@@ -5,12 +5,14 @@ description = "Miscellaneous functions for tracking analysis in Python using Dee
 authors = ["Felipe Cybis Pereira <felipe.cybis-pereira@espci.psl.eu>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9,<3.11"
 numpy = "^1.22.1"
 pandas = "^1.3.5"
 tables = "^3.7.0"
 "ruamel.yaml" = "^0.17.20"
 matplotlib = "^3.5.1"
+opencv-python-headless = "^4.5.5"
+scipy = "^1.7.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
