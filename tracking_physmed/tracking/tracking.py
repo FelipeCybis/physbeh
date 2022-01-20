@@ -3,16 +3,13 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from scipy import signal
-
-import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
-from matplotlib import colors
+from scipy.stats import multivariate_normal
 
 from tracking_physmed.utils import (
-    get_cmap, get_gaussian_value, get_rectangular_value, get_line_collection,
-    plot_color_wheel,
+    get_cmap,
+    get_gaussian_value, get_rectangular_value,
+    get_value_from_hexagonal_grid, set_hexagonal_parameters, get_place_field_coords
 )
-from tracking_physmed.gui.get_corners import Corner_Coords
 
 class Tracking(object):
 
@@ -62,6 +59,18 @@ class Tracking(object):
 
         self._spatial_units = units
 
+    @property
+    def speed_smooth_window(self):
+        return self._speed_smooth_window
+
+    @speed_smooth_window.setter
+    def speed_smooth_window(self, params):
+        assert len(params) == 2, "To set the gaussian window, a tuple with (lenght, std) should be passed."
+        M, sigma = params
+        self._speed_smooth_window = signal.gaussian(M=M,std=sigma) 
+        self._speed_smooth_window /= sum(self._speed_smooth_window)
+        
+
     def __init__(self, filename=None, video_filename=None) -> None:
 
         if not os.path.isfile(filename):
@@ -85,6 +94,8 @@ class Tracking(object):
 
         self.colormap = 'plasma'
         self._pcutout = 0.8
+        self._speed_smooth_window = signal.gaussian(M=101,std=6) 
+        self._speed_smooth_window /= sum(self._speed_smooth_window)
         self._load_Dataframe()
 
     def _load_Dataframe(self):
@@ -101,7 +112,7 @@ class Tracking(object):
         self.nframes = self.Dataframe.shape[0]
         self.bodyparts = self.metadata['data']['DLC-model-config file']['all_joints_names']
         self._fps = self.metadata['data']['fps']
-        colors =   get_cmap(len(self.bodyparts), name=self.colormap)
+        colors =  get_cmap(len(self.bodyparts), name=self.colormap)
         self.colors = {self.bodyparts[i]: colors(i) for i in range(len(self.bodyparts))}
 
         try:
@@ -126,6 +137,7 @@ class Tracking(object):
         if coord_list:
             self._write_corner_coords(coord_list)
         else:
+            from tracking_physmed.gui.get_corners import Corner_Coords
             x_crop = self.metadata['data']['cropping_parameters'][:2]
             y_crop = self.metadata['data']['cropping_parameters'][2:]
             self.corner_coords = Corner_Coords(self.video_filepath,
@@ -278,9 +290,37 @@ class Tracking(object):
         
         return hd_array, time_array, index
 
-    def get_position_x(self,bodypart,pcutout=.8):
+    def get_xy_coords(self, bodypart='body'):
+        """Gets array of x, y coordinates of the `bodypart` label in the shape [nframes, 2].
+
+        Parameters
+        ----------
+        bodypart : str, optional
+            By default 'body'
+
+        Returns
+        -------
+        tuple
+            x_bp : numpy.ndarray
+                Pixel values in x for bodypart.
+            time_array : numpy.ndarray
+                Time array in seconds.
+            # index : numpy.ndarray
+                Index where p-value > pcutout is True, index is False otherwise.
         """
-        Simple function to get x values for bodypart.
+        
+        x, time_array, index = self.get_position_x(bodypart=bodypart,pcutout=self.pcutout)
+        y, _, _ = self.get_position_y(bodypart=bodypart,pcutout=self.pcutout)
+        
+        x *= self.ratio_per_pixel
+        y *= self.ratio_per_pixel
+        
+        coords = np.array([x, y]).T
+        
+        return coords, time_array, index
+
+    def get_position_x(self,bodypart,pcutout=.8):
+        """Simple function to get x values for bodypart.
 
         Parameters
         ----------
@@ -290,10 +330,13 @@ class Tracking(object):
 
         Returns
         -------
-        x_bp : numpy.ndarray
-            Pixel values in x for bodypart.
-        # index : numpy.ndarray
-            Index where p-value > pcutout is True, index is False otherwise.
+        tuple
+            x_bp : numpy.ndarray
+                Pixel values in x for bodypart.
+            time_array : numpy.ndarray
+                Time array in seconds.
+            # index : numpy.ndarray
+                Index where p-value > pcutout is True, index is False otherwise.
 
         """
         index = self.Dataframe[self.scorer][bodypart]['likelihood'].values > pcutout
@@ -303,8 +346,7 @@ class Tracking(object):
         return x_bp, time_array, index
 
     def get_position_y(self,bodypart,pcutout=0.8):
-        """
-        Simple function to get y values for bodypart.
+        """Simple function to get y values for bodypart.
 
         Parameters
         ----------
@@ -314,10 +356,13 @@ class Tracking(object):
 
         Returns
         -------
-        y_bp : numpy.ndarray
-            Pixel values in y for bodypart.
-        index : numpy.ndarray
-            Index where p-value > pcutout is True, index is False otherwise.
+        tuple
+            y_bp : numpy.ndarray
+                Pixel values in y for bodypart.
+            time_array : numpy.ndarray
+                Time array in seconds.
+            index : numpy.ndarray
+                Index where p-value > pcutout is True, index is False otherwise.
 
         """
         
@@ -331,8 +376,7 @@ class Tracking(object):
                                     bodypart='body',
                                     backup_bps=['probe']
                                     ):        
-        """
-        Get distance from one frame to another for the specific bodypart along the whole analysis.
+        """Get distance from one frame to another for the specific bodypart along the whole analysis.
 
         Parameters
         ----------
@@ -341,14 +385,8 @@ class Tracking(object):
 
         Returns
         -------
-        numpy.ndarray, first return
-            Array of size index[True]. This means only the index which likelihood is above the given threshold.
+        distance between frames : numpy.ndarray
             First values is set to 0 so that the returned array has the same size of self.nframes.
-            
-        numpy.ndarray, second return
-            Array of size index[True].
-            Distance between (x,y) coordinates from one frame to another.
-            First values is set to 0 so that the returned array has the same size of index[True].
 
         """
         x_pts = self.get_position_x(bodypart=bodypart)[0]
@@ -358,14 +396,31 @@ class Tracking(object):
 
         return np.insert(dist_in_px, 0, 0)
 
-    def get_speed(self,
-                  bodypart='body',
-                  smooth=True,
-                  speed_cutout=0,
-                  only_running_bouts=False,
-                  normalized=False,
-                  **kwargs):
-        
+    def get_speed(self, bodypart='body', smooth=True, speed_cutout=0, only_running_bouts=False):
+        """Gets speed for given `bodypart`. When getting the distance between frames, the first index is hard set to be 0 so that the output array has the same length as the number of frames.
+
+        Parameters
+        ----------
+        bodypart : str, optional
+            Name of the label to get the speed from, by default 'body'.
+        smooth : bool, optional
+            If True a Gaussian window will convolve the speed array, by default True.
+            The parameters of the Gaussian window can be set via the self.speed_smooth_window variable.
+        speed_cutout : int, optional
+            If given it will set the speed values under this threshold to 0, by default 0.
+        only_running_bouts : bool, optional
+            [description], by default False.
+
+        Returns
+        -------
+        tuple
+            speed_array : numpy.ndarray
+            time_array : numpy.ndarray
+            index : numpy.ndarray
+                Index where p-value > pcutout is True, index is False otherwise.
+            speed_units : str
+                String telling the units of the speed_array
+        """
         dist_in_px = self.get_distance_between_frames(bodypart=bodypart)
         speed_in_px_per_second = dist_in_px * self.fps
         
@@ -377,10 +432,8 @@ class Tracking(object):
         speed_array = speed_in_px_per_second * self.ratio_per_pixel 
             
         if smooth:
-            window = signal.gaussian(M=101,std=6)
-            window /= sum(window)
-            speed_array[~index] = np.nan
-            speed_array = np.convolve(window, speed_array, 'same')
+            speed_array[~index] = 0
+            speed_array = np.convolve(self.speed_smooth_window, speed_array, 'same')
             speed_array[speed_array < speed_cutout] = 0
             
         if only_running_bouts == True:
@@ -416,4 +469,44 @@ class Tracking(object):
               f"Mean running speed: {info_dict['mean_speed']:.2f} {speed_units}\n"+
               "--------------------------------------------------------------")
         return info_dict
+
+    def get_place_field_array(self, coords: tuple = None,
+                              random_coords = False,
+                              only_running_bouts=False,
+                              bodypart = 'body'):
+        
+        animal_coords, time_array, index = self.get_xy_coords(bodypart=bodypart)
+        sigma = 300
+        
+        self.place_fields_list = list()
+        if coords is None:
+            coords = get_place_field_coords(random = random_coords)
+        else:
+            coords = [coords]
+            
+        for coord in coords:    
+            rv = multivariate_normal(mean=[coord[0], coord[1]], cov=[[sigma, 0], [0, sigma]])    
+            self.place_fields_list.append(rv.pdf(animal_coords))
+
+            
+        self.place_fields_array = np.array(self.place_fields_list)
+        return self.place_fields_array, (time_array, coords)
+
+    def get_grid_field_array(self, params=None, bodypart='body'):
+        
+        animal_coords, time_array, index = self.get_xy_coords(bodypart=bodypart)
+        
+        if params is None:
+            params = set_hexagonal_parameters()
+        
+        self.grid_fields_list = list()
+        for param in params:
+            [xplus, a, angle] = param
+            # for pos in animal_coords:
+            z = get_value_from_hexagonal_grid(animal_coords, xplus=xplus, a=a, angle=angle)
+            self.grid_fields_list.append(z)
+            
+        self.grid_fields_array = np.array(self.grid_fields_list)
+        
+        return self.grid_fields_array, time_array, params
 

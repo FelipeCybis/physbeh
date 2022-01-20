@@ -6,39 +6,38 @@ import numpy as np
 
 from tracking_physmed.utils import get_line_collection, plot_color_wheel, get_cmap
 
-def plot_speed(Trk_cls,
-                bodypart='body',
-                smooth=True,
-                speed_cutout=0,
-                only_running_bouts=False,
-                figsize=(12,5),
-                ax=None,
-                ax_kwargs=None,
-                fig=None):
+def plot_speed(Trk_cls, **kwargs):
+    """Plot speed of given label. 
+
+    Parameters
+    ----------
+    Trk_cls : Tracking class
+    kwargs  : Keyword arguments can be passed to the get_speed method (see Tracking.get_speed?). They can be a matplotlib axes `ax` or a matplotlib figure `fig`. They can also `figsize` for matplotlib figure if this is not passed or they can be matplotlib axes parameters, such as `ylabel`, `title`, etc.
+
+    Returns
+    -------
+    fig     : matplotlib.Figure
+    ax      : matplotlib.Axes
+    """
     
-    
-    (speed_array,
-        time_array,
-        index,
-        speed_units) = Trk_cls.get_speed(bodypart=bodypart,
-                                    smooth=smooth,
-                                    speed_cutout=speed_cutout,
-                                    only_running_bouts=only_running_bouts)
+    speed_kwargs = {'bodypart'           : kwargs.pop('bodypart','body'),
+                    'smooth'             : kwargs.pop('smooth',True),
+                    'speed_cutout'       : kwargs.pop('speed_cutout', 0),
+                    'only_running_bouts' : kwargs.pop('only_running_bouts', False)}
+    speed_array, time_array, index, speed_units = Trk_cls.get_speed(**speed_kwargs)
                                     
-    lines = get_line_collection(x_array=time_array,
-                                y_array=speed_array,
-                                index=index)
+    lines = get_line_collection(time_array, speed_array, index)
         
-    lc = LineCollection(lines, label=bodypart, linewidths=2, colors=Trk_cls.colors[bodypart])
+    lc = LineCollection(lines, label=speed_kwargs['bodypart'], linewidths=2, colors=Trk_cls.colors[speed_kwargs['bodypart']])
     
+    ax = kwargs.pop('ax', None)
     if ax is None:
-        if fig is None:
-            fig = plt.figure(figsize=figsize)
+        fig = kwargs.pop('fig',plt.figure(figsize=kwargs.pop('figsize',(12,5))))
         ax = fig.add_subplot(111)
         
     ax.add_collection(lc)
     
-    if only_running_bouts == True:
+    if speed_kwargs['only_running_bouts'] == True:
         time_array = np.concatenate(time_array)
         speed_array = np.concatenate(speed_array)
         index = np.concatenate(index)
@@ -46,18 +45,9 @@ def plot_speed(Trk_cls,
     
     ax.plot(time_array[index], speed_array[index], '.', markersize=0)
     ax.set(ylabel=speed_units, xlabel='time (s)')
-    legend = ax.legend(loc='upper right')
+    ax.set(**kwargs)
+    ax.legend(loc='upper right')
     ax.grid(linestyle='--')
-    
-    if ax_kwargs is not None:
-        legend_kwargs = ax_kwargs.pop('legend', False)
-        if legend_kwargs is None: legend.remove()
-        elif legend_kwargs is not False: ax.legend(**legend_kwargs)
-        
-        grid_kwargs = ax_kwargs.pop('grid', False)
-        if grid_kwargs is None: ax.grid(b=False)
-        elif grid_kwargs is not False: ax.grid(**grid_kwargs)
-        ax.set(**ax_kwargs)
         
     plt.show()
     return fig, ax
@@ -73,6 +63,7 @@ def plot_position_2d(Trk_cls,
                     ax_kwargs=None,
                     fig=None):
     
+
     x_bp, _, index = Trk_cls.get_position_x(bodypart=bodypart)
     y_bp = Trk_cls.get_position_y(bodypart=bodypart)[0]
     if head_direction:
