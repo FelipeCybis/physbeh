@@ -7,12 +7,15 @@ from scipy.stats import multivariate_normal
 
 from tracking_physmed.utils import (
     get_cmap,
-    get_gaussian_value, get_rectangular_value,
-    get_value_from_hexagonal_grid, set_hexagonal_parameters, get_place_field_coords
+    get_gaussian_value,
+    get_rectangular_value,
+    get_value_from_hexagonal_grid,
+    set_hexagonal_parameters,
+    get_place_field_coords,
 )
 
-class Tracking(object):
 
+class Tracking(object):
     @property
     def tracking_filepath(self):
         return self._tracking_filepath
@@ -25,7 +28,7 @@ class Tracking(object):
     def video_filepath(self):
         return self._video_filepath
 
-    @property        
+    @property
     def fps(self):
         """Frames per second from metadata of chosen analysis."""
         return self._fps
@@ -48,13 +51,20 @@ class Tracking(object):
 
     @spatial_units.setter
     def spatial_units(self, units):
-        
-        assert units in ('mm', 'cm', 'm', 'px'), f"Units can only be one of these strings: 'mm', 'cm', 'm' or 'px'. It is '{units}'"
-        if units == 'px':
+
+        assert units in (
+            "mm",
+            "cm",
+            "m",
+            "px",
+        ), f"Units can only be one of these strings: 'mm', 'cm', 'm' or 'px'. It is '{units}'"
+        if units == "px":
             self._ratio_per_pixel = 1
         else:
-            assert self.ratio_cm_per_pixel is not None, 'The cm/px ratio has not yet been set.'
-            ratio_factor_dict = {'mm':10, 'cm': 1, 'm': 0.1}
+            assert (
+                self.ratio_cm_per_pixel is not None
+            ), "The cm/px ratio has not yet been set."
+            ratio_factor_dict = {"mm": 10, "cm": 1, "m": 0.1}
             self._ratio_per_pixel = self.ratio_cm_per_pixel * ratio_factor_dict[units]
 
         self._spatial_units = units
@@ -65,16 +75,17 @@ class Tracking(object):
 
     @speed_smooth_window.setter
     def speed_smooth_window(self, params):
-        assert len(params) == 2, "To set the gaussian window, a tuple with (lenght, std) should be passed."
+        assert (
+            len(params) == 2
+        ), "To set the gaussian window, a tuple with (lenght, std) should be passed."
         M, sigma = params
-        self._speed_smooth_window = signal.gaussian(M=M,std=sigma) 
+        self._speed_smooth_window = signal.gaussian(M=M, std=sigma)
         self._speed_smooth_window /= sum(self._speed_smooth_window)
-        
 
     def __init__(self, filename=None, video_filename=None) -> None:
 
         if not os.path.isfile(filename):
-            raise FileNotFoundError('Check filename and make sure the file exists.')
+            raise FileNotFoundError("Check filename and make sure the file exists.")
 
         filename = Path(filename)
         self._tracking_filepath = filename
@@ -82,51 +93,62 @@ class Tracking(object):
 
         self._video_filepath = video_filename
         if video_filename is None:
-            self._video_filepath = self.tracking_directory.joinpath(self.tracking_filepath.stem + '_labeled.mp4')
+            self._video_filepath = self.tracking_directory.joinpath(
+                self.tracking_filepath.stem + "_labeled.mp4"
+            )
 
         if not os.path.isfile(self._video_filepath):
-            warnings.warn(f'Tried to guess video filepath as {self._video_filepath}, but file does not exist.\n'+ \
-                'Use self.set_video_filepath(filename) for the animations to work with the right video.', category=UserWarning)
+            warnings.warn(
+                f"Tried to guess video filepath as {self._video_filepath}, but file does not exist.\n"
+                + "Use self.set_video_filepath(filename) for the animations to work with the right video.",
+                category=UserWarning,
+            )
             self._video_filepath = None
         else:
             # There is video filepath
             self._video_filepath = Path(self._video_filepath)
 
-        self.colormap = 'plasma'
+        self.colormap = "plasma"
         self._pcutout = 0.8
-        self._speed_smooth_window = signal.gaussian(M=101,std=6) 
+        self._speed_smooth_window = signal.gaussian(M=101, std=6)
         self._speed_smooth_window /= sum(self._speed_smooth_window)
         self._load_Dataframe()
 
     def _load_Dataframe(self):
 
         self.Dataframe = pd.read_hdf(self.tracking_filepath)
-        if 'filtered' in str(self.tracking_filepath):
-            self.metadata_filepath = str(self.tracking_filepath).split('_filtered')[0]+'_meta.pickle'
+        if "filtered" in str(self.tracking_filepath):
+            self.metadata_filepath = (
+                str(self.tracking_filepath).split("_filtered")[0] + "_meta.pickle"
+            )
         else:
-            self.metadata_filepath = str(self.tracking_filepath).split('.')[0]+'_meta.pickle'
+            self.metadata_filepath = (
+                str(self.tracking_filepath).split(".")[0] + "_meta.pickle"
+            )
 
         self.metadata = pd.read_pickle(self.metadata_filepath)
-        self.scorer = self.metadata['data']['Scorer']
+        self.scorer = self.metadata["data"]["Scorer"]
 
         self.nframes = self.Dataframe.shape[0]
-        self.bodyparts = self.metadata['data']['DLC-model-config file']['all_joints_names']
-        self._fps = self.metadata['data']['fps']
-        colors =  get_cmap(len(self.bodyparts), name=self.colormap)
+        self.bodyparts = self.metadata["data"]["DLC-model-config file"][
+            "all_joints_names"
+        ]
+        self._fps = self.metadata["data"]["fps"]
+        colors = get_cmap(len(self.bodyparts), name=self.colormap)
         self.colors = {self.bodyparts[i]: colors(i) for i in range(len(self.bodyparts))}
 
         try:
             # checking if coordinates for corners have already been set
             # if not, calls function to do it
-            self.metadata['data']['corner_coords']
+            self.metadata["data"]["corner_coords"]
         except KeyError:
             self.set_corner_coords()
 
         self._get_cm2px_ratio(w=100, h=100)
-        self._spatial_units = 'cm'
+        self._spatial_units = "cm"
         self._ratio_per_pixel = self.ratio_cm_per_pixel
 
-    def set_corner_coords(self, coord_list = []):
+    def set_corner_coords(self, coord_list=[]):
         """If coord_list is not given, it calls Corner_Coords class GUI so the user can label the four corners and the Tracking class is able to calculate the ratio px/cm. It rights the corner coordinates in the metadata pickle file.
 
         Parameters
@@ -138,24 +160,35 @@ class Tracking(object):
             self._write_corner_coords(coord_list)
         else:
             from tracking_physmed.gui.get_corners import Corner_Coords
-            x_crop = self.metadata['data']['cropping_parameters'][:2]
-            y_crop = self.metadata['data']['cropping_parameters'][2:]
-            self.corner_coords = Corner_Coords(self.video_filepath,
-                                               function_after_done=self._write_corner_coords,
-                                               x_crop=x_crop,
-                                               y_crop=y_crop)
+
+            x_crop = self.metadata["data"]["cropping_parameters"][:2]
+            y_crop = self.metadata["data"]["cropping_parameters"][2:]
+            self.corner_coords = Corner_Coords(
+                self.video_filepath,
+                function_after_done=self._write_corner_coords,
+                x_crop=x_crop,
+                y_crop=y_crop,
+            )
 
     def _write_corner_coords(self, coords_list):
         """Writes corner coordinates in the metadata of the analysis so it is there for the next time
         and set_corner_coords does not need to be called again.
         """
-        with open(self.metadata_filepath, 'wb') as f:
+        with open(self.metadata_filepath, "wb") as f:
             try:
-                self.metadata['data']['corner_coords'] = {}
-                self.metadata['data']['corner_coords']['top_left'] = np.array(coords_list[0])
-                self.metadata['data']['corner_coords']['top_right'] = np.array(coords_list[1])
-                self.metadata['data']['corner_coords']['bottom_left'] = np.array(coords_list[2])
-                self.metadata['data']['corner_coords']['bottom_right'] = np.array(coords_list[3])
+                self.metadata["data"]["corner_coords"] = {}
+                self.metadata["data"]["corner_coords"]["top_left"] = np.array(
+                    coords_list[0]
+                )
+                self.metadata["data"]["corner_coords"]["top_right"] = np.array(
+                    coords_list[1]
+                )
+                self.metadata["data"]["corner_coords"]["bottom_left"] = np.array(
+                    coords_list[2]
+                )
+                self.metadata["data"]["corner_coords"]["bottom_right"] = np.array(
+                    coords_list[3]
+                )
                 print("Corner coordinates saved correctly!")
             except AttributeError:
                 print("Corner coordinates were not saved!")
@@ -178,29 +211,59 @@ class Tracking(object):
             Returns the ratio of cm/px of the images being analysed.
         """
         ## TO SEE IF W AND H ARE NOT THE SAME!!
-        
+
         try:
             estimates = np.empty(4)
-            estimates[0] = np.sqrt(np.sum((self.metadata['data']['corner_coords']['top_right'] \
-                 - self.metadata['data']['corner_coords']['top_left'])**2))
-            estimates[1] = np.sqrt(np.sum((self.metadata['data']['corner_coords']['bottom_right'] \
-                 - self.metadata['data']['corner_coords']['bottom_left'])**2))
-            
-            estimates[2] = np.sqrt(np.sum((self.metadata['data']['corner_coords']['top_left'] \
-                 - self.metadata['data']['corner_coords']['bottom_left'])**2))
-            estimates[3] = np.sqrt(np.sum((self.metadata['data']['corner_coords']['top_right'] \
-                 - self.metadata['data']['corner_coords']['bottom_right'])**2))
-        
+            estimates[0] = np.sqrt(
+                np.sum(
+                    (
+                        self.metadata["data"]["corner_coords"]["top_right"]
+                        - self.metadata["data"]["corner_coords"]["top_left"]
+                    )
+                    ** 2
+                )
+            )
+            estimates[1] = np.sqrt(
+                np.sum(
+                    (
+                        self.metadata["data"]["corner_coords"]["bottom_right"]
+                        - self.metadata["data"]["corner_coords"]["bottom_left"]
+                    )
+                    ** 2
+                )
+            )
+
+            estimates[2] = np.sqrt(
+                np.sum(
+                    (
+                        self.metadata["data"]["corner_coords"]["top_left"]
+                        - self.metadata["data"]["corner_coords"]["bottom_left"]
+                    )
+                    ** 2
+                )
+            )
+            estimates[3] = np.sqrt(
+                np.sum(
+                    (
+                        self.metadata["data"]["corner_coords"]["top_right"]
+                        - self.metadata["data"]["corner_coords"]["bottom_right"]
+                    )
+                    ** 2
+                )
+            )
+
             w_estimate = w / estimates[:2].mean()
             h_estimate = h / estimates[2:].mean()
-            self.ratio_cm_per_pixel = (w_estimate + h_estimate)/2
+            self.ratio_cm_per_pixel = (w_estimate + h_estimate) / 2
             return self.ratio_cm_per_pixel
-        
+
         except KeyError:
-            print('Ratio cm/px not yet calculated. See function self.set_corner_coords.')
+            print(
+                "Ratio cm/px not yet calculated. See function self.set_corner_coords."
+            )
 
     def get_vector_from_two_labels(self, label0, label1):
-        """Gets the vector 'label0'->'label1' by simple subtraction label1 - label0.  
+        """Gets the vector 'label0'->'label1' by simple subtraction label1 - label0.
 
         Parameters
         ----------
@@ -217,11 +280,17 @@ class Tracking(object):
             Vector distance in the y coordinate. label1_y - label0_y
         """
 
-        vec_x = self.Dataframe[self.scorer][label1]['x'] - self.Dataframe[self.scorer][label0]['x']
-        vec_y = self.Dataframe[self.scorer][label1]['y'] - self.Dataframe[self.scorer][label0]['y']
+        vec_x = (
+            self.Dataframe[self.scorer][label1]["x"]
+            - self.Dataframe[self.scorer][label0]["x"]
+        )
+        vec_y = (
+            self.Dataframe[self.scorer][label1]["y"]
+            - self.Dataframe[self.scorer][label0]["y"]
+        )
         return vec_x.to_numpy(), vec_y.to_numpy()
-    
-    def get_direction_array(self, label0='neck', label1='probe', mode='deg'):
+
+    def get_direction_array(self, label0="neck", label1="probe", mode="deg"):
         """Gets the direction vector 'label0'->'label1' by simple subtraction label1 - label0.
         Default vector is 'neck'->'probe'. This can be used to get the head direction of the animal, for example.
 
@@ -238,16 +307,18 @@ class Tracking(object):
             In degrees, if mode asks for it, otherwise in radians.
 
         """
-        
+
         hd_x, hd_y = self.get_vector_from_two_labels(label0=label0, label1=label1)
 
-        resp_in_rad = np.arctan2(hd_y*(-1), hd_x) # multiplication by -1 needed because of video x and y directions
-        resp_in_rad[resp_in_rad < 0] += 2*np.pi
-        if mode in ('deg', 'degree'):
+        resp_in_rad = np.arctan2(
+            hd_y * (-1), hd_x
+        )  # multiplication by -1 needed because of video x and y directions
+        resp_in_rad[resp_in_rad < 0] += 2 * np.pi
+        if mode in ("deg", "degree"):
             return np.degrees(resp_in_rad)
         return resp_in_rad
 
-    def get_degree_interval_hd(self, deg, only_running_bouts = False):
+    def get_degree_interval_hd(self, deg, only_running_bouts=False):
         """Gets an array where the direction array (head direction here) is modulated by a guassian function centered in `deg`.
 
         Parameters
@@ -262,35 +333,56 @@ class Tracking(object):
         [type]
             [description]
         """
-        hd_deg = self.get_direction_array(label0='neck', label1='probe', mode='deg')
-        
+        hd_deg = self.get_direction_array(label0="neck", label1="probe", mode="deg")
+
         time_array = np.array(self.Dataframe.index) / self.fps
-        index = self.Dataframe[self.scorer]['probe']['likelihood'].values >= self.pcutout
-        
+        index = (
+            self.Dataframe[self.scorer]["probe"]["likelihood"].values >= self.pcutout
+        )
+
         sigma = 20
-        
+
         if deg < 60:
             hd_deg = np.where(hd_deg > 300, 360 - hd_deg, hd_deg)
-        
+
         if deg > 300:
             hd_deg = np.where(hd_deg < 60, hd_deg + 360, hd_deg)
-            
+
         tmp = hd_deg - deg
-        
-        hd_array = get_gaussian_value(tmp,sigma)
-        
+
+        hd_array = get_gaussian_value(tmp, sigma)
+
         if only_running_bouts == True:
-            
+
             self.get_running_bouts()
-            hd_bouts = [x for x in np.split(np.where(self.running_bouts, hd_array, 0),self.final_change_idx+1) if x[0]!=0]
-            time_bouts = [x for x in np.split(np.where(self.running_bouts, time_array, 0),self.final_change_idx+1) if x[1]!=0]
-            index_bouts = [x for x in np.split(np.where(self.running_bouts, index, 0),self.final_change_idx+1) if x[0]!=0]
-            
+            hd_bouts = [
+                x
+                for x in np.split(
+                    np.where(self.running_bouts, hd_array, 0), self.final_change_idx + 1
+                )
+                if x[0] != 0
+            ]
+            time_bouts = [
+                x
+                for x in np.split(
+                    np.where(self.running_bouts, time_array, 0),
+                    self.final_change_idx + 1,
+                )
+                if x[1] != 0
+            ]
+            index_bouts = [
+                x
+                for x in np.split(
+                    np.where(self.running_bouts, index, 0), self.final_change_idx + 1
+                )
+                if x[0] != 0
+            ]
+
             return hd_bouts, time_bouts, index_bouts
-        
+
         return hd_array, time_array, index
 
-    def get_xy_coords(self, bodypart='body'):
+    def get_xy_coords(self, bodypart="body"):
         """Gets array of x, y coordinates of the `bodypart` label in the shape [nframes, 2].
 
         Parameters
@@ -308,18 +400,20 @@ class Tracking(object):
             # index : numpy.ndarray
                 Index where p-value > pcutout is True, index is False otherwise.
         """
-        
-        x, time_array, index = self.get_position_x(bodypart=bodypart,pcutout=self.pcutout)
-        y, _, _ = self.get_position_y(bodypart=bodypart,pcutout=self.pcutout)
-        
+
+        x, time_array, index = self.get_position_x(
+            bodypart=bodypart, pcutout=self.pcutout
+        )
+        y, _, _ = self.get_position_y(bodypart=bodypart, pcutout=self.pcutout)
+
         x *= self.ratio_per_pixel
         y *= self.ratio_per_pixel
-        
+
         coords = np.array([x, y]).T
-        
+
         return coords, time_array, index
 
-    def get_position_x(self,bodypart,pcutout=.8):
+    def get_position_x(self, bodypart, pcutout=0.8):
         """Simple function to get x values for bodypart.
 
         Parameters
@@ -339,13 +433,16 @@ class Tracking(object):
                 Index where p-value > pcutout is True, index is False otherwise.
 
         """
-        index = self.Dataframe[self.scorer][bodypart]['likelihood'].values > pcutout
-        x_bp = self.Dataframe[self.scorer][bodypart]['x'].values - self.metadata['data']['corner_coords']['top_left'][0]
+        index = self.Dataframe[self.scorer][bodypart]["likelihood"].values > pcutout
+        x_bp = (
+            self.Dataframe[self.scorer][bodypart]["x"].values
+            - self.metadata["data"]["corner_coords"]["top_left"][0]
+        )
         time_array = np.array(self.Dataframe.index) / self.fps
-        
+
         return x_bp, time_array, index
 
-    def get_position_y(self,bodypart,pcutout=0.8):
+    def get_position_y(self, bodypart, pcutout=0.8):
         """Simple function to get y values for bodypart.
 
         Parameters
@@ -365,17 +462,17 @@ class Tracking(object):
                 Index where p-value > pcutout is True, index is False otherwise.
 
         """
-        
-        index = self.Dataframe[self.scorer][bodypart]['likelihood'].values > pcutout
-        y_bp = self.Dataframe[self.scorer][bodypart]['y'].values - self.metadata['data']['corner_coords']['top_left'][1]
+
+        index = self.Dataframe[self.scorer][bodypart]["likelihood"].values > pcutout
+        y_bp = (
+            self.Dataframe[self.scorer][bodypart]["y"].values
+            - self.metadata["data"]["corner_coords"]["top_left"][1]
+        )
         time_array = np.array(self.Dataframe.index) / self.fps
-        
+
         return y_bp, time_array, index
 
-    def get_distance_between_frames(self,
-                                    bodypart='body',
-                                    backup_bps=['probe']
-                                    ):        
+    def get_distance_between_frames(self, bodypart="body", backup_bps=["probe"]):
         """Get distance from one frame to another for the specific bodypart along the whole analysis.
 
         Parameters
@@ -391,12 +488,14 @@ class Tracking(object):
         """
         x_pts = self.get_position_x(bodypart=bodypart)[0]
         y_pts = self.get_position_y(bodypart=bodypart)[0]
-    
-        dist_in_px = np.sqrt(np.diff(x_pts)**2 + np.diff(y_pts)**2)
+
+        dist_in_px = np.sqrt(np.diff(x_pts) ** 2 + np.diff(y_pts) ** 2)
 
         return np.insert(dist_in_px, 0, 0)
 
-    def get_speed(self, bodypart='body', smooth=True, speed_cutout=0, only_running_bouts=False):
+    def get_speed(
+        self, bodypart="body", smooth=True, speed_cutout=0, only_running_bouts=False
+    ):
         """Gets speed for given `bodypart`. When getting the distance between frames, the first index is hard set to be 0 so that the output array has the same length as the number of frames.
 
         Parameters
@@ -423,90 +522,123 @@ class Tracking(object):
         """
         dist_in_px = self.get_distance_between_frames(bodypart=bodypart)
         speed_in_px_per_second = dist_in_px * self.fps
-        
-        index = self.Dataframe[self.scorer][bodypart]['likelihood'].values >= self.pcutout
+
+        index = (
+            self.Dataframe[self.scorer][bodypart]["likelihood"].values >= self.pcutout
+        )
 
         time_array = np.array(self.Dataframe.index) / self.fps
-        
-        speed_units = self.spatial_units + '/s'
-        speed_array = speed_in_px_per_second * self.ratio_per_pixel 
-            
+
+        speed_units = self.spatial_units + "/s"
+        speed_array = speed_in_px_per_second * self.ratio_per_pixel
+
         if smooth:
             speed_array[~index] = 0
-            speed_array = np.convolve(self.speed_smooth_window, speed_array, 'same')
+            speed_array = np.convolve(self.speed_smooth_window, speed_array, "same")
             speed_array[speed_array < speed_cutout] = 0
-            
+
         if only_running_bouts == True:
             self.get_running_bouts(speed_array=speed_array, time_array=time_array)
-            speed_bouts = [x for x in np.split(np.where(self.running_bouts, speed_array, 0),self.final_change_idx+1) if x[0]!=0]
-            time_bouts = [x for x in np.split(np.where(self.running_bouts, time_array, 0),self.final_change_idx+1) if x[1]!=0]
-            index_bouts = [x for x in np.split(np.where(self.running_bouts, index, 0),self.final_change_idx+1) if x[0]!=0]
+            speed_bouts = [
+                x
+                for x in np.split(
+                    np.where(self.running_bouts, speed_array, 0),
+                    self.final_change_idx + 1,
+                )
+                if x[0] != 0
+            ]
+            time_bouts = [
+                x
+                for x in np.split(
+                    np.where(self.running_bouts, time_array, 0),
+                    self.final_change_idx + 1,
+                )
+                if x[1] != 0
+            ]
+            index_bouts = [
+                x
+                for x in np.split(
+                    np.where(self.running_bouts, index, 0), self.final_change_idx + 1
+                )
+                if x[0] != 0
+            ]
 
             return speed_bouts, time_bouts, index_bouts, speed_units
-        else:    
+        else:
             return speed_array, time_array, index, speed_units
 
     def get_binned_position(self):
-        pass    
+        pass
 
     def get_infos(self):
-        
+
         info_dict = {}
-        info_dict['total_time'] = self.nframes / self.fps
-        
-        speed, _, _, _ = self.get_speed(bodypart='body', smooth=True)
-        speed_bouts, time_bouts, _, speed_units = self.get_speed(only_running_bouts=True)
+        info_dict["total_time"] = self.nframes / self.fps
+
+        speed, _, _, _ = self.get_speed(bodypart="body", smooth=True)
+        speed_bouts, time_bouts, _, speed_units = self.get_speed(
+            only_running_bouts=True
+        )
         bout_lenghts = [t_bout[-1] - t_bout[0] for t_bout in time_bouts]
-        info_dict['total_running_time'] = sum(bout_lenghts)
-        info_dict['timefraction_of_running'] = info_dict['total_running_time'] / info_dict['total_time']
-        info_dict['mean_running_speed'] = np.concatenate(speed_bouts).mean()
-        info_dict['mean_speed'] = speed.mean()
-        print("--------------------------------------------------------------\n"+
-              f"Total tracking time: {info_dict['total_time']} s\n"+
-              f"Total running time: {info_dict['total_running_time']:.2f}\n"+
-              f"Exploration ratio (total time / running time): {info_dict['timefraction_of_running']:.3f}\n"+
-              f"Mean running speed (only running periods): {info_dict['mean_running_speed']:.2f} {speed_units}\n"+
-              f"Mean running speed: {info_dict['mean_speed']:.2f} {speed_units}\n"+
-              "--------------------------------------------------------------")
+        info_dict["total_running_time"] = sum(bout_lenghts)
+        info_dict["timefraction_of_running"] = (
+            info_dict["total_running_time"] / info_dict["total_time"]
+        )
+        info_dict["mean_running_speed"] = np.concatenate(speed_bouts).mean()
+        info_dict["mean_speed"] = speed.mean()
+        print(
+            "--------------------------------------------------------------\n"
+            + f"Total tracking time: {info_dict['total_time']} s\n"
+            + f"Total running time: {info_dict['total_running_time']:.2f}\n"
+            + f"Exploration ratio (total time / running time): {info_dict['timefraction_of_running']:.3f}\n"
+            + f"Mean running speed (only running periods): {info_dict['mean_running_speed']:.2f} {speed_units}\n"
+            + f"Mean running speed: {info_dict['mean_speed']:.2f} {speed_units}\n"
+            + "--------------------------------------------------------------"
+        )
         return info_dict
 
-    def get_place_field_array(self, coords: tuple = None,
-                              random_coords = False,
-                              only_running_bouts=False,
-                              bodypart = 'body'):
-        
+    def get_place_field_array(
+        self,
+        coords: tuple = None,
+        random_coords=False,
+        only_running_bouts=False,
+        bodypart="body",
+    ):
+
         animal_coords, time_array, index = self.get_xy_coords(bodypart=bodypart)
         sigma = 300
-        
+
         self.place_fields_list = list()
         if coords is None:
-            coords = get_place_field_coords(random = random_coords)
+            coords = get_place_field_coords(random=random_coords)
         else:
             coords = [coords]
-            
-        for coord in coords:    
-            rv = multivariate_normal(mean=[coord[0], coord[1]], cov=[[sigma, 0], [0, sigma]])    
+
+        for coord in coords:
+            rv = multivariate_normal(
+                mean=[coord[0], coord[1]], cov=[[sigma, 0], [0, sigma]]
+            )
             self.place_fields_list.append(rv.pdf(animal_coords))
 
-            
         self.place_fields_array = np.array(self.place_fields_list)
         return self.place_fields_array, (time_array, coords)
 
-    def get_grid_field_array(self, params=None, bodypart='body'):
-        
+    def get_grid_field_array(self, params=None, bodypart="body"):
+
         animal_coords, time_array, index = self.get_xy_coords(bodypart=bodypart)
-        
+
         if params is None:
             params = set_hexagonal_parameters()
-        
+
         self.grid_fields_list = list()
         for param in params:
             [xplus, a, angle] = param
             # for pos in animal_coords:
-            z = get_value_from_hexagonal_grid(animal_coords, xplus=xplus, a=a, angle=angle)
+            z = get_value_from_hexagonal_grid(
+                animal_coords, xplus=xplus, a=a, angle=angle
+            )
             self.grid_fields_list.append(z)
-            
-        self.grid_fields_array = np.array(self.grid_fields_list)
-        
-        return self.grid_fields_array, time_array, params
 
+        self.grid_fields_array = np.array(self.grid_fields_list)
+
+        return self.grid_fields_array, time_array, params

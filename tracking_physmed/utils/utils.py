@@ -2,7 +2,8 @@ import matplotlib as plt
 import numpy as np
 from matplotlib import colors
 
-def get_cmap(n, name='hsv'):
+
+def get_cmap(n, name="hsv"):
     """Get a colormap instance with n numbers of entries.
 
     Parameters
@@ -18,6 +19,7 @@ def get_cmap(n, name='hsv'):
 
     """
     return plt.cm.get_cmap(name, n)
+
 
 def get_line_collection(x_array, y_array, index):
     """Gets collection of arrays for each segmente of x_array and y_array.
@@ -38,47 +40,53 @@ def get_line_collection(x_array, y_array, index):
         x_array = [x_array]
         y_array = [y_array]
         index = [index]
-        
+
     segments = []
     segment_index = []
     for x, y, idx in zip(x_array, y_array, index):
         points = np.array([x, y]).T.reshape(-1, 1, 2)
         segments.append(np.concatenate([points[:-1], points[1:]], axis=1))
-        segment_index.append(np.logical_and(idx[1:],idx[:-1]))
+        segment_index.append(np.logical_and(idx[1:], idx[:-1]))
 
     segments = np.concatenate(segments, axis=0)
     segment_index = np.concatenate(segment_index, axis=0)
     return segments[segment_index]
-    
-def get_gaussian_value(n, sigma):
-    """Gets value of n in a gaussian curve centered in 0 with sigma = sigma
-    """
-    return np.e**(-1/2 * (n / sigma)**2)
 
-def get_rectangular_value(n,width):
-    """Gets value of n in a rectangular function centered in 0 with width = width
-    """
-    return np.where(abs(n)<width,1,0)
+
+def get_gaussian_value(n, sigma):
+    """Gets value of n in a gaussian curve centered in 0 with sigma = sigma"""
+    return np.e ** (-1 / 2 * (n / sigma) ** 2)
+
+
+def get_rectangular_value(n, width):
+    """Gets value of n in a rectangular function centered in 0 with width = width"""
+    return np.where(abs(n) < width, 1, 0)
+
 
 def plot_color_wheel(ax, cmap):
-        
+
     # Define colormap normalization for 0 to 2*pi
-    norm_2 = colors.Normalize(0, 2*np.pi) 
-        
+    norm_2 = colors.Normalize(0, 2 * np.pi)
+
     # Plot a color mesh on the polar plot
     # with the color set by the angle
-    n = 360  #the number of secants for the mesh
-    t = np.linspace(0,2*np.pi,n)   #theta values
-    r = np.linspace(.6,1,2)        #radius values change 0.6 to 0 for full circle
-    rg, tg = np.meshgrid(r,t)      #create a r,theta meshgrid
-    c = tg                         #define color values as theta value
-    ax.pcolormesh(t, r, c.T, norm=norm_2, cmap=cmap, shading='auto')  #plot the colormesh on axis with colormap
-    ax.set(yticklabels=[],
-            xticks=[0,np.pi/2,np.pi,np.pi*3/2],
-            xticklabels=["E","N","W","S"])
-    ax.tick_params(pad=4,labelsize=14)      #cosmetic changes to tick labels
-    ax.spines['polar'].set_visible(False)
-    ax.set_title('Head direction color wheel', y=1.0, pad=30)
+    n = 360  # the number of secants for the mesh
+    t = np.linspace(0, 2 * np.pi, n)  # theta values
+    r = np.linspace(0.6, 1, 2)  # radius values change 0.6 to 0 for full circle
+    rg, tg = np.meshgrid(r, t)  # create a r,theta meshgrid
+    c = tg  # define color values as theta value
+    ax.pcolormesh(
+        t, r, c.T, norm=norm_2, cmap=cmap, shading="auto"
+    )  # plot the colormesh on axis with colormap
+    ax.set(
+        yticklabels=[],
+        xticks=[0, np.pi / 2, np.pi, np.pi * 3 / 2],
+        xticklabels=["E", "N", "W", "S"],
+    )
+    ax.tick_params(pad=4, labelsize=14)  # cosmetic changes to tick labels
+    ax.spines["polar"].set_visible(False)
+    ax.set_title("Head direction color wheel", y=1.0, pad=30)
+
 
 class BlitManager:
     def __init__(self, canvas, animated_artists=()):
