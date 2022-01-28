@@ -57,7 +57,6 @@ def plot_speed(Trk_cls, **kwargs):
     ax.legend(loc="upper right")
     ax.grid(linestyle="--")
 
-    plt.show()
     return fig, ax
 
 
@@ -70,6 +69,7 @@ def plot_position_2d(
     figsize=(8, 6),
     colormap="hsv",
     ax=None,
+    ax_direction=True,
     ax_kwargs=None,
     fig=None,
 ):
@@ -95,7 +95,7 @@ def plot_position_2d(
         if fig is None:
             fig = plt.figure(figsize=figsize)
 
-        ax_1 = fig.add_subplot(111)
+        ax_1 = fig.add_axes(rect=[0.125, 0.125, 0.775, 0.775])
         ax_1.set(
             xlabel="X pixel",
             ylabel="Y pixel",
@@ -131,11 +131,11 @@ def plot_position_2d(
         lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)
         lc.set_array(head_direction_array[index])
 
-        fig.set_size_inches(14, 7.5)
-        ax_1.set_position([0.1, 0.12, 0.5, 0.75])
-
-        ax_2 = fig.add_subplot(122, projection="polar", position=[0.8, 0.4, 0.1, 0.1])
-        plot_color_wheel(ax=ax_2, cmap=cmap)
+        if ax_direction:
+            fig.set_size_inches(14, 7.5)
+            ax_1.set_position([0.1, 0.12, 0.5, 0.75])
+            ax_2 = fig.add_axes(rect=[0.65, 0.26, 0.3, 0.48], projection="polar")
+            plot_color_wheel(ax=ax_2, cmap=cmap)
 
     ax_1.add_collection(lc)
     ax_1.scatter(x_bp[index], y_bp[index], s=0)
@@ -143,5 +143,4 @@ def plot_position_2d(
     if ax_kwargs is not None:
         ax_1.set(**ax_kwargs)
 
-    plt.show()
     return fig, lc

@@ -93,9 +93,9 @@ class Tracking(object):
 
         self._video_filepath = video_filename
         if video_filename is None:
-            self._video_filepath = self.tracking_directory.joinpath(
-                self.tracking_filepath.stem + "_labeled.mp4"
-            )
+            self._video_filepath = sorted(
+                self.tracking_directory.glob("*recording-labeled*")
+            )[0]
 
         if not os.path.isfile(self._video_filepath):
             warnings.warn(
@@ -117,15 +117,10 @@ class Tracking(object):
     def _load_Dataframe(self):
 
         self.Dataframe = pd.read_hdf(self.tracking_filepath)
-        if "filtered" in str(self.tracking_filepath):
-            self.metadata_filepath = (
-                str(self.tracking_filepath).split("_filtered")[0] + "_meta.pickle"
-            )
-        else:
-            self.metadata_filepath = (
-                str(self.tracking_filepath).split(".")[0] + "_meta.pickle"
-            )
 
+        self.metadata_filepath = sorted(
+            self.tracking_filepath.parent.glob("*meta*.pickle")
+        )[0]
         self.metadata = pd.read_pickle(self.metadata_filepath)
         self.scorer = self.metadata["data"]["Scorer"]
 
@@ -148,6 +143,13 @@ class Tracking(object):
         self._spatial_units = "cm"
         self._ratio_per_pixel = self.ratio_cm_per_pixel
 
+    def manual_relabel(self):
+        from tracking_physmed.gui import Manual_relabel
+
+        return Manual_relabel(
+            self.tracking_filepath, self.metadata_filepath, self.video_filepath
+        )
+
     def set_corner_coords(self, coord_list=[]):
         """If coord_list is not given, it calls Corner_Coords class GUI so the user can label the four corners and the Tracking class is able to calculate the ratio px/cm. It rights the corner coordinates in the metadata pickle file.
 
@@ -159,7 +161,7 @@ class Tracking(object):
         if coord_list:
             self._write_corner_coords(coord_list)
         else:
-            from tracking_physmed.gui.get_corners import Corner_Coords
+            from tracking_physmed.gui import Corner_Coords
 
             x_crop = self.metadata["data"]["cropping_parameters"][:2]
             y_crop = self.metadata["data"]["cropping_parameters"][2:]
@@ -567,35 +569,112 @@ class Tracking(object):
         else:
             return speed_array, time_array, index, speed_units
 
-    def get_binned_position(self):
-        pass
+    def get_running_bouts(self, speed_array=None, time_array=None):
+        """Automatic gets running bouts given certain parameters, such as speed_threshold,
+        minimal duration of running bout and minimal duration of resting bout.
 
-    def get_infos(self):
+        Parameters
+        ----------
+        speed_array : array_like, optional
+            Array to get automatic running bouts from, if None then Tracking.get_speed() is called, by default None.
+        time_array : array_like, optional
+            Time array to be passed as output, by default None.
+
+        Returns
+        -------
+        tuple
+            running_bouts : np.array
+                Boolean array with True when the animal is running and False otherwise.
+            time_array : np.array
+                Array mapping the index of the tracking data to time in seconds.
+            final_change_idx : np.array
+                Tells at which index the running_bout ends (either True or False).
+        """
+        if speed_array is None or time_array is None:
+            speed_array, time_array, _, _ = self.get_speed(bodypart="body", smooth=True)
+
+        # getting True False array where speed is above 10 cm/s
+        self.running_bouts = speed_array > 10
+        # getting indices where this True False array changes from True to False or False to True
+        change_idx = np.where(np.diff(self.running_bouts))[0]
+        # getting length from one change_idx to the next one
+        bout_lengths = np.insert(np.diff(change_idx), 0, change_idx[0])
+
+        # This for loop gets every False bout (no running) shorter than 15 seconds,
+        # either in the beginning or between running bouts and sets them to True (running)
+        for i in range(len(bout_lengths)):
+            if bout_lengths[i] < 750 and self.running_bouts[change_idx[i]] == False:
+                if i == 0:
+                    self.running_bouts[: change_idx[i] + 1] = True
+                else:
+                    self.running_bouts[change_idx[i - 1] : change_idx[i] + 1] = True
+
+        # again, getting indices of change in the new running_bouts array
+        temp_change_idx = np.where(np.diff(self.running_bouts))[0]
+        # again, getting lengths from one temp_change_idx to the next one
+        temp_bout_lengths = np.insert(np.diff(temp_change_idx), 0, temp_change_idx[0])
+
+        # This for loop gets every True bout (running) shorter then 15 seconds,
+        # either in the beginning or between no running bouts and sets them to False (no running)
+        for i in range(len(temp_bout_lengths)):
+            if (
+                temp_bout_lengths[i] < 750
+                and self.running_bouts[temp_change_idx[i]] == True
+            ):
+                if i == 0:
+                    self.running_bouts[: temp_change_idx[i] + 1] = False
+                else:
+                    self.running_bouts[
+                        temp_change_idx[i - 1] : temp_change_idx[i] + 1
+                    ] = False
+
+        self.final_change_idx = np.where(np.diff(self.running_bouts))[0]
+        # final_change_idx tells at which index the running_bout ends (either True or False)
+        # using running_bouts[final_change_idx[i]] you have True if the True running bout is
+        # ending or False if the False running bout is ending
+
+        return self.running_bouts, time_array, self.final_change_idx
+
+    def get_binned_position(self, bodypart="body", bins=[10, 10]):
+        x_pos = self.get_position_x(bodypart=bodypart)[0]
+        y_pos = self.get_position_y(bodypart=bodypart)[0]
+        x_pos *= self.ratio_per_pixel
+        y_pos *= self.ratio_per_pixel
+
+        return np.histogram2d(x_pos, y_pos, bins=bins, range=[[0, 100], [0, 100]])
+
+    def get_infos(self, bins=10):
+        H = self.get_binned_position("body", bins)[0]
 
         info_dict = {}
         info_dict["total_time"] = self.nframes / self.fps
 
         speed, _, _, _ = self.get_speed(bodypart="body", smooth=True)
-        speed_bouts, time_bouts, _, speed_units = self.get_speed(
-            only_running_bouts=True
-        )
+        speed_bouts, time_bouts, _, _ = self.get_speed(only_running_bouts=True)
         bout_lenghts = [t_bout[-1] - t_bout[0] for t_bout in time_bouts]
         info_dict["total_running_time"] = sum(bout_lenghts)
-        info_dict["timefraction_of_running"] = (
+        info_dict["running_ratio"] = (
             info_dict["total_running_time"] / info_dict["total_time"]
         )
+        info_dict["exploration_ratio"] = np.mean(H > 0)
+        info_dict["exploration_std"] = np.std(H)
         info_dict["mean_running_speed"] = np.concatenate(speed_bouts).mean()
         info_dict["mean_speed"] = speed.mean()
+        return info_dict
+
+    def print_infos(self):
+        info_dict = self.get_infos()
         print(
             "--------------------------------------------------------------\n"
             + f"Total tracking time: {info_dict['total_time']} s\n"
-            + f"Total running time: {info_dict['total_running_time']:.2f}\n"
-            + f"Exploration ratio (total time / running time): {info_dict['timefraction_of_running']:.3f}\n"
-            + f"Mean running speed (only running periods): {info_dict['mean_running_speed']:.2f} {speed_units}\n"
-            + f"Mean running speed: {info_dict['mean_speed']:.2f} {speed_units}\n"
+            + f"Total running time: {info_dict['total_running_time']:.2f} s\n"
+            + f"Running time ratio (running time / all time): {info_dict['running_ratio']}\n"
+            + f"Exploration ratio (ratio of visited bins): {info_dict['exploration_ratio']:.3f}\n"
+            + f"Exploration std (std of visits on each bin): {info_dict['exploration_std']:.3f}\n"
+            + f"Mean running speed (only running periods): {info_dict['mean_running_speed']:.2f} {self.spatial_units}/s\n"
+            + f"Mean running speed: {info_dict['mean_speed']:.2f} {self.spatial_units}/s\n"
             + "--------------------------------------------------------------"
         )
-        return info_dict
 
     def get_place_field_array(
         self,
