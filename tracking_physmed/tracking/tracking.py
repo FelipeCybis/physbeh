@@ -15,6 +15,20 @@ from tracking_physmed.utils import (
 )
 
 
+def to_tracking_time(arr, time, new_time, offset=0):
+    new_arr = np.zeros(arr.shape[:-1] + new_time.shape)
+    fps = 1 / (new_time[1] - new_time[0])
+
+    last_idx = 0
+    for i, trig in enumerate(time):
+        idx = int(np.ceil(trig * fps))
+
+        new_arr[last_idx:idx] = arr[i + offset]
+        last_idx = idx
+
+    return new_arr
+
+
 class Tracking(object):
     @property
     def tracking_filepath(self):
@@ -662,8 +676,8 @@ class Tracking(object):
         info_dict["mean_speed"] = speed.mean()
         return info_dict
 
-    def print_infos(self):
-        info_dict = self.get_infos()
+    def print_infos(self, bins=10):
+        info_dict = self.get_infos(bins=bins)
         print(
             "--------------------------------------------------------------\n"
             + f"Total tracking time: {info_dict['total_time']} s\n"
