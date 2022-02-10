@@ -278,6 +278,25 @@ class Tracking(object):
                 "Ratio cm/px not yet calculated. See function self.set_corner_coords."
             )
 
+    def get_index(self, label, pcutout=None):
+        """Gets likelihood indices for `label` and threshold `pcutout`. Returns an array of booleans with True when index >= pcutout and False otherwise.
+
+        Parameters
+        ----------
+        label : str
+        pcutout : float, optional
+            Between 0 and 1. If `None`, uses the self.pcutout property. The default is `None`
+
+        Returns
+        -------
+        array_like
+            Array of Trues when index >= pcutout and False otherwise
+        """
+        if pcutout is None:
+            pcutout = self.pcutout
+
+        return self.Dataframe[self.scorer][label]["likelihood"].values >= pcutout
+
     def get_vector_from_two_labels(self, label0, label1):
         """Gets the vector 'label0'->'label1' by simple subtraction label1 - label0.
 
@@ -352,9 +371,7 @@ class Tracking(object):
         hd_deg = self.get_direction_array(label0="neck", label1="probe", mode="deg")
 
         time_array = np.array(self.Dataframe.index) / self.fps
-        index = (
-            self.Dataframe[self.scorer]["probe"]["likelihood"].values >= self.pcutout
-        )
+        index = self.get_index("probe", self.pcutout)
 
         sigma = 20
 
@@ -429,14 +446,14 @@ class Tracking(object):
 
         return coords, time_array, index
 
-    def get_position_x(self, bodypart, pcutout=0.8):
+    def get_position_x(self, bodypart, pcutout=None):
         """Simple function to get x values for bodypart.
 
         Parameters
         ----------
         bodypart : str
         pcutout : float, optional
-            Between 0 and 1. The default is .8.
+            Between 0 and 1. If `None`, uses the self.pcutout property. The default is `None`.
 
         Returns
         -------
@@ -449,7 +466,7 @@ class Tracking(object):
                 Index where p-value > pcutout is True, index is False otherwise.
 
         """
-        index = self.Dataframe[self.scorer][bodypart]["likelihood"].values > pcutout
+        index = self.get_index(bodypart, pcutout)
         x_bp = (
             self.Dataframe[self.scorer][bodypart]["x"].values
             - self.metadata["data"]["corner_coords"]["top_left"][0]
@@ -458,14 +475,14 @@ class Tracking(object):
 
         return x_bp, time_array, index
 
-    def get_position_y(self, bodypart, pcutout=0.8):
+    def get_position_y(self, bodypart, pcutout=None):
         """Simple function to get y values for bodypart.
 
         Parameters
         ----------
         bodypart : str
         pcutout : float, optional
-            Between 0 and 1. The default is .8.
+            Between 0 and 1. If `None`, uses the self.pcutout property. The default is `None`.
 
         Returns
         -------
@@ -479,7 +496,7 @@ class Tracking(object):
 
         """
 
-        index = self.Dataframe[self.scorer][bodypart]["likelihood"].values > pcutout
+        index = self.get_index(bodypart, pcutout)
         y_bp = (
             self.Dataframe[self.scorer][bodypart]["y"].values
             - self.metadata["data"]["corner_coords"]["top_left"][1]
@@ -539,9 +556,7 @@ class Tracking(object):
         dist_in_px = self.get_distance_between_frames(bodypart=bodypart)
         speed_in_px_per_second = dist_in_px * self.fps
 
-        index = (
-            self.Dataframe[self.scorer][bodypart]["likelihood"].values >= self.pcutout
-        )
+        index = self.get_index(bodypart, self.pcutout)
 
         time_array = np.array(self.Dataframe.index) / self.fps
 

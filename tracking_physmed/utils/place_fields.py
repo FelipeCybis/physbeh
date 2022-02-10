@@ -3,8 +3,9 @@ import numpy as np
 
 def get_place_field_coords(random=False, size=30):
     if random:
-        y_mu_grid, x_mu_grid = np.random.randint(5, 95, size=size), np.random.randint(
-            5, 95, size=size
+        y_mu_grid, x_mu_grid = (
+            np.random.randint(5, 95, size=size),
+            np.random.randint(5, 95, size=size),
         )
     else:
         y_mu_grid, x_mu_grid = np.meshgrid(
