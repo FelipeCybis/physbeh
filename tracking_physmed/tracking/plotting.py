@@ -66,7 +66,7 @@ def plot_speed(
         time_array = np.concatenate(time_array)
         speed_array = np.concatenate(speed_array)
         index = np.concatenate(index)
-        Trk_cls.plot_running_bouts(ax)
+        plot_running_bouts(Trk_cls, ax=ax)
 
     ax.plot(time_array[index], speed_array[index], ".", markersize=0)
     ax.set(ylabel=speed_units, xlabel="time (s)")
@@ -75,6 +75,43 @@ def plot_speed(
 
     return fig, ax
 
+def plot_running_bouts(Trk, ax=None, figsize=(12,6), fig=None):
+    """Plots the running periods of the animal automatically computed by `Tracking.get_running_bouts`.
+
+    Parameters
+    ----------
+    Trk : `Tracking` instance
+    ax : matplotlib Axes, optional
+        If None, new axes is created in `fig`. By default ``None``
+    figsize : tuple, optional
+        Figure size, if `fig` is ``None``. By default `(12,6)`
+    fig : matplotlib Figure, optional
+        If ``None``, new figure is created. By default ``None``
+
+    Returns
+    -------
+    fig : matplotlib.Figure
+    """
+    time_array = np.array(Trk.Dataframe.index) / Trk.fps
+    
+    if Trk.running_bouts is None:
+        Trk.get_running_bouts()
+    
+    if ax is None:
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+        ax.set(xlabel = 'time (s)')
+    
+    xmin = time_array[0]
+    for bout_id, idx in enumerate(Trk.final_change_idx):
+        if Trk.running_bouts[idx] == True:
+            xmax = time_array[idx]
+            ax.axvspan(xmin,xmax, color='orange',alpha=0.5)
+        else:
+            xmin = time_array[idx]
+
+    return fig
 
 def plot_position_2d(
     Trk_cls,
