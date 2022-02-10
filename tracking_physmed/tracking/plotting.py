@@ -7,33 +7,57 @@ import numpy as np
 
 from tracking_physmed.utils import get_line_collection, plot_color_wheel, get_cmap
 
-
-def plot_speed(Trk_cls, bodypart="body", smooth=True, speed_cutout=0, only_running_bouts=False, ax=None, figsize=(12,5)):
+def plot_speed(
+    Trk_cls,
+    bodypart="body",
+    smooth=True,
+    speed_cutout=0,
+    only_running_bouts=False,
+    ax=None,
+    fig=None,
+    figsize=(12, 6),
+):
     """Plot speed of given label.
 
     Parameters
     ----------
     Trk_cls : `Tracking` instance
-    kwargs  : Keyword arguments can be passed to the get_speed method (see Tracking.get_speed?). They can be a matplotlib axes `ax` or a matplotlib figure `fig`. They can also `figsize` for matplotlib figure if this is not passed or they can be matplotlib axes parameters, such as `ylabel`, `title`, etc.
+    bodypart : str, optional
+        Bodypart label. By default `"body"`
+    smooth : bool, optional
+        If speed array is to be smoothed using a gaussian kernel. By default `True`
+    speed_cutout : int, optional
+        If speed is to be thresholded by some value. By default `0`
+    only_running_bouts : bool, optional
+        If should plot only the running periods using `Tracking.get_running_bouts` function. By default `False`
+    ax : matplotlib Axes, optional
+        If None, new axes is created in `fig`. By default ``None``
+    figsize : tuple, optional
+        Figure size, if `fig` is ``None``. By default `(12,6)`
+    fig : matplotlib Figure, optional
+        If ``None``, new figure is created. By default ``None``
 
     Returns
     -------
-    fig     : matplotlib.Figure
-    ax      : matplotlib.Axes
+    tuple (matplotlib.Figure, matplotlib.Axes)
     """
-    speed_array, time_array, index, speed_units = Trk_cls.get_speed(bodypart=bodypart, smooth=smooth, speed_cutout=speed_cutout, only_running_bouts=only_running_bouts)
+    
+    speed_array, time_array, index, speed_units = Trk_cls.get_speed(
+        bodypart=bodypart,
+        smooth=smooth,
+        speed_cutout=speed_cutout,
+        only_running_bouts=only_running_bouts,
+    )
 
     lines = get_line_collection(time_array, speed_array, index)
 
     lc = LineCollection(
-        lines,
-        label=bodypart,
-        linewidths=2,
-        colors=Trk_cls.colors[bodypart],
+        lines, label=bodypart, linewidths=2, colors=Trk_cls.colors[bodypart],
     )
 
     if ax is None:
-        fig = plt.figure(figsize=figsize)
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
 
     ax.add_collection(lc)
@@ -67,16 +91,43 @@ def plot_position_2d(
     ax_kwargs=None,
     fig=None,
 ):
+    """Plots position of the animal in 2D coordinates.
+
+    Parameters
+    ----------
+    Trk_cls : `Tracking` instance
+    bodypart : str, optional
+        Bodypart label, by default "body"
+    color_collection_array : [type], optional
+        [description], by default None
+    clim : [type], optional
+        [description], by default None
+    head_direction : bool, optional
+        [description], by default True
+    head_direction_vector_labels : list, optional
+        [description], by default ["neck", "probe"]
+    only_running_bouts : bool, optional
+        [description], by default False
+    figsize : tuple, optional
+        [description], by default (8, 6)
+    colormap : str, optional
+        [description], by default "hsv"
+    ax : [type], optional
+        [description], by default None
+    ax_direction : bool, optional
+        [description], by default True
+    ax_kwargs : [type], optional
+        [description], by default None
+    fig : matplotlib Figure, optional
+        If ``None``, new figure is created. By default ``None``
+
+    Returns
+    -------
+    tuple (matplotlib.Figure, LineCollection)
+    """
 
     x_bp, _, index = Trk_cls.get_position_x(bodypart=bodypart)
     y_bp = Trk_cls.get_position_y(bodypart=bodypart)[0]
-    if head_direction:
-        index = (
-            Trk_cls.Dataframe[Trk_cls.scorer][head_direction_vector_labels[0]][
-                "likelihood"
-            ].values
-            > 0.8
-        )
 
     if only_running_bouts:
         Trk_cls.get_running_bouts()
@@ -101,9 +152,11 @@ def plot_position_2d(
     if color_collection_array is not None:
         if clim is None:
             clim = (color_collection_array.min(), color_collection_array.max())
-        
+
         cmap = get_cmap(name=colormap, n=200)
-        norm = colors.BoundaryNorm(np.arange(clim[0], clim[1],(clim[1] - clim[0])/100), cmap.N)
+        norm = colors.BoundaryNorm(
+            np.arange(clim[0], clim[1], (clim[1] - clim[0]) / 100), cmap.N
+        )
 
         lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)
         lc.set_alpha(0.7)
@@ -114,12 +167,7 @@ def plot_position_2d(
 
     elif head_direction:
 
-        index = (
-            Trk_cls.Dataframe[Trk_cls.scorer][head_direction_vector_labels[0]][
-                "likelihood"
-            ].values
-            > 0.8
-        )
+        index = Trk_cls.get_index(head_direction_vector_labels[0], Trk_cls.pcutout)
 
         cmap = get_cmap(name=colormap, n=360)
 
@@ -152,14 +200,210 @@ def plot_position_2d(
 
     return fig, lc
 
-def plot_likelihood(Trk, bodyparts='all', ax=None, fig=None, **ax_kwargs):
+
+def plot_likelihood(Trk, bodyparts="all", ax=None, figsize=(12, 6), fig=None, **ax_kwargs):
     """Plot likelihood for labels in each frame
 
     Parameters
     ----------
     Trk : `Tracking` instance
     bodyparts : list or str, optional
-        Labels to be plotted, it can be a string, a list of strings or `all` for all labels. By default `all`
+        Labels to be plotted, it can be a string, a list of strings or `"all"` for all labels. By default `"all"`
+    ax : matplotlib Axes, optional
+        If None, new axes is created in `fig`. By default ``None``
+    figsize : tuple, optional
+        Figure size, if `fig` is ``None``. By default (12,6)
+    fig : matplotlib Figure, optional
+        If ``None``, new figure is created. By default ``None``
+
+    Returns
+    -------
+    fig     : matplotlib.Figure
+    """
+
+    if isinstance(bodyparts, str):
+        if bodyparts == "all":
+            bodyparts = Trk.bodyparts
+        else:
+            bodyparts = [bodyparts]
+
+    time_array = np.array(Trk.Dataframe.index) / Trk.fps
+
+    if ax is None:
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
+        ax = fig.add_axes([0.1, 0.125, 0.75, 0.775])
+
+    for bp in bodyparts:
+        lk = Trk.Dataframe[Trk.scorer][bp]["likelihood"].values
+
+        ax.plot(
+            time_array, lk, ".", markersize=4, color=Trk.colors[bp], label=bp, alpha=0.6
+        )
+
+    ax.set(ylabel="likelihood", xlabel="frames", ylim=(-0.05, 1.05))
+    ax.set(**ax_kwargs)
+    ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
+    ax.grid(linestyle="--")
+
+    return fig
+
+
+def plot_position_x(
+    Trk, bodyparts="all", ax=None, fig=None, figsize=(12, 6), **ax_kwargs
+):
+    """Plots X coordinates of requested `bodyparts`
+
+    Parameters
+    ----------
+    Trk : `Tracking` instance
+    bodyparts : str or list of str, optional
+        Bodypart labels, accepts string or list of strings or `"all"` for all labels. By default `"all"`
+    ax : matplotlib Axes, optional
+        If None, new axes is created in `fig`. By default ``None``
+    figsize : tuple, optional
+        Figure size, if `fig` is ``None``. By default (12,6)
+    fig : matplotlib Figure, optional
+        If ``None``, new figure is created. By default ``None``
+
+    Returns
+    -------
+    fig     : matplotlib.Figure
+    """
+
+    if isinstance(bodyparts, str):
+        if bodyparts == "all":
+            bodyparts = Trk.bodyparts
+        else:
+            bodyparts = [bodyparts]
+
+    if ax == None:
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+
+    for bp in bodyparts:
+        x_bp, time_array, index = Trk.get_position_x(bodypart=bp)
+
+        lines = get_line_collection(x_array=time_array, y_array=x_bp, index=index)
+
+        lc = LineCollection(lines, label=bp, linewidths=2, colors=Trk.colors[bp])
+        ax.add_collection(lc)
+
+    ax.plot(time_array, x_bp, ".", markersize=0)
+
+    ax.set(ylabel="X pixel", xlabel="time (s)")
+    ax.set(**ax_kwargs)
+    ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
+    ax.grid(linestyle="--")
+
+    return fig
+
+
+def plot_position_y(
+    Trk, bodyparts="all", ax=None, fig=None, figsize=(12, 6), **ax_kwargs
+):
+    """Plots Y coordinates of requested `bodyparts`
+
+    Parameters
+    ----------
+    Trk : `Tracking` instance
+    bodyparts : str or list of str, optional
+        Bodypart labels, accepts string or list of strings or `"all"` for all labels. By default `"all"`
+    ax : matplotlib Axes, optional
+        If None, new axes is created in `fig`. By default ``None``
+    figsize : tuple, optional
+        Figure size, if `fig` is ``None``. By default (12,6)
+    fig : matplotlib Figure, optional
+        If ``None``, new figure is created. By default ``None``
+
+    Returns
+    -------
+    fig     : matplotlib.Figure
+    """
+
+    if isinstance(bodyparts, str):
+        if bodyparts == "all":
+            bodyparts = Trk.bodyparts
+        else:
+            bodyparts = [bodyparts]
+
+    if ax == None:
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+
+    for bp in bodyparts:
+        y_bp, time_array, index = Trk.get_position_y(bodypart=bp)
+
+        lines = get_line_collection(x_array=time_array, y_array=y_bp, index=index)
+
+        lc = LineCollection(lines, label=bp, linewidths=2, colors=Trk.colors[bp])
+        ax.add_collection(lc)
+
+    ax.plot(time_array, y_bp, ".", markersize=0)
+
+    ax.set(ylabel="Y pixel", xlabel="time (s)")
+    ax.set(**ax_kwargs)
+    ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
+    ax.grid(linestyle="--")
+
+    return fig
+
+
+def plot_position(Trk, bodyparts="all", figsize=(12, 6), fig=None):
+    """Plots X and Y coordinates of requested `bodyparts` in two subplots, top one is for X coordinates and bottom one is for Y coordinates
+
+    Parameters
+    ----------
+    Trk : `Tracking` instance
+    bodyparts : str or list of str, optional
+        Bodypart labels, accepts string or list of strings or `"all"` for all labels. By default `"all"`
+    figsize : tuple, optional
+        Figure size, if `fig` is `None`. By default (12,6)
+    fig : matplotlib Figure, optional
+        If `None`, new figure is created. By default `None`
+
+    Returns
+    -------
+    fig     : matplotlib.Figure
+    """
+
+    if bodyparts == "all":
+        bodyparts = Trk.bodyparts
+
+    if fig is None:
+        fig = plt.figure(figsize=figsize)
+
+    ax_x = fig.add_subplot(211)
+    ax_y = fig.add_subplot(212)
+
+    plot_position_x(Trk, bodyparts=bodyparts, ax=ax_x, xlabel="")
+    plot_position_y(Trk, bodyparts=bodyparts, ax=ax_y)
+
+    return fig
+
+
+def plot_head_direction(
+    Trk,
+    head_direction_vector_labels=["neck", "probe"],
+    ang="deg",
+    figsize=(12, 6),
+    ax=None,
+    fig=None,
+    **ax_kwargs
+):
+    """Plots head direction using `head_direction_vector_labels` to compute the head direction vector.
+
+    Parameters
+    ----------
+    Trk : `Tracking` instance
+    head_direction_vector_labels : list
+        Pair of bodyparts from where to get the head direction from. By default ["neck", "probe"]
+    ang : str, optional
+        If plotting in "deg" for degrees or in "rad" for radians. By default "deg"
+    figsize : tuple, optional
+        Figure size, if `fig` is ``None``. By default (12,6)
     ax : matplotlib Axes, optional
         If None, new axes is created in `fig`. By default ``None``
     fig : matplotlib Figure, optional
@@ -169,130 +413,45 @@ def plot_likelihood(Trk, bodyparts='all', ax=None, fig=None, **ax_kwargs):
     -------
     fig     : matplotlib.Figure
     """
-        
-    if isinstance(bodyparts, str):
-        if bodyparts == "all":
-            bodyparts = Trk.bodyparts
-        else:
-            bodyparts = [bodyparts]
 
+    index = Trk.get_index(head_direction_vector_labels[1], Trk.pcutout)
+
+    head_direction_array = Trk.get_direction_array(
+        label0=head_direction_vector_labels[0],
+        label1=head_direction_vector_labels[1],
+        mode=ang,
+    )
     time_array = np.array(Trk.Dataframe.index) / Trk.fps
-        
+
+    index_wrapped_dict = {"deg": 320, "rad": 320/360*2*np.pi}
+    index_wrapped_angles = np.where(np.insert(np.abs(np.diff(head_direction_array)), 0, 0) >=index_wrapped_dict[ang])[0]
+    index[index_wrapped_angles] = False
+
+    lines = get_line_collection(
+        x_array=time_array, y_array=head_direction_array, index=index
+    )
+
+    cmap = get_cmap(name="hsv", n=360)
+    norm_dict = {"deg": np.arange(0, 360), "rad": np.arange(0, 2*np.pi*(1+1/360), 2*np.pi/360)}
+    norm = colors.BoundaryNorm(norm_dict[ang], cmap.N)
+    lc = LineCollection(lines, linewidths=2, cmap=cmap, norm=norm)
+    lc.set_array(head_direction_array[index])
+
     if ax is None:
         if fig is None:
-            fig = plt.figure(figsize=(14,5))
-        ax = fig.add_axes([0.1,0.125,0.75,0.775])
-    
-    for bp in bodyparts:
-        lk = Trk.Dataframe[Trk.scorer][bp]['likelihood'].values
-        
-        ax.plot(time_array,lk,'.', markersize=4, color=Trk.colors[bp], label=bp, alpha=.6)
-    
-    ax.set(ylabel='likelihood', xlabel='frames', ylim=(-0.05,1.05))
-    ax.set(**ax_kwargs)
-    ax.legend(bbox_to_anchor=(1.02,1), loc="upper left")
-    ax.grid(linestyle='--')
-
-    return fig
-
-def plot_position_x(Trk, bodyparts="all", ax=None, fig=None, figsize=(12,6), **ax_kwargs):
-    """[summary]
-
-    Parameters
-    ----------
-    Trk : [type]
-        [description]
-    bodyparts : [type]
-        [description]
-    ax : [type], optional
-        [description], by default None
-    fig : [type], optional
-        [description], by default None
-    """
-
-    if isinstance(bodyparts, str):
-        if bodyparts == "all":
-            bodyparts = Trk.bodyparts
-        else:
-            bodyparts = [bodyparts]
-
-    if ax == None:
-        if fig is None:
             fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111)
-    
-    for bp in bodyparts:
-        x_bp, time_array, index = Trk.get_position_x(bodypart=bp)
+        ax = fig.add_axes(rect=[0.1, 0.12, 0.8, 0.8])
+    ax.add_collection(lc)
 
-        lines = get_line_collection(x_array=time_array, y_array=x_bp, index=index)
-            
-        lc = LineCollection(lines, label=bp, linewidths=2, colors=Trk.colors[bp])
-        ax.add_collection(lc)
+    cax = fig.add_axes(rect=[0.92, 0.12, 0.025, 0.8])
+    fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=cax)
 
-    ax.plot(time_array, x_bp,'.', markersize=0)
-
-    ax.set(ylabel='X pixel', xlabel='time (s)')
+    ax.plot(time_array, head_direction_array, ".", markersize=0)
+    ax.grid(linestyle="--")
+    ylabel_dict = {"deg":"Degree", "rad": "Radians"}
+    ax.set(
+        xlabel="time (s)", ylabel=ylabel_dict[ang], title="Head direction",
+    )
     ax.set(**ax_kwargs)
-    ax.legend(bbox_to_anchor=(1.02,1), loc="upper left")
-    ax.grid(linestyle='--')
-
-    return fig
-
-def plot_position_y(Trk, bodyparts="all", ax=None, fig=None, figsize=(12,6), **ax_kwargs):
-    """[summary]
-
-    Parameters
-    ----------
-    Trk : [type]
-        [description]
-    bodyparts : [type]
-        [description]
-    ax : [type], optional
-        [description], by default None
-    fig : [type], optional
-        [description], by default None
-    """
-
-    if isinstance(bodyparts, str):
-        if bodyparts == "all":
-            bodyparts = Trk.bodyparts
-        else:
-            bodyparts = [bodyparts]
-
-    if ax == None:
-        if fig is None:
-            fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111)
-    
-    for bp in bodyparts:
-        y_bp, time_array, index = Trk.get_position_y(bodypart=bp)
-
-        lines = get_line_collection(x_array=time_array, y_array=y_bp, index=index)
-            
-        lc = LineCollection(lines, label=bp, linewidths=2, colors=Trk.colors[bp])
-        ax.add_collection(lc)
-
-    ax.plot(time_array, y_bp,'.', markersize=0)
-
-    ax.set(ylabel='Y pixel', xlabel='time (s)')
-    ax.set(**ax_kwargs)
-    ax.legend(bbox_to_anchor=(1.02,1), loc="upper left")
-    ax.grid(linestyle='--')
-
-    return fig
-
-def plot_position(Trk,bodyparts="all", figsize=(12,6), fig=None):
-        
-    if bodyparts == "all":
-        bodyparts = Trk.bodyparts
-        
-    if fig is None:
-        fig = plt.figure(figsize=figsize)
-    
-    ax_x = fig.add_subplot(211)
-    ax_y = fig.add_subplot(212)
-    
-    plot_position_x(Trk,bodyparts=bodyparts,ax=ax_x,xlabel='')
-    plot_position_y(Trk,bodyparts=bodyparts,ax=ax_y)
 
     return fig
