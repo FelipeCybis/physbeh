@@ -6,7 +6,10 @@ from matplotlib.cm import ScalarMappable
 import numpy as np
 
 from tracking_physmed.utils import get_line_collection, plot_color_wheel, get_cmap
+from .animate_decorator import anim_decorator
 
+
+@anim_decorator
 def plot_speed(
     Trk_cls,
     bodypart="body",
@@ -16,6 +19,7 @@ def plot_speed(
     ax=None,
     fig=None,
     figsize=(12, 6),
+    animate=False,
 ):
     """Plot speed of given label.
 
@@ -36,12 +40,14 @@ def plot_speed(
         Figure size, if `fig` is ``None``. By default `(12,6)`
     fig : matplotlib Figure, optional
         If ``None``, new figure is created. By default ``None``
+    animate : bool, optional
+        If set to `True`, plots an animation synched with the video of the Tracking class.
 
     Returns
     -------
     tuple (matplotlib.Figure, matplotlib.Axes)
     """
-    
+
     speed_array, time_array, index, speed_units = Trk_cls.get_speed(
         bodypart=bodypart,
         smooth=smooth,
@@ -52,7 +58,10 @@ def plot_speed(
     lines = get_line_collection(time_array, speed_array, index)
 
     lc = LineCollection(
-        lines, label=bodypart, linewidths=2, colors=Trk_cls.colors[bodypart],
+        lines,
+        label=bodypart,
+        linewidths=2,
+        colors=Trk_cls.colors[bodypart],
     )
 
     if ax is None:
@@ -75,7 +84,9 @@ def plot_speed(
 
     return fig, ax
 
-def plot_running_bouts(Trk, ax=None, figsize=(12,6), fig=None):
+
+@anim_decorator
+def plot_running_bouts(Trk, ax=None, figsize=(12, 6), fig=None, animate=False):
     """Plots the running periods of the animal automatically computed by `Tracking.get_running_bouts`.
 
     Parameters
@@ -87,31 +98,34 @@ def plot_running_bouts(Trk, ax=None, figsize=(12,6), fig=None):
         Figure size, if `fig` is ``None``. By default `(12,6)`
     fig : matplotlib Figure, optional
         If ``None``, new figure is created. By default ``None``
+    animate : bool, optional
+        If set to `True`, plots an animation synched with the video of the Tracking class.
 
     Returns
     -------
     fig : matplotlib.Figure
     """
     time_array = np.array(Trk.Dataframe.index) / Trk.fps
-    
-    if Trk.running_bouts is None:
+
+    if not hasattr(Trk, "running_bouts"):
         Trk.get_running_bouts()
-    
+
     if ax is None:
         if fig is None:
             fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
-        ax.set(xlabel = 'time (s)')
-    
+        ax.set(xlabel="time (s)")
+
     xmin = time_array[0]
     for bout_id, idx in enumerate(Trk.final_change_idx):
         if Trk.running_bouts[idx] == True:
             xmax = time_array[idx]
-            ax.axvspan(xmin,xmax, color='orange',alpha=0.5)
+            ax.axvspan(xmin, xmax, color="orange", alpha=0.5)
         else:
             xmin = time_array[idx]
 
-    return fig
+    return fig, ax
+
 
 def plot_position_2d(
     Trk_cls,
@@ -238,7 +252,10 @@ def plot_position_2d(
     return fig, lc
 
 
-def plot_likelihood(Trk, bodyparts="all", ax=None, figsize=(12, 6), fig=None, **ax_kwargs):
+@anim_decorator
+def plot_likelihood(
+    Trk, bodyparts="all", ax=None, figsize=(12, 6), fig=None, animate=False, **ax_kwargs
+):
     """Plot likelihood for labels in each frame
 
     Parameters
@@ -252,6 +269,8 @@ def plot_likelihood(Trk, bodyparts="all", ax=None, figsize=(12, 6), fig=None, **
         Figure size, if `fig` is ``None``. By default (12,6)
     fig : matplotlib Figure, optional
         If ``None``, new figure is created. By default ``None``
+    animate : bool, optional
+        If set to `True`, plots an animation synched with the video of the Tracking class.
 
     Returns
     -------
@@ -283,11 +302,12 @@ def plot_likelihood(Trk, bodyparts="all", ax=None, figsize=(12, 6), fig=None, **
     ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
     ax.grid(linestyle="--")
 
-    return fig
+    return fig, ax
 
 
+@anim_decorator
 def plot_position_x(
-    Trk, bodyparts="all", ax=None, fig=None, figsize=(12, 6), **ax_kwargs
+    Trk, bodyparts="all", ax=None, fig=None, figsize=(12, 6), animate=False, **ax_kwargs
 ):
     """Plots X coordinates of requested `bodyparts`
 
@@ -302,6 +322,8 @@ def plot_position_x(
         Figure size, if `fig` is ``None``. By default (12,6)
     fig : matplotlib Figure, optional
         If ``None``, new figure is created. By default ``None``
+    animate : bool, optional
+        If set to `True`, plots an animation synched with the video of the Tracking class.
 
     Returns
     -------
@@ -334,11 +356,12 @@ def plot_position_x(
     ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
     ax.grid(linestyle="--")
 
-    return fig
+    return fig, ax
 
 
+@anim_decorator
 def plot_position_y(
-    Trk, bodyparts="all", ax=None, fig=None, figsize=(12, 6), **ax_kwargs
+    Trk, bodyparts="all", ax=None, fig=None, figsize=(12, 6), animate=False, **ax_kwargs
 ):
     """Plots Y coordinates of requested `bodyparts`
 
@@ -353,6 +376,8 @@ def plot_position_y(
         Figure size, if `fig` is ``None``. By default (12,6)
     fig : matplotlib Figure, optional
         If ``None``, new figure is created. By default ``None``
+    animate : bool, optional
+        If set to `True`, plots an animation synched with the video of the Tracking class.
 
     Returns
     -------
@@ -421,6 +446,7 @@ def plot_position(Trk, bodyparts="all", figsize=(12, 6), fig=None):
     return fig
 
 
+@anim_decorator
 def plot_head_direction(
     Trk,
     head_direction_vector_labels=["neck", "probe"],
@@ -428,6 +454,7 @@ def plot_head_direction(
     figsize=(12, 6),
     ax=None,
     fig=None,
+    animate=False,
     **ax_kwargs
 ):
     """Plots head direction using `head_direction_vector_labels` to compute the head direction vector.
@@ -445,6 +472,8 @@ def plot_head_direction(
         If None, new axes is created in `fig`. By default ``None``
     fig : matplotlib Figure, optional
         If ``None``, new figure is created. By default ``None``
+    animate : bool, optional
+        If set to `True`, plots an animation synched with the video of the Tracking class.
 
     Returns
     -------
@@ -460,8 +489,11 @@ def plot_head_direction(
     )
     time_array = np.array(Trk.Dataframe.index) / Trk.fps
 
-    index_wrapped_dict = {"deg": 320, "rad": 320/360*2*np.pi}
-    index_wrapped_angles = np.where(np.insert(np.abs(np.diff(head_direction_array)), 0, 0) >=index_wrapped_dict[ang])[0]
+    index_wrapped_dict = {"deg": 320, "rad": 320 / 360 * 2 * np.pi}
+    index_wrapped_angles = np.where(
+        np.insert(np.abs(np.diff(head_direction_array)), 0, 0)
+        >= index_wrapped_dict[ang]
+    )[0]
     index[index_wrapped_angles] = False
 
     lines = get_line_collection(
@@ -469,7 +501,10 @@ def plot_head_direction(
     )
 
     cmap = get_cmap(name="hsv", n=360)
-    norm_dict = {"deg": np.arange(0, 360), "rad": np.arange(0, 2*np.pi*(1+1/360), 2*np.pi/360)}
+    norm_dict = {
+        "deg": np.arange(0, 360),
+        "rad": np.arange(0, 2 * np.pi * (1 + 1 / 360), 2 * np.pi / 360),
+    }
     norm = colors.BoundaryNorm(norm_dict[ang], cmap.N)
     lc = LineCollection(lines, linewidths=2, cmap=cmap, norm=norm)
     lc.set_array(head_direction_array[index])
@@ -485,10 +520,12 @@ def plot_head_direction(
 
     ax.plot(time_array, head_direction_array, ".", markersize=0)
     ax.grid(linestyle="--")
-    ylabel_dict = {"deg":"Degree", "rad": "Radians"}
+    ylabel_dict = {"deg": "Degree", "rad": "Radians"}
     ax.set(
-        xlabel="time (s)", ylabel=ylabel_dict[ang], title="Head direction",
+        xlabel="time (s)",
+        ylabel=ylabel_dict[ang],
+        title="Head direction",
     )
     ax.set(**ax_kwargs)
 
-    return fig
+    return fig, ax
