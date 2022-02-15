@@ -39,7 +39,8 @@ def anim_decorator(plot_function):
             anim = Animate_plot(
                 fig, ax, video_path=Trk[0].video_filepath, x_crop=xcrop, y_crop=ycrop
             )
-        return fig, ax, anim
+            return fig, ax, anim
+        return fig, ax
 
     return plot_wrapper
 
@@ -233,7 +234,10 @@ class Animate_plot:
             and self.current_time > self.ax.get_xlim()[0]
         ):
             self.current_frame += self.frame_step
-        elif self.current_frame == self.max_frames:
+            if self.current_frame >= self.max_frames:
+                self.current_frame = 0
+
+        elif self.current_frame >= self.max_frames:
             self.current_frame = 0
         else:
             new_time = self.ax.get_xlim()[0] if self.ax.get_xlim()[0] >= 0 else 0
