@@ -1,3 +1,4 @@
+from distutils.log import warn
 import os, warnings, pickle
 from pathlib import Path
 import pandas as pd
@@ -41,6 +42,16 @@ class Tracking(object):
     @property
     def video_filepath(self):
         return self._video_filepath
+
+    @video_filepath.setter
+    def video_filepath(self, str_path):
+        accepted_extensions = (".mp4", ".avi", ".mpg")
+        if Path(str(str_path)).suffix not in accepted_extensions:
+            self._video_filepath = None
+            warnings.warn(f"Video file should have extensions {accepted_extensions} and not {Path(str(str_path)).suffix}. Returning `NoneType`", category=UserWarning)
+        else:
+            self._video_filepath = Path(str(str_path))
+
 
     @property
     def fps(self):
@@ -107,20 +118,24 @@ class Tracking(object):
 
         self._video_filepath = video_filename
         if video_filename is None:
-            self._video_filepath = sorted(
+            possible_video_filename = list(
                 self.tracking_directory.glob("*recording-labeled*")
-            )[0]
-
-        if not os.path.isfile(self._video_filepath):
-            warnings.warn(
-                f"Tried to guess video filepath as {self._video_filepath}, but file does not exist.\n"
-                + "Use self.set_video_filepath(filename) for the animations to work with the right video.",
-                category=UserWarning,
             )
-            self._video_filepath = None
-        else:
-            # There is video filepath
-            self._video_filepath = Path(self._video_filepath)
+            if possible_video_filename:
+                self.video_filepath = possible_video_filename[0]
+                if not os.path.isfile(self.video_filepath):
+                    warnings.warn(
+                        f"Tried to guess video filepath as {self.video_filepath}, but file does not exist.\n"
+                        + "Use self.set_video_filepath(filename) for the animations to work with the right video.",
+                        category=UserWarning,
+                    )
+                    self._video_filepath = None
+            else:
+                warnings.warn(
+                        f"`video_filename` was not given. Tried to search video path with `*recording-labeled*` glob pattern, but file does not exist.\n"
+                        + "Use self.set_video_filepath(filename) for the animations to work with the right video.",
+                        category=UserWarning,
+                    )
 
         self.colormap = "plasma"
         self._pcutout = 0.8
