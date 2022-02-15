@@ -17,6 +17,7 @@ def anim_decorator(plot_function):
     plot_function : tracking_physmed plot function
         Usually, plot function with one axes that returns Figure and Axes.
     """
+
     def plot_wrapper(*args, **kwargs):
         do_anim = kwargs.pop("animate", False)
         fig, ax = plot_function(*args, **kwargs)
@@ -29,7 +30,7 @@ def anim_decorator(plot_function):
 
             if Trk[0].video_filepath is None:
                 return fig, ax
-                
+
             cropping = (
                 Trk[0].metadata["data"].get("cropping_parameters", [0, -1, 0, -1])
             )
@@ -113,8 +114,10 @@ class Animate_plot:
             "button_release_event", self.onrelease
         )
         self.cmove = self.fig.canvas.mpl_connect("motion_notify_event", self.onmove)
-        self.ckeypress = self.fig.canvas.mpl_connect('key_press_event',self.onkeypress)
-        self.ckeyrelease = self.fig.canvas.mpl_connect('key_release_event',self.onkeyrelease)
+        self.ckeypress = self.fig.canvas.mpl_connect("key_press_event", self.onkeypress)
+        self.ckeyrelease = self.fig.canvas.mpl_connect(
+            "key_release_event", self.onkeyrelease
+        )
 
         self.is_playing = False
         self.is_starting = True
@@ -126,9 +129,8 @@ class Animate_plot:
         self.custom_ani.add_callback(self.update_frame)
         self.custom_ani.add_callback(self.bm.update)
 
-
     def onkeypress(self, event):
- 
+
         if event.key == " ":
             self.play()
 
@@ -147,10 +149,15 @@ class Animate_plot:
                 pass
             else:
                 self.frame_step -= 1
-            
-        print("Frame step:", self.frame_step, "Timer interval:", int(self.anim_interval), "msec")
-        self.custom_ani.interval = int(self.anim_interval)
 
+        print(
+            "Frame step:",
+            self.frame_step,
+            "Timer interval:",
+            int(self.anim_interval),
+            "msec",
+        )
+        self.custom_ani.interval = int(self.anim_interval)
 
     def onkeyrelease(self, event):
         pass
@@ -219,16 +226,18 @@ class Animate_plot:
 
         self.current_time = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1e3
 
-
     def update_frame(self):
 
-        if self.current_time < self.ax.get_xlim()[1] and self.current_time > self.ax.get_xlim()[0]:
+        if (
+            self.current_time < self.ax.get_xlim()[1]
+            and self.current_time > self.ax.get_xlim()[0]
+        ):
             self.current_frame += self.frame_step
         elif self.current_frame == self.max_frames:
             self.current_frame = 0
         else:
             new_time = self.ax.get_xlim()[0] if self.ax.get_xlim()[0] >= 0 else 0
-            self.current_frame = new_time // (1/self.fps) + 1
+            self.current_frame = new_time // (1 / self.fps) + 1
 
         self.grab_frame(self.current_frame)
 
@@ -239,9 +248,8 @@ class Animate_plot:
             )
         )
 
-
     def play(self):
-        
+
         if self.is_playing:
             self.custom_ani.stop()
             self.is_playing = False

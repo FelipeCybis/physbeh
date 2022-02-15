@@ -48,10 +48,12 @@ class Tracking(object):
         accepted_extensions = (".mp4", ".avi", ".mpg")
         if Path(str(str_path)).suffix not in accepted_extensions:
             self._video_filepath = None
-            warnings.warn(f"Video file should have extensions {accepted_extensions} and not {Path(str(str_path)).suffix}. Returning `NoneType`", category=UserWarning)
+            warnings.warn(
+                f"Video file should have extensions {accepted_extensions} and not {Path(str(str_path)).suffix}. Returning `NoneType`",
+                category=UserWarning,
+            )
         else:
             self._video_filepath = Path(str(str_path))
-
 
     @property
     def fps(self):
@@ -132,10 +134,10 @@ class Tracking(object):
                     self._video_filepath = None
             else:
                 warnings.warn(
-                        f"`video_filename` was not given. Tried to search video path with `*recording-labeled*` glob pattern, but file does not exist.\n"
-                        + "Use self.set_video_filepath(filename) for the animations to work with the right video.",
-                        category=UserWarning,
-                    )
+                    f"`video_filename` was not given. Tried to search video path with `*recording-labeled*` glob pattern, but file does not exist.\n"
+                    + "Use self.set_video_filepath(filename) for the animations to work with the right video.",
+                    category=UserWarning,
+                )
 
         self.colormap = "plasma"
         self._pcutout = 0.8
