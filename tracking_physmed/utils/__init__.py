@@ -3,7 +3,7 @@ from .utils import (
     get_line_collection,
     get_rectangular_value,
     get_gaussian_value,
-    plot_color_wheel,
+    _plot_color_wheel,
     BlitManager,
 )
 from .place_fields import (
@@ -17,7 +17,7 @@ __all__ = [
     "get_line_collection",
     "get_rectangular_value",
     "get_gaussian_value",
-    "plot_color_wheel",
+    "_plot_color_wheel",
     "BlitManager",
     "get_value_from_hexagonal_grid",
     "set_hexagonal_parameters",

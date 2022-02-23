@@ -63,7 +63,7 @@ def get_rectangular_value(n, width):
     return np.where(abs(n) < width, 1, 0)
 
 
-def plot_color_wheel(ax, cmap):
+def _plot_color_wheel(ax, cmap):
 
     # Define colormap normalization for 0 to 2*pi
     norm_2 = colors.Normalize(0, 2 * np.pi)
