@@ -1,12 +1,9 @@
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from matplotlib.widgets import Button
-import numpy as np
 import cv2
 from .tracking import Tracking
 from tracking_physmed.utils import BlitManager
 
 import warnings
+from functools import wraps
 
 
 def anim_decorator(plot_function):
@@ -18,6 +15,7 @@ def anim_decorator(plot_function):
         Usually, plot function with one axes that returns Figure and Axes.
     """
 
+    @wraps(plot_function)
     def plot_wrapper(*args, **kwargs):
         do_anim = kwargs.pop("animate", False)
         fig, ax = plot_function(*args, **kwargs)

@@ -5,8 +5,9 @@ from matplotlib.cm import ScalarMappable
 
 import numpy as np
 
-from tracking_physmed.utils import get_line_collection, plot_color_wheel, get_cmap
+from tracking_physmed.utils import get_line_collection, _plot_color_wheel, get_cmap
 from .animate_decorator import anim_decorator
+from .animate2d_decorator import anim2d_decorator
 
 
 @anim_decorator
@@ -27,7 +28,7 @@ def plot_speed(
     ----------
     Trk_cls : `Tracking` instance
     bodypart : str, optional
-        Bodypart label. By default `"body"`
+        Bodypart label. By default `body`
     smooth : bool, optional
         If speed array is to be smoothed using a gaussian kernel. By default `True`
     speed_cutout : int, optional
@@ -127,9 +128,11 @@ def plot_running_bouts(Trk, ax=None, figsize=(12, 6), fig=None, animate=False):
     return fig, ax
 
 
+@anim2d_decorator
 def plot_position_2d(
     Trk_cls,
     bodypart="body",
+    absolute=False,
     color_collection_array=None,
     clim=None,
     head_direction=True,
@@ -137,10 +140,12 @@ def plot_position_2d(
     only_running_bouts=False,
     figsize=(8, 6),
     colormap="hsv",
+    color='gray',
     ax=None,
     ax_direction=True,
     ax_kwargs=None,
     fig=None,
+    animate=False,
 ):
     """Plots position of the animal in 2D coordinates.
 
@@ -177,8 +182,8 @@ def plot_position_2d(
     tuple (matplotlib.Figure, LineCollection)
     """
 
-    x_bp, _, index = Trk_cls.get_position_x(bodypart=bodypart)
-    y_bp = Trk_cls.get_position_y(bodypart=bodypart)[0]
+    x_bp, _, index = Trk_cls.get_position_x(bodypart=bodypart, absolute=absolute)
+    y_bp = Trk_cls.get_position_y(bodypart=bodypart, absolute=absolute)[0]
 
     if only_running_bouts:
         Trk_cls.get_running_bouts()
@@ -197,7 +202,7 @@ def plot_position_2d(
             ylabel="Y pixel",
             title="Animal position in the arena [bodypart: " + bodypart + "]",
         )
-        ax_1.axis("equal")
+        ax_1.set_aspect("equal", "box")
         ax_1.invert_yaxis()
 
     if color_collection_array is not None:
@@ -237,11 +242,11 @@ def plot_position_2d(
             fig.set_size_inches(14, 7.5)
             ax_1.set_position([0.12, 0.12, 0.5, 0.75])
             ax_2 = fig.add_axes(rect=[0.65, 0.26, 0.3, 0.48], projection="polar")
-            plot_color_wheel(ax=ax_2, cmap=cmap)
+            _plot_color_wheel(ax=ax_2, cmap=cmap)
 
     else:
-        lc = LineCollection(lines, linewidths=3)
-        lc.set_alpha(0.8)
+        lc = LineCollection(lines, linewidths=3, color=color)
+        lc.set_alpha(0.3)
 
     ax_1.add_collection(lc)
     ax_1.scatter(x_bp[index], y_bp[index], s=0)
@@ -249,7 +254,7 @@ def plot_position_2d(
     if ax_kwargs is not None:
         ax_1.set(**ax_kwargs)
 
-    return fig, lc
+    return fig, ax_1, lines
 
 
 @anim_decorator
@@ -410,7 +415,7 @@ def plot_position_y(
     ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
     ax.grid(linestyle="--")
 
-    return fig
+    return fig, ax
 
 
 def plot_position(Trk, bodyparts="all", figsize=(12, 6), fig=None):
