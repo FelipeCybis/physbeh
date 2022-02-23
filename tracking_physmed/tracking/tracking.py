@@ -17,6 +17,25 @@ from tracking_physmed.utils import (
 
 
 def to_tracking_time(arr, time, new_time, offset=0):
+    """Returns upsampled array to match `new_time` array. Simply duplicates data to fill new array indices.
+
+    Parameters
+    ----------
+    arr : _type_
+        _description_
+    time : _type_
+        _description_
+    new_time : _type_
+        _description_
+    offset : int, optional
+        _description_, by default 0
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+    assert arr.shape[-1] == time.shape[-1], f"`arr` and `time` arguments must have the same length, but they are {arr.shape[-1]} and {time.shape[-1]} respectively"
     new_arr = np.zeros(arr.shape[:-1] + new_time.shape)
     fps = 1 / (new_time[1] - new_time[0])
 
@@ -121,7 +140,7 @@ class Tracking(object):
         self._video_filepath = video_filename
         if video_filename is None:
             possible_video_filename = list(
-                self.tracking_directory.glob("*recording-labeled*")
+                self.tracking_directory.glob("*labeled*")
             )
             if possible_video_filename:
                 self.video_filepath = possible_video_filename[0]
@@ -463,7 +482,7 @@ class Tracking(object):
 
         return coords, time_array, index
 
-    def get_position_x(self, bodypart, pcutout=None):
+    def get_position_x(self, bodypart, pcutout=None, absolute=False):
         """Simple function to get x values for bodypart.
 
         Parameters
@@ -484,15 +503,15 @@ class Tracking(object):
 
         """
         index = self.get_index(bodypart, pcutout)
-        x_bp = (
-            self.Dataframe[self.scorer][bodypart]["x"].values
-            - self.metadata["data"]["corner_coords"]["top_left"][0]
-        )
+        x_bp = self.Dataframe[self.scorer][bodypart]["x"].values
+        if absolute is False:
+            x_bp = self.Dataframe[self.scorer][bodypart]["x"].values - self.metadata["data"]["corner_coords"]["top_left"][0]
+        
         time_array = np.array(self.Dataframe.index) / self.fps
 
         return x_bp, time_array, index
 
-    def get_position_y(self, bodypart, pcutout=None):
+    def get_position_y(self, bodypart, pcutout=None, absolute=False):
         """Simple function to get y values for bodypart.
 
         Parameters
@@ -514,10 +533,9 @@ class Tracking(object):
         """
 
         index = self.get_index(bodypart, pcutout)
-        y_bp = (
-            self.Dataframe[self.scorer][bodypart]["y"].values
-            - self.metadata["data"]["corner_coords"]["top_left"][1]
-        )
+        y_bp = self.Dataframe[self.scorer][bodypart]["y"].values
+        if absolute is False:
+            y_bp = self.Dataframe[self.scorer][bodypart]["y"].values - self.metadata["data"]["corner_coords"]["top_left"][1]
         time_array = np.array(self.Dataframe.index) / self.fps
 
         return y_bp, time_array, index
@@ -695,8 +713,8 @@ class Tracking(object):
         info_dict = {}
         info_dict["total_time"] = self.nframes / self.fps
 
-        speed, _, _, _ = self.get_speed(bodypart="body", smooth=True)
-        speed_bouts, time_bouts, _, _ = self.get_speed(only_running_bouts=True)
+        speed = self.get_speed(bodypart="body", smooth=True)[0]
+        speed_bouts, time_bouts = self.get_speed(bodypart="body", smooth=True, only_running_bouts=True)[:2]
         bout_lenghts = [t_bout[-1] - t_bout[0] for t_bout in time_bouts]
         info_dict["total_running_time"] = sum(bout_lenghts)
         info_dict["running_ratio"] = (
@@ -729,6 +747,24 @@ class Tracking(object):
         only_running_bouts=False,
         bodypart="body",
     ):
+        """Gets output array by applying the each frame's x, y coordinates to a specific place field.
+
+        Parameters
+        ----------
+        coords : tuple, optional
+            (x, y) coordinates to create the place field. If `None`, gets coordinates from utils.place_fields.get_place_field_coordinates. By default None
+        random_coords : bool, optional
+            If `coords` is `None`, gets coordinates using the `random` parameter or not. By default False
+        only_running_bouts : bool, optional
+            Not yet implemented. By default False
+        bodypart : str, optional
+            Which bodypart label to use when getting coordinates. By default "body"
+
+        Returns
+        -------
+        tuple (place field array, (time array, place field coordinates))
+            Each line in the place field array corresponds to one place field coordinate.
+        """
 
         animal_coords, time_array, index = self.get_xy_coords(bodypart=bodypart)
         sigma = 300
