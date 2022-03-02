@@ -699,16 +699,25 @@ class Tracking(object):
 
         return self.running_bouts, time_array, self.final_change_idx
 
-    def get_binned_position(self, bodypart="body", bins=[10, 10]):
-        x_pos = self.get_position_x(bodypart=bodypart)[0]
+    def get_binned_position(self, bodypart="body", bins=[10, 10], only_running_bouts=False):
+
+        
+        
+        x_pos, _, index = self.get_position_x(bodypart=bodypart)
         y_pos = self.get_position_y(bodypart=bodypart)[0]
         x_pos *= self.ratio_per_pixel
         y_pos *= self.ratio_per_pixel
 
-        return np.histogram2d(x_pos, y_pos, bins=bins, range=[[0, 100], [0, 100]])
+        if only_running_bouts:
+            if not hasattr(self, "running_bouts"):
+                self.get_running_bouts()
 
-    def get_infos(self, bins=10):
-        H = self.get_binned_position("body", bins)[0]
+            index = self.running_bouts
+
+        return np.histogram2d(x_pos[index], y_pos[index], bins=bins, range=[[0, 100], [0, 100]])
+
+    def get_infos(self, bins=10, bin_only_running_bouts=False):
+        H = self.get_binned_position("body", bins, only_running_bouts=bin_only_running_bouts)[0]
 
         info_dict = {}
         info_dict["total_time"] = self.nframes / self.fps

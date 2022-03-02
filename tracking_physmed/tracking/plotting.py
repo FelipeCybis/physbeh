@@ -140,9 +140,10 @@ def plot_position_2d(
     only_running_bouts=False,
     figsize=(8, 6),
     colormap="hsv",
+    colorbar=True,
+    colorbar_label=None,
     color='gray',
     ax=None,
-    ax_direction=True,
     ax_kwargs=None,
     fig=None,
     animate=False,
@@ -170,8 +171,6 @@ def plot_position_2d(
         [description], by default "hsv"
     ax : [type], optional
         [description], by default None
-    ax_direction : bool, optional
-        [description], by default True
     ax_kwargs : [type], optional
         [description], by default None
     fig : matplotlib Figure, optional
@@ -217,9 +216,10 @@ def plot_position_2d(
         lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)
         lc.set_alpha(0.7)
         lc.set_array(color_collection_array[index])
-        ax_1.set_position([0.12, 0.12, 0.7, 0.8])
-        ax_2 = fig.add_axes(rect=[0.85, 0.12, 0.03, 0.8])
-        fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=ax_2)
+        # ax_1.set_position([0.12, 0.12, 0.7, 0.8])
+        # ax_2 = fig.add_axes(rect=[0.85, 0.12, 0.03, 0.8])
+        if colorbar:
+            fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), ax=ax_1, label=colorbar_label)
 
     elif head_direction:
 
@@ -238,7 +238,7 @@ def plot_position_2d(
         lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)
         lc.set_array(head_direction_array[index])
 
-        if ax_direction:
+        if colorbar:
             fig.set_size_inches(14, 7.5)
             ax_1.set_position([0.12, 0.12, 0.5, 0.75])
             ax_2 = fig.add_axes(rect=[0.65, 0.26, 0.3, 0.48], projection="polar")
