@@ -142,6 +142,7 @@ def plot_position_2d(
     colormap="hsv",
     colorbar=True,
     colorbar_label=None,
+    colorwheel=True,
     color='gray',
     ax=None,
     ax_kwargs=None,
@@ -224,10 +225,13 @@ def plot_position_2d(
     elif head_direction:
 
         index = Trk_cls.get_index(head_direction_vector_labels[0], Trk_cls.pcutout)
+        if only_running_bouts:
+            index = Trk_cls.running_bouts
+        
 
         cmap = get_cmap(name=colormap, n=360)
 
-        head_direction_array = Trk_cls.get_direction_array(
+        head_direction_array, _ = Trk_cls.get_direction_array(
             label0=head_direction_vector_labels[0],
             label1=head_direction_vector_labels[1],
             mode="deg",
@@ -238,11 +242,13 @@ def plot_position_2d(
         lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)
         lc.set_array(head_direction_array[index])
 
-        if colorbar:
+        if colorwheel:
             fig.set_size_inches(14, 7.5)
             ax_1.set_position([0.12, 0.12, 0.5, 0.75])
             ax_2 = fig.add_axes(rect=[0.65, 0.26, 0.3, 0.48], projection="polar")
             _plot_color_wheel(ax=ax_2, cmap=cmap)
+        elif colorbar:
+            fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), ax=ax_1, label="Head direction (deg)")
 
     else:
         lc = LineCollection(lines, linewidths=3, color=color)
@@ -456,6 +462,13 @@ def plot_head_direction(
     Trk,
     head_direction_vector_labels=["neck", "probe"],
     ang="deg",
+    smooth=False,
+    only_running_bouts=False,
+    color_collection_array=None,
+    clim=None,
+    colormap="hsv",
+    colorbar=True,
+    colorbar_label = None,
     figsize=(12, 6),
     ax=None,
     fig=None,
@@ -486,13 +499,17 @@ def plot_head_direction(
     """
 
     index = Trk.get_index(head_direction_vector_labels[1], Trk.pcutout)
+    if only_running_bouts:
+        if not hasattr(Trk, "running_bouts"):
+            Trk.get_running_bouts()
+        index = Trk.running_bouts
 
-    head_direction_array = Trk.get_direction_array(
+    head_direction_array, _ = Trk.get_direction_array(
         label0=head_direction_vector_labels[0],
         label1=head_direction_vector_labels[1],
         mode=ang,
+        smooth=smooth,
     )
-    time_array = np.array(Trk.Dataframe.index) / Trk.fps
 
     index_wrapped_dict = {"deg": 320, "rad": 320 / 360 * 2 * np.pi}
     index_wrapped_angles = np.where(
@@ -502,17 +519,32 @@ def plot_head_direction(
     index[index_wrapped_angles] = False
 
     lines = get_line_collection(
-        x_array=time_array, y_array=head_direction_array, index=index
+        x_array=Trk.time, y_array=head_direction_array, index=index
     )
+    
+    if color_collection_array is not None:
+        if clim is None:
+            clim = (color_collection_array.min(), color_collection_array.max())
 
-    cmap = get_cmap(name="hsv", n=360)
-    norm_dict = {
-        "deg": np.arange(0, 360),
-        "rad": np.arange(0, 2 * np.pi * (1 + 1 / 360), 2 * np.pi / 360),
-    }
-    norm = colors.BoundaryNorm(norm_dict[ang], cmap.N)
+        cmap = get_cmap(name=colormap, n=200)
+        norm = colors.BoundaryNorm(
+            np.arange(clim[0], clim[1], (clim[1] - clim[0]) / 100), cmap.N
+        )
+
+        line_collection_array = color_collection_array[index]
+    else:
+
+        cmap = get_cmap(name="hsv", n=360)
+        norm_dict = {
+            "deg": np.arange(0, 361),
+            "rad": np.arange(0, 2 * np.pi * (1 + 1 / 360), 2 * np.pi / 360),
+        }
+        norm = colors.BoundaryNorm(norm_dict[ang], cmap.N)
+        
+        line_collection_array = head_direction_array[index]
+        
     lc = LineCollection(lines, linewidths=2, cmap=cmap, norm=norm)
-    lc.set_array(head_direction_array[index])
+    lc.set_array(line_collection_array)
 
     if ax is None:
         if fig is None:
@@ -520,10 +552,11 @@ def plot_head_direction(
         ax = fig.add_axes(rect=[0.1, 0.12, 0.8, 0.8])
     ax.add_collection(lc)
 
-    cax = fig.add_axes(rect=[0.92, 0.12, 0.025, 0.8])
-    fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=cax)
+    if colorbar:
+        cax = fig.add_axes(rect=[0.92, 0.12, 0.025, 0.8])
+        fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=cax, label=colorbar_label)
 
-    ax.plot(time_array, head_direction_array, ".", markersize=0)
+    ax.plot(Trk.time, head_direction_array, ".", markersize=0)
     ax.grid(linestyle="--")
     ylabel_dict = {"deg": "Degree", "rad": "Radians"}
     ax.set(
@@ -534,3 +567,36 @@ def plot_head_direction(
     ax.set(**ax_kwargs)
 
     return fig, ax
+
+@anim_decorator
+def plot_head_direction_interval(Trk, deg=180, only_running_bouts=False, figsize=(12,6), fig=None, ax=None, animate=False):
+
+    hd_interval_array, time_array, index = Trk.get_degree_interval_hd(deg, only_running_bouts=only_running_bouts)
+
+    lines = get_line_collection(time_array, hd_interval_array, index)
+
+    lc = LineCollection(
+        lines,
+        linewidths=2,
+    )
+
+    if ax is None:
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+
+    ax.add_collection(lc)
+
+    if only_running_bouts == True:
+        time_array = np.concatenate(time_array)
+        hd_interval_array = np.concatenate(hd_interval_array)
+        index = np.concatenate(index)
+        plot_running_bouts(Trk, ax=ax)
+
+    ax.plot(time_array[index], hd_interval_array[index], ".", markersize=0, label=f"{deg} degrees")
+    ax.set(ylabel="a.u", xlabel="time (s)")
+    ax.legend(loc="upper right")
+    ax.grid(linestyle="--")
+
+    return fig, ax
+

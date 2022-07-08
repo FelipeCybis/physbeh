@@ -8,6 +8,7 @@ from .plotting import (
     plot_position_y,
     plot_position,
     plot_head_direction,
+    plot_head_direction_interval,
 )
 from .animate_decorator import anim_decorator
 from .animate2d_decorator import anim2d_decorator
@@ -23,6 +24,7 @@ __all__ = [
     "plot_position_y",
     "plot_position",
     "plot_head_direction",
+    "plot_head_direction_interval",
     "anim_decorator",
     "anim2d_decorator"
 ]
