@@ -41,9 +41,10 @@ def to_tracking_time(arr, time, new_time, offset=0):
 
     last_idx = 0
     for i, trig in enumerate(time):
-        idx = int(np.ceil(trig * fps))
+        idx = min(int(np.ceil(trig * fps)), new_arr.shape[-1]) 
+        arr_idx = min(i + offset, arr.shape[-1] - 1)
 
-        new_arr[last_idx:idx] = arr[i + offset]
+        new_arr[..., last_idx:idx] = np.repeat(arr[..., arr_idx][..., np.newaxis], idx - last_idx, axis=-1)
         last_idx = idx
 
     return new_arr
@@ -78,6 +79,11 @@ class Tracking(object):
     def fps(self):
         """Frames per second from metadata of chosen analysis."""
         return self._fps
+    
+    @property
+    def time(self):
+        """Timing index calculated using the `fps` property."""
+        return self._time
 
     @property
     def pcutout(self):
@@ -128,7 +134,14 @@ class Tracking(object):
         self._speed_smooth_window = signal.gaussian(M=M, std=sigma)
         self._speed_smooth_window /= sum(self._speed_smooth_window)
 
-    def __init__(self, filename=None, video_filename=None) -> None:
+    @property
+    def scan(self):
+        return self._scan
+
+    def attach_scan(self, Scan):
+        self._scan = Scan
+
+    def __init__(self, filename=None, video_filename=None, scan=None):
 
         if not os.path.isfile(filename):
             raise FileNotFoundError("Check filename and make sure the file exists.")
@@ -139,38 +152,51 @@ class Tracking(object):
 
         self._video_filepath = video_filename
         if video_filename is None:
-            possible_video_filename = list(
-                self.tracking_directory.glob("*labeled*")
-            )
-            if possible_video_filename:
-                self.video_filepath = possible_video_filename[0]
-                if not os.path.isfile(self.video_filepath):
-                    warnings.warn(
+            self.tracking_directory.stem
+            self.video_filepath = self.tracking_filepath.with_name(self.tracking_filepath.name.replace("tracking-filtered", "recording-labeled").replace("beh.h5", "video.mp4"))
+            
+            if self.video_filepath is None or not self.video_filepath.is_file():
+                warnings.warn(
                         f"Tried to guess video filepath as {self.video_filepath}, but file does not exist.\n"
                         + "Use self.set_video_filepath(filename) for the animations to work with the right video.",
                         category=UserWarning,
                     )
-                    self._video_filepath = None
-            else:
-                warnings.warn(
-                    f"`video_filename` was not given. Tried to search video path with `*recording-labeled*` glob pattern, but file does not exist.\n"
-                    + "Use self.set_video_filepath(filename) for the animations to work with the right video.",
-                    category=UserWarning,
-                )
+                self._video_filepath = None
+            
+            # possible_video_filename = list(
+            #     self.tracking_directory.glob("*labeled*")
+            # )
+            # if possible_video_filename:
+            #     self.video_filepath = possible_video_filename[0]
+            #     if not os.path.isfile(self.video_filepath):
+            #         warnings.warn(
+            #             f"Tried to guess video filepath as {self.video_filepath}, but file does not exist.\n"
+            #             + "Use self.set_video_filepath(filename) for the animations to work with the right video.",
+            #             category=UserWarning,
+            #         )
+            #         self._video_filepath = None
+            # else:
+            #     warnings.warn(
+            #         f"`video_filename` was not given. Tried to search video path with `*recording-labeled*` glob pattern, but file does not exist.\n"
+            #         + "Use self.set_video_filepath(filename) for the animations to work with the right video.",
+            #         category=UserWarning,
+            #     )
 
         self.colormap = "plasma"
         self._pcutout = 0.8
         self._speed_smooth_window = signal.gaussian(M=101, std=6)
         self._speed_smooth_window /= sum(self._speed_smooth_window)
         self._load_Dataframe()
+        self._scan = scan
 
     def _load_Dataframe(self):
 
         self.Dataframe = pd.read_hdf(self.tracking_filepath)
 
-        self.metadata_filepath = sorted(
-            self.tracking_filepath.parent.glob("*meta*.pickle")
-        )[0]
+        self.metadata_filepath = self.tracking_filepath.with_name(self.tracking_filepath.name.replace("filtered", "meta").replace("h5", "pickle"))
+        # self.metadata_filepath = sorted(
+        #     self.tracking_filepath.parent.glob("*meta*.pickle")
+        # )[0]
         self.metadata = pd.read_pickle(self.metadata_filepath)
         self.scorer = self.metadata["data"]["Scorer"]
 
@@ -179,6 +205,7 @@ class Tracking(object):
             "all_joints_names"
         ]
         self._fps = self.metadata["data"]["fps"]
+        self._time = np.array(self.Dataframe.index / self._fps)
         colors = get_cmap(len(self.bodyparts), name=self.colormap)
         self.colors = {self.bodyparts[i]: colors(i) for i in range(len(self.bodyparts))}
 
@@ -361,7 +388,7 @@ class Tracking(object):
         )
         return vec_x.to_numpy(), vec_y.to_numpy()
 
-    def get_direction_array(self, label0="neck", label1="probe", mode="deg"):
+    def get_direction_array(self, label0="neck", label1="probe", mode="deg", smooth=False):
         """Gets the direction vector 'label0'->'label1' by simple subtraction label1 - label0.
         Default vector is 'neck'->'probe'. This can be used to get the head direction of the animal, for example.
 
@@ -380,14 +407,80 @@ class Tracking(object):
         """
 
         hd_x, hd_y = self.get_vector_from_two_labels(label0=label0, label1=label1)
+        index = self.get_index(label=label1)
 
         resp_in_rad = np.arctan2(
             hd_y * (-1), hd_x
         )  # multiplication by -1 needed because of video x and y directions
+        
+        
+        if smooth:
+            resp_in_rad = np.unwrap(resp_in_rad)
+            smooth_window = signal.gaussian(M=101, std=10)
+            smooth_window /= sum(smooth_window)
+            
+            resp_in_rad[~index] = 0
+            resp_in_rad = np.convolve(smooth_window, resp_in_rad, "same")
+            
+            resp_in_rad = np.arctan2(
+            np.sin(resp_in_rad), np.cos(resp_in_rad)
+        )
+
         resp_in_rad[resp_in_rad < 0] += 2 * np.pi
         if mode in ("deg", "degree"):
-            return np.degrees(resp_in_rad)
-        return resp_in_rad
+            return np.degrees(resp_in_rad), index
+        return resp_in_rad, index
+    
+    def get_direction_angular_velocity(self, label0="neck", label1="probe", only_running_bouts=False):
+        
+        hd_x, hd_y = self.get_vector_from_two_labels(label0=label0, label1=label1)
+        index = self.get_index(label=label1)
+        time_array = np.array(self.Dataframe.index) / self.fps
+
+        resp_in_rad = np.arctan2(
+            hd_y * (-1), hd_x
+        )  # multiplication by -1 needed because of video x and y directions
+        
+        resp_in_rad = np.unwrap(resp_in_rad) # unwrapping so smoothing and derivative can be done
+        
+        smooth_window = signal.gaussian(M=101, std=10)
+        smooth_window /= sum(smooth_window)
+        resp_in_rad[~index] = 0
+        resp_in_rad = np.convolve(smooth_window, resp_in_rad, "same")
+        
+        angular_velocity = np.gradient(resp_in_rad)
+        
+        if only_running_bouts == True:
+
+            self.get_running_bouts()
+            angular_velocity_bouts = [
+                x
+                for x in np.split(
+                    np.where(self.running_bouts, angular_velocity, 0), self.final_change_idx + 1
+                )
+                if x[0] != 0
+            ]
+            time_bouts = [
+                x
+                for x in np.split(
+                    np.where(self.running_bouts, time_array, 0),
+                    self.final_change_idx + 1,
+                )
+                if x[1] != 0
+            ]
+            index_bouts = [
+                x
+                for x in np.split(
+                    np.where(self.running_bouts, index, 0), self.final_change_idx + 1
+                )
+                if x[0] != 0
+            ]
+
+            return angular_velocity_bouts, time_bouts, index_bouts
+
+        return angular_velocity, time_array, index
+        
+        
 
     def get_degree_interval_hd(self, deg, only_running_bouts=False):
         """Gets an array where the direction array (head direction here) is modulated by a guassian function centered in `deg`.
@@ -404,15 +497,14 @@ class Tracking(object):
         [type]
             [description]
         """
-        hd_deg = self.get_direction_array(label0="neck", label1="probe", mode="deg")
+        hd_deg, index = self.get_direction_array(label0="neck", label1="probe", mode="deg")
 
         time_array = np.array(self.Dataframe.index) / self.fps
-        index = self.get_index("probe", self.pcutout)
 
-        sigma = 20
+        sigma = 10
 
         if deg < 60:
-            hd_deg = np.where(hd_deg > 300, 360 - hd_deg, hd_deg)
+            hd_deg = np.where(hd_deg > 300, hd_deg - 360, hd_deg)
 
         if deg > 300:
             hd_deg = np.where(hd_deg < 60, hd_deg + 360, hd_deg)
@@ -726,6 +818,7 @@ class Tracking(object):
         speed_bouts, time_bouts = self.get_speed(bodypart="body", smooth=True, only_running_bouts=True)[:2]
         bout_lenghts = [t_bout[-1] - t_bout[0] for t_bout in time_bouts]
         info_dict["total_running_time"] = sum(bout_lenghts)
+        info_dict["total_distance"] = np.concatenate(speed_bouts).mean() * sum(bout_lenghts)
         info_dict["running_ratio"] = (
             info_dict["total_running_time"] / info_dict["total_time"]
         )
@@ -741,6 +834,7 @@ class Tracking(object):
             "--------------------------------------------------------------\n"
             + f"Total tracking time: {info_dict['total_time']} s\n"
             + f"Total running time: {info_dict['total_running_time']:.2f} s\n"
+            + f"Total distance run: {info_dict['total_distance']} cm\n"
             + f"Running time ratio (running time / all time): {info_dict['running_ratio']}\n"
             + f"Exploration ratio (ratio of visited bins): {info_dict['exploration_ratio']:.3f}\n"
             + f"Exploration std (std of visits on each bin): {info_dict['exploration_std']:.3f}\n"
