@@ -176,6 +176,8 @@ def plot_position_2d(
         [description], by default None
     fig : matplotlib Figure, optional
         If ``None``, new figure is created. By default ``None``
+    animate : bool, optional
+        If set to `True`, plots an animation of the animal position in 2D.
 
     Returns
     -------
