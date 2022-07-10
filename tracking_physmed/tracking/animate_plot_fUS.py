@@ -1,20 +1,26 @@
 import cv2
 import warnings
+import numpy as np
 
 from tracking_physmed.utils import BlitManager
 
 class Animate_plot_fUS:
-    def __init__(self, fig, ax, video_path=None, x_crop=[0, -1], y_crop=[0, -1], scan=None):
+    def __init__(self, fig, ax, scan):
 
         self.fig = fig
         self.ax = ax
 
+        self.data = np.rot90(scan.get_data()[:, 0, :])
+        self.scan_time = scan.time
+        self.n_scan_frames = self.data.shape[-1]
+        self.dt_scan = scan.voxdim[-1]
+
         self.original_xlim = self.ax.get_xlim()
         self.original_ylim = self.ax.get_ylim()
 
-        self.vid = None
         self.useblit = self.fig.canvas.supports_blit
         self.interval_limit = 1
+        self.frame_step = 1
         if not self.useblit:
             self.interval_limit = 100
             warnings.warn(
@@ -23,44 +29,34 @@ class Animate_plot_fUS:
 
         self.bm = BlitManager(self.fig.canvas)
 
-        # if scan and not video_path:
+        self.ax.set_xlabel("")
+        self.ax.set_position([0.4, 0.13, 0.55, 0.75])
+        self.ax_fus = self.fig.add_axes([0.05, 0.13, 0.3, 0.75])
 
-        if video_path:
+        self.current_frame = 0
+        self.current_time = self.scan_time[0]
 
-            self.ax.set_xlabel("")
+        self.im = self.ax_fus.imshow(self.data[..., 0], cmap="gray")
+        self.bm.add_artist(self.im)
 
-            self.y_crop = y_crop
-            self.x_crop = x_crop
+        self.ax_fus.set(xlabel="X pixel", ylabel="Y pixel")
 
-            self.ax.set_position([0.4, 0.13, 0.55, 0.75])
-            self.ax_vid = self.fig.add_axes([0.05, 0.13, 0.3, 0.75])
+        self.ax_xlabel = self.fig.add_axes([0.55, 0.002, 0.3, 0.07], frameon=False)
+        self.ax_xlabel.xaxis.set_visible(False)
+        self.ax_xlabel.yaxis.set_visible(False)
 
-            self.current_frame = 0
-            self.current_time = 0
-
-            self.cap = cv2.VideoCapture(str(video_path))
-            if self.cap.isOpened() == False:
-                raise cv2.error("Error opening video stream or file")
-            self.grab_first_frame()
-
-            self.ax_vid.set(xlabel="X pixel", ylabel="Y pixel")
-
-            self.ax_xlabel = self.fig.add_axes([0.55, 0.002, 0.3, 0.07], frameon=False)
-            self.ax_xlabel.xaxis.set_visible(False)
-            self.ax_xlabel.yaxis.set_visible(False)
-
-            self.time_stamp = self.ax_xlabel.annotate(
-                "current fr: {fr:05} | time: {sec:06.2f} s".format(
-                    fr=self.current_frame, sec=self.current_time
-                ),
-                (0.5, 0.75),
-                xycoords="axes fraction",
-                ha="center",
-                va="top",
-                bbox=dict(facecolor="white", alpha=0.6, edgecolor="white"),
-                animated=self.useblit,
-            )
-            self.bm.add_artist(self.time_stamp)
+        self.time_stamp = self.ax_xlabel.annotate(
+            "current fUS fr: {fr:05} | time: {sec:06.2f} s".format(
+                fr=self.current_frame, sec=self.current_time
+            ),
+            (0.5, 0.75),
+            xycoords="axes fraction",
+            ha="center",
+            va="top",
+            bbox=dict(facecolor="white", alpha=0.6, edgecolor="white"),
+            animated=self.useblit,
+        )
+        self.bm.add_artist(self.time_stamp)
 
         self.play_bar = self.ax.axvline(
             self.current_time, color="gray", animated=self.useblit
@@ -87,7 +83,7 @@ class Animate_plot_fUS:
         self.anim_interval = self.interval_limit
         self.frame_step = 1
         self.custom_ani = self.fig.canvas.new_timer(interval=self.anim_interval)
-        self.custom_ani.add_callback(self.update_frame)
+        self.custom_ani.add_callback(self.next_frame)
         self.custom_ani.add_callback(self.bm.update)
 
     def onkeypress(self, event):
@@ -97,7 +93,6 @@ class Animate_plot_fUS:
 
         elif event.key == "-":
             self.anim_interval *= 2
-            self.custom_ani.interval = int(self.anim_interval)
         elif event.key == "+":
             if self.anim_interval <= self.interval_limit:
                 pass
@@ -141,73 +136,42 @@ class Animate_plot_fUS:
 
         if event.inaxes == self.ax:
             # self.current_time = event.xdata
-            self.current_frame = int(event.xdata * self.fps)
-            if self.current_frame >= self.max_frames:
-                self.current_frame = int(self.max_frames - 1)
+            self.current_frame = int(event.xdata // self.dt_scan)
+            if self.current_frame >= self.n_scan_frames:
+                self.current_frame = int(self.n_scan_frames - 1)
+
             if not self.is_playing:
                 self.grab_frame(self.current_frame)
-                self.play_bar.set_xdata([self.current_time, self.current_time])
-                self.time_stamp.set_text(
-                    "current fr: {fr:05} | time: {sec:06.2f} s".format(
-                        fr=self.current_frame, sec=self.current_time
-                    )
-                )
-
                 self.bm.update()
 
-    def grab_first_frame(self):
+    def next_frame(self):
+        # handles the next frame, if outside of the time dimension, goes back to the beginning
+        self.current_frame += self.frame_step
+        if self.current_frame >= self.n_scan_frames:
+            self.current_frame -= self.n_scan_frames
 
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
-        ret, frame = self.cap.read()
-
-        self.vid = self.ax_vid.imshow(
-            frame[
-                self.y_crop[0] : self.y_crop[1], self.x_crop[0] : self.x_crop[1], ::-1
-            ],
-            animated=self.useblit,
-        )
-        self.bm.add_artist(self.vid)
-        self.current_time = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1e3
-        self.fps = self.cap.get(cv2.CAP_PROP_FPS)
-        self.max_frames = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
-
-    def grab_frame(self, fr):
-
-        if fr < 0:
-            fr = 0
-        self.current_frame = fr
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, fr)
-        _, frame = self.cap.read()
-
-        self.vid.set_array(
-            frame[
-                self.y_crop[0] : self.y_crop[1], self.x_crop[0] : self.x_crop[1], ::-1
-            ]
-        )
-
-        self.current_time = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1e3
-
-    def update_frame(self):
-
+        self.current_time = self.scan_time[self.current_frame]
         if (
-            self.current_time < self.ax.get_xlim()[1]
-            and self.current_time > self.ax.get_xlim()[0]
+            self.current_time > self.ax.get_xlim()[1]
+            or self.current_time < self.ax.get_xlim()[0]
         ):
-            self.current_frame += self.frame_step
-            if self.current_frame >= self.max_frames:
-                self.current_frame = 0
-
-        elif self.current_frame >= self.max_frames:
-            self.current_frame = 0
-        else:
-            new_time = self.ax.get_xlim()[0] if self.ax.get_xlim()[0] >= 0 else 0
-            self.current_frame = new_time // (1 / self.fps) + 1
+            if self.ax.get_xlim()[0] >= 0 and self.ax.get_xlim()[0] < self.scan_time[-1]:
+                new_time = self.ax.get_xlim()[0]
+            else:
+                new_time = 0
+            self.current_frame = int(new_time // self.dt_scan)
+            self.current_time = self.scan_time[self.current_frame]
 
         self.grab_frame(self.current_frame)
 
+    def grab_frame(self, frame):
+        # simply grabbing requested frame
+        # done like this to maybe add a goto frame capability
+        self.im.set_array(self.data[..., self.current_frame])
+
         self.play_bar.set_xdata([self.current_time, self.current_time])
         self.time_stamp.set_text(
-            "current fr: {fr:05} | time: {sec:06.2f} s".format(
+            "current fUS fr: {fr:05} | time: {sec:06.2f} s".format(
                 fr=self.current_frame, sec=self.current_time
             )
         )

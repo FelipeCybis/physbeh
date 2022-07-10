@@ -1,6 +1,7 @@
 import cv2
 from .tracking import Tracking
-from tracking_physmed.utils import BlitManager
+from ..utils import BlitManager
+from .animate_plot_fUS import Animate_plot_fUS
 
 import warnings
 from functools import wraps
@@ -17,9 +18,11 @@ def anim_decorator(plot_function):
 
     @wraps(plot_function)
     def plot_wrapper(*args, **kwargs):
+        anim_video = kwargs.pop("animate_video", False)
+        anim_fus = kwargs.pop("animate_fus", False)
         do_anim = kwargs.pop("animate", False)
         fig, ax = plot_function(*args, **kwargs)
-        if do_anim:
+        if anim_video or do_anim:
             Trk = [arg for arg in args if isinstance(arg, Tracking)]
             if not Trk:
                 Trk = [
@@ -38,6 +41,19 @@ def anim_decorator(plot_function):
                 fig, ax, video_path=Trk[0].video_filepath, x_crop=xcrop, y_crop=ycrop
             )
             return fig, ax, anim
+        elif anim_fus:
+            Trk = [arg for arg in args if isinstance(arg, Tracking)]
+            if not Trk:
+                Trk = [
+                    value for value in kwargs.values() if isinstance(value, Tracking)
+                ]
+
+            if Trk[0].scan is None:
+                return fig, ax
+
+            anim = Animate_plot_fUS(fig, ax, scan=Trk[0].scan)
+            return fig, ax, anim
+
         return fig, ax
 
     return plot_wrapper

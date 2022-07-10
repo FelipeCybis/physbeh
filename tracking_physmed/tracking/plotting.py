@@ -20,7 +20,8 @@ def plot_speed(
     ax=None,
     fig=None,
     figsize=(12, 6),
-    animate=False,
+    animate_video=False,
+    animate_fus=False,
 ):
     """Plot speed of given label.
 
@@ -41,8 +42,10 @@ def plot_speed(
         Figure size, if `fig` is ``None``. By default `(12,6)`
     fig : matplotlib Figure, optional
         If ``None``, new figure is created. By default ``None``
-    animate : bool, optional
+    animate_video : bool, optional
         If set to `True`, plots an animation synched with the video of the Tracking class.
+    animate_fus : bool, optional
+        If set to `True`, plots an animation synched with the associated scan (should be attached to Tracking).
 
     Returns
     -------
@@ -87,7 +90,7 @@ def plot_speed(
 
 
 @anim_decorator
-def plot_running_bouts(Trk, ax=None, figsize=(12, 6), fig=None, animate=False):
+def plot_running_bouts(Trk, ax=None, figsize=(12, 6), fig=None, animate_video=False, animate_fus=False):
     """Plots the running periods of the animal automatically computed by `Tracking.get_running_bouts`.
 
     Parameters
@@ -267,7 +270,7 @@ def plot_position_2d(
 
 @anim_decorator
 def plot_likelihood(
-    Trk, bodyparts="all", ax=None, figsize=(12, 6), fig=None, animate=False, **ax_kwargs
+    Trk, bodyparts="all", ax=None, figsize=(12, 6), fig=None, animate_video=False, animate_fus=False, **ax_kwargs
 ):
     """Plot likelihood for labels in each frame
 
@@ -320,7 +323,7 @@ def plot_likelihood(
 
 @anim_decorator
 def plot_position_x(
-    Trk, bodyparts="all", ax=None, fig=None, figsize=(12, 6), animate=False, **ax_kwargs
+    Trk, bodyparts="all", ax=None, fig=None, figsize=(12, 6), animate_video=False, animate_fus=False, **ax_kwargs
 ):
     """Plots X coordinates of requested `bodyparts`
 
@@ -374,7 +377,7 @@ def plot_position_x(
 
 @anim_decorator
 def plot_position_y(
-    Trk, bodyparts="all", ax=None, fig=None, figsize=(12, 6), animate=False, **ax_kwargs
+    Trk, bodyparts="all", ax=None, fig=None, figsize=(12, 6), animate_video=False, animate_fus=False, **ax_kwargs
 ):
     """Plots Y coordinates of requested `bodyparts`
 
@@ -474,7 +477,8 @@ def plot_head_direction(
     figsize=(12, 6),
     ax=None,
     fig=None,
-    animate=False,
+    animate_video=False,
+    animate_fus=False,
     **ax_kwargs
 ):
     """Plots head direction using `head_direction_vector_labels` to compute the head direction vector.
@@ -571,7 +575,7 @@ def plot_head_direction(
     return fig, ax
 
 @anim_decorator
-def plot_head_direction_interval(Trk, deg=180, only_running_bouts=False, figsize=(12,6), fig=None, ax=None, animate=False):
+def plot_head_direction_interval(Trk, deg=180, only_running_bouts=False, figsize=(12,6), fig=None, ax=None, animate_video=False, animate_fus=False):
 
     hd_interval_array, time_array, index = Trk.get_degree_interval_hd(deg, only_running_bouts=only_running_bouts)
 
