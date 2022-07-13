@@ -9,9 +9,9 @@ from .plotting import (
     plot_position,
     plot_head_direction,
     plot_head_direction_interval,
+    plot_occupancy,
+    animation_behavior_fus,
 )
-from .animate_decorator import anim_decorator
-from .animate2d_decorator import anim2d_decorator
 
 __all__ = [
     "Tracking",
@@ -25,6 +25,6 @@ __all__ = [
     "plot_position",
     "plot_head_direction",
     "plot_head_direction_interval",
-    "anim_decorator",
-    "anim2d_decorator"
+    "plot_occupancy",
+    "animation_behavior_fus",
 ]
