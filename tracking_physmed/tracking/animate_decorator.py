@@ -51,7 +51,13 @@ def anim_decorator(plot_function):
             if Trk[0].scan is None:
                 return fig, ax
 
-            anim = Animate_plot_fUS(fig, ax, scan=Trk[0].scan)
+            cropping = (
+                Trk[0].metadata["data"].get("cropping_parameters", [0, -1, 0, -1])
+            )
+            xcrop = cropping[:2]
+            ycrop = cropping[2:]
+
+            anim = Animate_plot_fUS(fig=fig, ax=ax, scan=Trk[0].scan, video_path=Trk[0].video_filepath, x_crop=xcrop, y_crop=ycrop)
             return fig, ax, anim
 
         return fig, ax
