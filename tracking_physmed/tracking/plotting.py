@@ -8,6 +8,7 @@ import numpy as np
 from tracking_physmed.utils import get_line_collection, _plot_color_wheel, get_cmap
 from .animate_decorator import anim_decorator
 from .animate2d_decorator import anim2d_decorator
+from .animate_plot_fUS import Animate_video_fUS
 
 
 @anim_decorator
@@ -606,3 +607,27 @@ def plot_head_direction_interval(Trk, deg=180, only_running_bouts=False, figsize
 
     return fig, ax
 
+def plot_occupancy(Trk, bins=40, only_running_bouts=True, figsize=(8,7), fig=None, ax=None):
+
+    if ax is None:
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+
+    H = Trk.get_binned_position(bins=40, only_running_bouts=True)
+    H[0][H[0]==0] = np.nan
+
+    i = ax.pcolormesh(H[1], H[2], H[0].T)
+    ax.invert_yaxis()
+    ax.set_aspect("equal", "box")
+    ax.set(xlabel="cm", ylabel="cm")
+    fig.colorbar(i, ax=ax, label="count")
+
+    return fig, ax
+
+
+def animation_behavior_fus(Trk, fig=None):
+
+    assert Trk.scan is not None, "Tracking class needs to have an attached scan for this animation"
+
+    return Animate_video_fUS(tracking=Trk, fig=fig)
