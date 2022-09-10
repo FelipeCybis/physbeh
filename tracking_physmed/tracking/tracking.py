@@ -253,13 +253,16 @@ class Tracking(object):
             self.tracking_filepath, self.metadata_filepath, self.video_filepath
         )
 
-    def set_corner_coords(self, coord_list=[]):
-        """If coord_list is not given, it calls Corner_Coords class GUI so the user can label the four corners and the Tracking class is able to calculate the ratio px/cm. It rights the corner coordinates in the metadata pickle file.
+    def set_ratio_coords(self, coord_list=[], type="rectangle"):
+        """If coord_list is not given, it calls Corner_Coords class GUI so the user can label
+        the four corners and the Tracking class is able to calculate the ratio px/cm.
+        It rights the corner coordinates in the metadata pickle file.
 
         Parameters
         ----------
         coord_list : list, optional
-            Should be a list of [x, y] coordinates for the top left, top right, bottom left and bottom right corners such that coord_list = [[tl_x, tl_y], [tr_x, tr_y], ...], by default []
+            Should be a list of [x, y] coordinates for the top left, top right, bottom left and
+            bottom right corners such that coord_list = [[tl_x, tl_y], [tr_x, tr_y], ...], by default []
         """
         if coord_list:
             self._write_corner_coords(coord_list)
@@ -277,9 +280,9 @@ class Tracking(object):
 
     def _write_corner_coords(self, coords_list):
         """Writes corner coordinates in the metadata of the analysis so it is there for the next time
-        and set_corner_coords does not need to be called again.
+        and set_ratio_coords does not need to be called again.
         """
-        with open(self.metadata_filepath, "wb") as f:
+        with open(self.metadata_filename, "wb") as f:
             try:
                 self.metadata["data"]["corner_coords"] = {}
                 self.metadata["data"]["corner_coords"]["top_left"] = np.array(
