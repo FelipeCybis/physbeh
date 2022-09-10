@@ -131,6 +131,22 @@ class Tracking(object):
         self._pcutout = value
 
     @property
+    def w(self):
+        return self._w
+
+    @w.setter
+    def w(self, value):
+        self._w = value
+
+    @property
+    def h(self):
+        return self._h
+
+    @h.setter
+    def h(self, value):
+        self._h = value
+
+    @property
     def ratio_per_pixel(self):
         return self._ratio_per_pixel
 
@@ -266,7 +282,7 @@ class Tracking(object):
                 pass
             pickle.dump(self.metadata, f)
 
-    def _get_cm2px_ratio(self, w, h):
+    def _get_cm2px_ratio(self):
         """Helper function that calculates the cm/px ratio from the user inputs of the corners of the arena.
 
         Parameters
@@ -281,8 +297,6 @@ class Tracking(object):
         float
             Returns the ratio of cm/px of the images being analysed.
         """
-        ## TO SEE IF W AND H ARE NOT THE SAME!!
-
         try:
             estimates = np.empty(4)
             estimates[0] = np.sqrt(
@@ -323,14 +337,14 @@ class Tracking(object):
                 )
             )
 
-            w_estimate = w / estimates[:2].mean()
-            h_estimate = h / estimates[2:].mean()
+            w_estimate = self.w / estimates[:2].mean()
+            h_estimate = self.h / estimates[2:].mean()
             self.ratio_cm_per_pixel = (w_estimate + h_estimate) / 2
             return self.ratio_cm_per_pixel
 
         except KeyError:
             print(
-                "Ratio cm/px not yet calculated. See function self.set_corner_coords."
+                "Ratio cm/px not yet calculated. See function self.set_ratio_coords."
             )
 
     def get_index(self, label, pcutout=None):
