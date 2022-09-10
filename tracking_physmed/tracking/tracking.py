@@ -228,6 +228,24 @@ class Tracking(object):
         self._spatial_units = "cm"
         self._ratio_per_pixel = self.ratio_cm_per_pixel
 
+        self._scan = None
+
+    def __repr__(self):
+        infos = self.get_infos()
+        return (
+            f"Filename: {self.filename.name}\n"
+            "-----------------------------------------------------------\n"
+            f"Total time: {infos['total_time']:.2f} s\n"
+            f"Time running: {infos['total_running_time']:.2f} s\n"
+            f"Distance run: {infos['total_distance']:.2f} cm\n"
+            f"Running ratio (running time / all time): {infos['running_ratio']:.2f}\n"
+            f"Exploration ratio (ratio of visited bins): {infos['exploration_ratio']:.2f}\n"
+            f"Exploration std. (std of visits on each bin): {infos['exploration_std']:.2f}\n"
+            f"Mean running speed (only running periods): {infos['mean_running_speed']:.2f} cm/s\n"
+            f"Mean speed: {infos['mean_speed']:.2f} cm/s\n"
+            "-----------------------------------------------------------"
+        )
+
     def manual_relabel(self):
         from tracking_physmed.gui import Manual_relabel
 
@@ -840,8 +858,8 @@ class Tracking(object):
             "--------------------------------------------------------------\n"
             + f"Total tracking time: {info_dict['total_time']} s\n"
             + f"Total running time: {info_dict['total_running_time']:.2f} s\n"
-            + f"Total distance run: {info_dict['total_distance']} cm\n"
-            + f"Running time ratio (running time / all time): {info_dict['running_ratio']}\n"
+            + f"Total distance run: {info_dict['total_distance']:.2f} cm\n"
+            + f"Running time ratio (running time / all time): {info_dict['running_ratio']:.2f}\n"
             + f"Exploration ratio (ratio of visited bins): {info_dict['exploration_ratio']:.3f}\n"
             + f"Exploration std (std of visits on each bin): {info_dict['exploration_std']:.3f}\n"
             + f"Mean running speed (only running periods): {info_dict['mean_running_speed']:.2f} {self.spatial_units}/s\n"
