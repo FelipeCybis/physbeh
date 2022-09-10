@@ -3,5 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Packaging
+*egg-info/
+
 # VS Code
 .vscode
