@@ -1,4 +1,4 @@
-from .tracking import Tracking, to_tracking_time
+from .tracking import load_tracking, to_tracking_time
 from .plotting import (
     plot_speed,
     plot_running_bouts,
@@ -14,7 +14,7 @@ from .plotting import (
 )
 
 __all__ = [
-    "Tracking",
+    "load_tracking",
     "to_tracking_time",
     "plot_speed",
     "plot_running_bouts",

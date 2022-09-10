@@ -1,4 +1,4 @@
-import os, warnings, pickle
+import pickle
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -14,6 +14,44 @@ from tracking_physmed.utils import (
     get_place_field_coords,
 )
 
+
+def load_tracking(filename, metadata_filename=None, video_filename=None):
+    try:
+        filename = Path(filename)
+    except TypeError:
+        raise TypeError(
+            "filename argument must be a pathlib.Path (or a type that supports"
+            " casting to pathlib.Path, such as string)."
+        )
+    
+    filename = filename.expanduser().resolve()
+
+    if not filename.is_file():
+        raise ValueError(f"File not found: {filename}.")
+
+    assert filename.suffix == ".h5", f"Accepted filename needs to have extension `.h5` and not `{filename.suffix}`"
+
+    Dataframe = pd.read_hdf(filename)
+
+    if metadata_filename is None:
+        metadata_filename = filename.with_name(filename.name.replace("filtered","meta").replace("h5", "pickle"))
+
+    if not metadata_filename.is_file():
+        raise ValueError(f"Metadata file not found: {metadata_filename}")
+
+
+    if video_filename is None:
+        video_filename = filename.with_name(filename.name.replace("tracking-filtered", "recording-labeled").replace("beh.h5", "video.mp4"))
+
+    if not video_filename.is_file():
+        video_filename = None
+        # !TODO raise warning to say there is no video
+
+    track = Tracking(Dataframe, metadata_filename, video_filename)
+    track.filename = filename
+
+    return track
+    
 
 def to_tracking_time(arr, time, new_time, offset=0):
     """Returns upsampled array to match `new_time` array. Simply duplicates data to fill new array indices.
@@ -140,82 +178,37 @@ class Tracking(object):
     def attach_scan(self, Scan):
         self._scan = Scan
 
-    def __init__(self, filename=None, video_filename=None, scan=None):
+    def __init__(self, data, metadata_filename, video_filename):
 
-        if not os.path.isfile(filename):
-            raise FileNotFoundError("Check filename and make sure the file exists.")
-
-        filename = Path(filename)
-        self._tracking_filepath = filename
-        self._tracking_directory = self._tracking_filepath.parent
-
+        self.Dataframe = data
+        self.metadata = pd.read_pickle(metadata_filename)
+        self.metadata_filename = metadata_filename
         self._video_filepath = video_filename
-        if video_filename is None:
-            self.tracking_directory.stem
-            self.video_filepath = self.tracking_filepath.with_name(self.tracking_filepath.name.replace("tracking-filtered", "recording-labeled").replace("beh.h5", "video.mp4"))
-            
-            if self.video_filepath is None or not self.video_filepath.is_file():
-                warnings.warn(
-                        f"Tried to guess video filepath as {self.video_filepath}, but file does not exist.\n"
-                        + "Use self.set_video_filepath(filename) for the animations to work with the right video.",
-                        category=UserWarning,
-                    )
-                self._video_filepath = None
-            
-            # possible_video_filename = list(
-            #     self.tracking_directory.glob("*labeled*")
-            # )
-            # if possible_video_filename:
-            #     self.video_filepath = possible_video_filename[0]
-            #     if not os.path.isfile(self.video_filepath):
-            #         warnings.warn(
-            #             f"Tried to guess video filepath as {self.video_filepath}, but file does not exist.\n"
-            #             + "Use self.set_video_filepath(filename) for the animations to work with the right video.",
-            #             category=UserWarning,
-            #         )
-            #         self._video_filepath = None
-            # else:
-            #     warnings.warn(
-            #         f"`video_filename` was not given. Tried to search video path with `*recording-labeled*` glob pattern, but file does not exist.\n"
-            #         + "Use self.set_video_filepath(filename) for the animations to work with the right video.",
-            #         category=UserWarning,
-            #     )
 
-        self.colormap = "plasma"
-        self._pcutout = 0.8
-        self._speed_smooth_window = signal.gaussian(M=101, std=6)
-        self._speed_smooth_window /= sum(self._speed_smooth_window)
-        self._load_Dataframe()
-        self._scan = scan
-
-    def _load_Dataframe(self):
-
-        self.Dataframe = pd.read_hdf(self.tracking_filepath)
-
-        self.metadata_filepath = self.tracking_filepath.with_name(self.tracking_filepath.name.replace("filtered", "meta").replace("h5", "pickle"))
-        # self.metadata_filepath = sorted(
-        #     self.tracking_filepath.parent.glob("*meta*.pickle")
-        # )[0]
-        self.metadata = pd.read_pickle(self.metadata_filepath)
         self.scorer = self.metadata["data"]["Scorer"]
-
-        self.nframes = self.Dataframe.shape[0]
+        self.nframes = data.shape[0]
         self.bodyparts = self.metadata["data"]["DLC-model-config file"][
             "all_joints_names"
         ]
         self._fps = self.metadata["data"]["fps"]
-        self._time = np.array(self.Dataframe.index / self._fps)
+        self._time = np.array(data.index / self.fps)
+        self.colormap = "plasma"
         colors = get_cmap(len(self.bodyparts), name=self.colormap)
         self.colors = {self.bodyparts[i]: colors(i) for i in range(len(self.bodyparts))}
+        self._pcutout = 0.8
+        self._speed_smooth_window = signal.gaussian(M=101, std=6)
+        self._speed_smooth_window /= sum(self._speed_smooth_window)
 
         try:
             # checking if coordinates for corners have already been set
             # if not, calls function to do it
             self.metadata["data"]["corner_coords"]
         except KeyError:
-            self.set_corner_coords()
-
-        self._get_cm2px_ratio(w=100, h=100)
+            self.set_ratio_coords()
+        
+        self._w = 100
+        self._h = 100
+        self._get_cm2px_ratio()
         self._spatial_units = "cm"
         self._ratio_per_pixel = self.ratio_cm_per_pixel
 
