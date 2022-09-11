@@ -91,7 +91,54 @@ def plot_speed(
 
 
 @anim_decorator
-def plot_running_bouts(Trk, ax=None, figsize=(12, 6), fig=None, animate_video=False, animate_fus=False):
+def plot_wall_proximity(
+    Trk,
+    wall,
+    bodypart="probe",
+    only_running_bouts=False,
+    ax=None,
+    fig=None,
+    figsize=(14, 7),
+):
+
+    wall_proximity, time_array, index = Trk.get_proximity_from_wall(
+        wall=wall, bodypart=bodypart, only_running_bouts=only_running_bouts
+    )
+
+    lines = get_line_collection(time_array, wall_proximity, index)
+
+    lc = LineCollection(
+        lines,
+        label=bodypart,
+        linewidths=2,
+        colors=Trk.colors[bodypart],
+    )
+
+    if ax is None:
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+
+    ax.add_collection(lc)
+
+    if only_running_bouts:
+        time_array = np.concatenate(time_array)
+        wall_proximity = np.concatenate(wall_proximity)
+        index = np.concatenate(index)
+        plot_running_bouts(Trk, ax=ax)
+
+    ax.plot(time_array[index], wall_proximity[index], ".", markersize=0)
+    ax.set(ylabel=f"Proximity from {wall} wall (a.u)", xlabel="time (s)")
+    ax.legend(loc="upper right")
+    ax.grid(linestyle="--")
+
+    return fig, ax
+
+
+@anim_decorator
+def plot_running_bouts(
+    Trk, ax=None, figsize=(12, 6), fig=None, animate_video=False, animate_fus=False
+):
     """Plots the running periods of the animal automatically computed by `Tracking.get_running_bouts`.
 
     Parameters

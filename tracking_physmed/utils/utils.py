@@ -63,6 +63,10 @@ def get_rectangular_value(n, width):
     return np.where(abs(n) < width, 1, 0)
 
 
+def custom_sigmoid(x, a=0.3, b=80):
+    return 1 / (1 + np.e ** (-a * (x - b)))
+
+
 def _plot_color_wheel(ax, cmap):
 
     # Define colormap normalization for 0 to 2*pi

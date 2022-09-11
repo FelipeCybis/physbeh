@@ -9,10 +9,18 @@ from tracking_physmed.utils import (
     get_cmap,
     get_gaussian_value,
     get_rectangular_value,
+    custom_sigmoid,
     get_value_from_hexagonal_grid,
     set_hexagonal_parameters,
     get_place_field_coords,
 )
+
+SIGMOID_PARAMETERS = {
+    "left": (-0.3, 20),
+    "right": (0.3, 80),
+    "bottom": (-0.3, 20),
+    "top": (0.3, 80),
+}
 
 
 def load_tracking(filename, metadata_filename=None, video_filename=None):
@@ -896,6 +904,57 @@ class Tracking(object):
             + f"Mean running speed: {info_dict['mean_speed']:.2f} {self.spatial_units}/s\n"
             + "--------------------------------------------------------------"
         )
+
+    def get_proximity_from_wall(
+        self, wall="left", bodypart="probe", only_running_bouts=False
+    ):
+        """Get a sigmoid response from the label position in relation to the specified wall
+
+        Parameters
+        ----------
+        wall : str, optional
+            Wall to use for computations. Can be one of ("left", "right", "top", "bottom"), by default "left"
+        bodypart : str, optional
+            Bodypart to use for computations, by default "probe".
+        only_running_bouts : bool, optional
+            Use only running bouts of the experiment, by default False
+
+        Returns
+        -------
+        tuple
+            _description_
+
+        Raises
+        ------
+        ValueError
+            If wall parameter is not on of the possibilities to choose from.
+        """
+
+        if wall not in ("left", "right", "top", "bottom"):
+            raise ValueError(
+                f"wall parameter must be one of the following: left, right, top or bottom, not {wall}."
+            )
+
+        if wall in ("left", "right"):
+            pos, _, index = self.get_position_x(bodypart=bodypart)
+        elif wall in ("top", "bottom"):
+            pos, _, index = self.get_position_y(bodypart=bodypart)
+
+        a, b = SIGMOID_PARAMETERS[wall]
+        wall_activation = custom_sigmoid(pos * self.ratio_per_pixel, a=a, b=b)
+
+        if only_running_bouts:
+            wall_activation = self._split_in_running_bouts(wall_activation)
+            index = self._split_in_running_bouts(index)
+            return wall_activation, self.time_bouts, index
+
+        return wall_activation, self.time, index
+
+    def get_proximity_from_corner(self, corner="tr"):
+        pass
+        if corner not in ("tr", "tl", "br", "bl"):
+            raise ValueError
+            
 
     def get_place_field_array(
         self,
