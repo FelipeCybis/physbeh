@@ -31,6 +31,7 @@ def anim2d_decorator(plot_function):
 
     return plot_wrapper
 
+
 class Animate_plot2D:
     def __init__(self, fig, ax, lines, fps):
 
@@ -52,7 +53,6 @@ class Animate_plot2D:
                 "Matplotlib figure does not support blit. Animation will not be optimal. This happens because the backend used does not support matplotlib blitting."
             )
 
-        
         self.fps = fps
         self.current_time = self.current_frame / self.fps
 
@@ -65,9 +65,12 @@ class Animate_plot2D:
         self.ax_timelabel.xaxis.set_visible(False)
         self.ax_timelabel.yaxis.set_visible(False)
 
-        self.ax.title.set_text(self.init_title + "\ncurrent fr: {fr:05} | time: {sec:06.2f} s".format(
-                    fr=self.current_frame, sec=self.current_time
-                ))
+        self.ax.title.set_text(
+            self.init_title
+            + "\ncurrent fr: {fr:05} | time: {sec:06.2f} s".format(
+                fr=self.current_frame, sec=self.current_time
+            )
+        )
 
         # self.time_stamp = self.ax_timelabel.annotate(
         #         "current fr: {fr:05} | time: {sec:06.2f} s".format(
@@ -157,14 +160,22 @@ class Animate_plot2D:
 
     def update_frame(self):
 
-        self.ax.collections[0]._paths += [mPath(line) for line in self.lines[self.current_frame:self.current_frame+self.frame_step]]
+        self.ax.collections[0]._paths += [
+            mPath(line)
+            for line in self.lines[
+                self.current_frame : self.current_frame + self.frame_step
+            ]
+        ]
 
         self.current_frame += self.frame_step
         self.current_time = self.current_frame / self.fps
 
-        self.ax.title.set_text(self.init_title + "\ncurrent fr: {fr:05} | time: {sec:06.2f} s".format(
-                    fr=self.current_frame, sec=self.current_time
-                ))
+        self.ax.title.set_text(
+            self.init_title
+            + "\ncurrent fr: {fr:05} | time: {sec:06.2f} s".format(
+                fr=self.current_frame, sec=self.current_time
+            )
+        )
         # self.time_stamp.set_text(
         #     "current fr: {fr:05} | time: {sec:06.2f} s".format(
         #         fr=self.current_frame, sec=self.current_time

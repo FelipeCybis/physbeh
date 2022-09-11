@@ -57,7 +57,14 @@ def anim_decorator(plot_function):
             xcrop = cropping[:2]
             ycrop = cropping[2:]
 
-            anim = Animate_plot_fUS(fig=fig, ax=ax, scan=Trk[0].scan, video_path=Trk[0].video_filepath, x_crop=xcrop, y_crop=ycrop)
+            anim = Animate_plot_fUS(
+                fig=fig,
+                ax=ax,
+                scan=Trk[0].scan,
+                video_path=Trk[0].video_filepath,
+                x_crop=xcrop,
+                y_crop=ycrop,
+            )
             return fig, ax, anim
 
         return fig, ax

@@ -23,25 +23,32 @@ def load_tracking(filename, metadata_filename=None, video_filename=None):
             "filename argument must be a pathlib.Path (or a type that supports"
             " casting to pathlib.Path, such as string)."
         )
-    
+
     filename = filename.expanduser().resolve()
 
     if not filename.is_file():
         raise ValueError(f"File not found: {filename}.")
 
-    assert filename.suffix == ".h5", f"Accepted filename needs to have extension `.h5` and not `{filename.suffix}`"
+    assert (
+        filename.suffix == ".h5"
+    ), f"Accepted filename needs to have extension `.h5` and not `{filename.suffix}`"
 
     Dataframe = pd.read_hdf(filename)
 
     if metadata_filename is None:
-        metadata_filename = filename.with_name(filename.name.replace("filtered","meta").replace("h5", "pickle"))
+        metadata_filename = filename.with_name(
+            filename.name.replace("filtered", "meta").replace("h5", "pickle")
+        )
 
     if not metadata_filename.is_file():
         raise ValueError(f"Metadata file not found: {metadata_filename}")
 
-
     if video_filename is None:
-        video_filename = filename.with_name(filename.name.replace("tracking-filtered", "recording-labeled").replace("beh.h5", "video.mp4"))
+        video_filename = filename.with_name(
+            filename.name.replace("tracking-filtered", "recording-labeled").replace(
+                "beh.h5", "video.mp4"
+            )
+        )
 
     if not video_filename.is_file():
         video_filename = None
@@ -51,7 +58,7 @@ def load_tracking(filename, metadata_filename=None, video_filename=None):
     track.filename = filename
 
     return track
-    
+
 
 def to_tracking_time(arr, time, new_time, offset=0):
     """Returns upsampled array to match `new_time` array. Simply duplicates data to fill new array indices.
@@ -72,16 +79,20 @@ def to_tracking_time(arr, time, new_time, offset=0):
     _type_
         _description_
     """
-    assert arr.shape[-1] == time.shape[-1], f"`arr` and `time` arguments must have the same length, but they are {arr.shape[-1]} and {time.shape[-1]} respectively"
+    assert (
+        arr.shape[-1] == time.shape[-1]
+    ), f"`arr` and `time` arguments must have the same length, but they are {arr.shape[-1]} and {time.shape[-1]} respectively"
     new_arr = np.zeros(arr.shape[:-1] + new_time.shape)
     fps = 1 / (new_time[1] - new_time[0])
 
     last_idx = 0
     for i, trig in enumerate(time):
-        idx = min(int(np.ceil(trig * fps)), new_arr.shape[-1]) 
+        idx = min(int(np.ceil(trig * fps)), new_arr.shape[-1])
         arr_idx = min(i + offset, arr.shape[-1] - 1)
 
-        new_arr[..., last_idx:idx] = np.repeat(arr[..., arr_idx][..., np.newaxis], idx - last_idx, axis=-1)
+        new_arr[..., last_idx:idx] = np.repeat(
+            arr[..., arr_idx][..., np.newaxis], idx - last_idx, axis=-1
+        )
         last_idx = idx
 
     return new_arr
@@ -116,7 +127,7 @@ class Tracking(object):
     def fps(self):
         """Frames per second from metadata of chosen analysis."""
         return self._fps
-    
+
     @property
     def time(self):
         """Timing index calculated using the `fps` property."""
@@ -183,8 +194,8 @@ class Tracking(object):
         assert (
             len(params) == 2
         ), "To set the gaussian window, a tuple with (lenght, std) should be passed."
-        M, sigma = params
-        self._speed_smooth_window = signal.gaussian(M=M, std=sigma)
+        m, sigma = params
+        self._speed_smooth_window = signal.gaussian(M=m, std=sigma)
         self._speed_smooth_window /= sum(self._speed_smooth_window)
 
     @property
@@ -221,7 +232,7 @@ class Tracking(object):
             self.metadata["data"]["corner_coords"]
         except KeyError:
             self.set_ratio_coords()
-        
+
         self._w = 100
         self._h = 100
         self._get_cm2px_ratio()
@@ -364,9 +375,7 @@ class Tracking(object):
             return self.ratio_cm_per_pixel
 
         except KeyError:
-            print(
-                "Ratio cm/px not yet calculated. See function self.set_ratio_coords."
-            )
+            print("Ratio cm/px not yet calculated. See function self.set_ratio_coords.")
 
     def get_index(self, label, pcutout=None):
         """Gets likelihood indices for `label` and threshold `pcutout`. Returns an array of booleans with True when index >= pcutout and False otherwise.
@@ -415,7 +424,9 @@ class Tracking(object):
         )
         return vec_x.to_numpy(), vec_y.to_numpy()
 
-    def get_direction_array(self, label0="neck", label1="probe", mode="deg", smooth=False):
+    def get_direction_array(
+        self, label0="neck", label1="probe", mode="deg", smooth=False
+    ):
         """Gets the direction vector 'label0'->'label1' by simple subtraction label1 - label0.
         Default vector is 'neck'->'probe'. This can be used to get the head direction of the animal, for example.
 
@@ -439,45 +450,43 @@ class Tracking(object):
         resp_in_rad = np.arctan2(
             hd_y * (-1), hd_x
         )  # multiplication by -1 needed because of video x and y directions
-        
-        
+
         if smooth:
             resp_in_rad = np.unwrap(resp_in_rad)
             smooth_window = signal.gaussian(M=101, std=10)
             smooth_window /= sum(smooth_window)
-            
+
             resp_in_rad[~index] = 0
             resp_in_rad = np.convolve(smooth_window, resp_in_rad, "same")
-            
-            resp_in_rad = np.arctan2(
-            np.sin(resp_in_rad), np.cos(resp_in_rad)
-        )
+
+            resp_in_rad = np.arctan2(np.sin(resp_in_rad), np.cos(resp_in_rad))
 
         resp_in_rad[resp_in_rad < 0] += 2 * np.pi
         if mode in ("deg", "degree"):
             return np.degrees(resp_in_rad), index
         return resp_in_rad, index
-    
-    def get_direction_angular_velocity(self, label0="neck", label1="probe", only_running_bouts=False):
-        
+
+    def get_direction_angular_velocity(
+        self, label0="neck", label1="probe", only_running_bouts=False
+    ):
+
         hd_x, hd_y = self.get_vector_from_two_labels(label0=label0, label1=label1)
         index = self.get_index(label=label1)
-        time_array = np.array(self.Dataframe.index) / self.fps
 
         resp_in_rad = np.arctan2(
             hd_y * (-1), hd_x
         )  # multiplication by -1 needed because of video x and y directions
-        
-        resp_in_rad = np.unwrap(resp_in_rad) # unwrapping so smoothing and derivative can be done
-        
+
+        resp_in_rad = np.unwrap(
+            resp_in_rad
+        )  # unwrapping so smoothing and derivative can be done
+
         smooth_window = signal.gaussian(M=101, std=10)
         smooth_window /= sum(smooth_window)
         resp_in_rad[~index] = 0
         resp_in_rad = np.convolve(smooth_window, resp_in_rad, "same")
-        
+
         angular_velocity = np.gradient(resp_in_rad)
-        
-        if only_running_bouts == True:
 
             self.get_running_bouts()
             angular_velocity_bouts = [
@@ -524,9 +533,9 @@ class Tracking(object):
         [type]
             [description]
         """
-        hd_deg, index = self.get_direction_array(label0="neck", label1="probe", mode="deg")
-
-        time_array = np.array(self.Dataframe.index) / self.fps
+        hd_deg, index = self.get_direction_array(
+            label0="neck", label1="probe", mode="deg"
+        )
 
         sigma = 10
 
@@ -589,9 +598,7 @@ class Tracking(object):
                 Index where p-value > pcutout is True, index is False otherwise.
         """
 
-        x, time_array, index = self.get_position_x(
-            bodypart=bodypart, pcutout=self.pcutout
-        )
+        x, _, index = self.get_position_x(bodypart=bodypart, pcutout=self.pcutout)
         y, _, _ = self.get_position_y(bodypart=bodypart, pcutout=self.pcutout)
 
         x *= self.ratio_per_pixel
@@ -599,7 +606,7 @@ class Tracking(object):
 
         coords = np.array([x, y]).T
 
-        return coords, time_array, index
+        return coords, self.time, index
 
     def get_position_x(self, bodypart, pcutout=None, absolute=False):
         """Simple function to get x values for bodypart.
@@ -624,11 +631,12 @@ class Tracking(object):
         index = self.get_index(bodypart, pcutout)
         x_bp = self.Dataframe[self.scorer][bodypart]["x"].values
         if absolute is False:
-            x_bp = self.Dataframe[self.scorer][bodypart]["x"].values - self.metadata["data"]["corner_coords"]["top_left"][0]
-        
-        time_array = np.array(self.Dataframe.index) / self.fps
+            x_bp = (
+                self.Dataframe[self.scorer][bodypart]["x"].values
+                - self.metadata["data"]["corner_coords"]["top_left"][0]
+            )
 
-        return x_bp, time_array, index
+        return x_bp, self.time, index
 
     def get_position_y(self, bodypart, pcutout=None, absolute=False):
         """Simple function to get y values for bodypart.
@@ -654,10 +662,12 @@ class Tracking(object):
         index = self.get_index(bodypart, pcutout)
         y_bp = self.Dataframe[self.scorer][bodypart]["y"].values
         if absolute is False:
-            y_bp = self.Dataframe[self.scorer][bodypart]["y"].values - self.metadata["data"]["corner_coords"]["top_left"][1]
-        time_array = np.array(self.Dataframe.index) / self.fps
+            y_bp = (
+                self.Dataframe[self.scorer][bodypart]["y"].values
+                - self.metadata["data"]["corner_coords"]["top_left"][1]
+            )
 
-        return y_bp, time_array, index
+        return y_bp, self.time, index
 
     def get_distance_between_frames(self, bodypart="body", backup_bps=["probe"]):
         """Get distance from one frame to another for the specific bodypart along the whole analysis.
@@ -816,12 +826,21 @@ class Tracking(object):
         # using running_bouts[final_change_idx[i]] you have True if the True running bout is
         # ending or False if the False running bout is ending
 
-        return self.running_bouts, time_array, self.final_change_idx
+        self.time_bouts = [
+            x
+            for x in np.split(
+                np.where(self.running_bouts, self.time, 0),
+                self.final_change_idx + 1,
+            )
+            if x[1] != 0
+        ]
 
-    def get_binned_position(self, bodypart="body", bins=[10, 10], only_running_bouts=False):
+        return self.running_bouts, self.time, self.final_change_idx
 
-        
-        
+    def get_binned_position(
+        self, bodypart="body", bins=[10, 10], only_running_bouts=False
+    ):
+
         x_pos, _, index = self.get_position_x(bodypart=bodypart)
         y_pos = self.get_position_y(bodypart=bodypart)[0]
         x_pos *= self.ratio_per_pixel
@@ -833,19 +852,27 @@ class Tracking(object):
 
             index = self.running_bouts
 
-        return np.histogram2d(x_pos[index], y_pos[index], bins=bins, range=[[0, 100], [0, 100]])
+        return np.histogram2d(
+            x_pos[index], y_pos[index], bins=bins, range=[[0, 100], [0, 100]]
+        )
 
     def get_infos(self, bins=10, bin_only_running_bouts=False):
-        H = self.get_binned_position("body", bins, only_running_bouts=bin_only_running_bouts)[0]
+        H = self.get_binned_position(
+            "body", bins, only_running_bouts=bin_only_running_bouts
+        )[0]
 
         info_dict = {}
         info_dict["total_time"] = self.nframes / self.fps
 
         speed = self.get_speed(bodypart="body", smooth=True)[0]
-        speed_bouts, time_bouts = self.get_speed(bodypart="body", smooth=True, only_running_bouts=True)[:2]
-        bout_lenghts = [t_bout[-1] - t_bout[0] for t_bout in time_bouts]
+        speed_bouts = self.get_speed(
+            bodypart="body", smooth=True, only_running_bouts=True
+        )[0]
+        bout_lenghts = [t_bout[-1] - t_bout[0] for t_bout in self.time_bouts]
         info_dict["total_running_time"] = sum(bout_lenghts)
-        info_dict["total_distance"] = np.concatenate(speed_bouts).mean() * sum(bout_lenghts)
+        info_dict["total_distance"] = np.concatenate(speed_bouts).mean() * sum(
+            bout_lenghts
+        )
         info_dict["running_ratio"] = (
             info_dict["total_running_time"] / info_dict["total_time"]
         )
@@ -912,7 +939,7 @@ class Tracking(object):
             self.place_fields_list.append(rv.pdf(animal_coords))
 
         self.place_fields_array = np.array(self.place_fields_list)
-        return self.place_fields_array, (time_array, coords)
+        return self.place_fields_array, (self.time, coords)
 
     def get_grid_field_array(self, params=None, bodypart="body"):
 

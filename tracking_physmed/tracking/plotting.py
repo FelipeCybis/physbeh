@@ -76,7 +76,7 @@ def plot_speed(
 
     ax.add_collection(lc)
 
-    if only_running_bouts == True:
+    if only_running_bouts:
         time_array = np.concatenate(time_array)
         speed_array = np.concatenate(speed_array)
         index = np.concatenate(index)
@@ -110,8 +110,6 @@ def plot_running_bouts(Trk, ax=None, figsize=(12, 6), fig=None, animate_video=Fa
     -------
     fig : matplotlib.Figure
     """
-    time_array = np.array(Trk.Dataframe.index) / Trk.fps
-
     if not hasattr(Trk, "running_bouts"):
         Trk.get_running_bouts()
 
@@ -121,13 +119,13 @@ def plot_running_bouts(Trk, ax=None, figsize=(12, 6), fig=None, animate_video=Fa
         ax = fig.add_subplot(111)
         ax.set(xlabel="time (s)")
 
-    xmin = time_array[0]
+    xmin = Trk.time[0]
     for bout_id, idx in enumerate(Trk.final_change_idx):
         if Trk.running_bouts[idx] == True:
-            xmax = time_array[idx]
+            xmax = Trk.time[idx]
             ax.axvspan(xmin, xmax, color="orange", alpha=0.5)
         else:
-            xmin = time_array[idx]
+            xmin = Trk.time[idx]
 
     return fig, ax
 
@@ -147,7 +145,7 @@ def plot_position_2d(
     colorbar=True,
     colorbar_label=None,
     colorwheel=True,
-    color='gray',
+    color="gray",
     ax=None,
     ax_kwargs=None,
     fig=None,
@@ -226,14 +224,15 @@ def plot_position_2d(
         # ax_1.set_position([0.12, 0.12, 0.7, 0.8])
         # ax_2 = fig.add_axes(rect=[0.85, 0.12, 0.03, 0.8])
         if colorbar:
-            fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), ax=ax_1, label=colorbar_label)
+            fig.colorbar(
+                ScalarMappable(norm=norm, cmap=cmap), ax=ax_1, label=colorbar_label
+            )
 
     elif head_direction:
 
         index = Trk_cls.get_index(head_direction_vector_labels[0], Trk_cls.pcutout)
         if only_running_bouts:
             index = Trk_cls.running_bouts
-        
 
         cmap = get_cmap(name=colormap, n=360)
 
@@ -254,7 +253,11 @@ def plot_position_2d(
             ax_2 = fig.add_axes(rect=[0.65, 0.26, 0.3, 0.48], projection="polar")
             _plot_color_wheel(ax=ax_2, cmap=cmap)
         elif colorbar:
-            fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), ax=ax_1, label="Head direction (deg)")
+            fig.colorbar(
+                ScalarMappable(norm=norm, cmap=cmap),
+                ax=ax_1,
+                label="Head direction (deg)",
+            )
 
     else:
         lc = LineCollection(lines, linewidths=3, color=color)
@@ -271,7 +274,14 @@ def plot_position_2d(
 
 @anim_decorator
 def plot_likelihood(
-    Trk, bodyparts="all", ax=None, figsize=(12, 6), fig=None, animate_video=False, animate_fus=False, **ax_kwargs
+    Trk,
+    bodyparts="all",
+    ax=None,
+    figsize=(12, 6),
+    fig=None,
+    animate_video=False,
+    animate_fus=False,
+    **ax_kwargs,
 ):
     """Plot likelihood for labels in each frame
 
@@ -300,8 +310,6 @@ def plot_likelihood(
         else:
             bodyparts = [bodyparts]
 
-    time_array = np.array(Trk.Dataframe.index) / Trk.fps
-
     if ax is None:
         if fig is None:
             fig = plt.figure(figsize=figsize)
@@ -311,7 +319,7 @@ def plot_likelihood(
         lk = Trk.Dataframe[Trk.scorer][bp]["likelihood"].values
 
         ax.plot(
-            time_array, lk, ".", markersize=4, color=Trk.colors[bp], label=bp, alpha=0.6
+            Trk.time, lk, ".", markersize=4, color=Trk.colors[bp], label=bp, alpha=0.6
         )
 
     ax.set(ylabel="likelihood", xlabel="frames", ylim=(-0.05, 1.05))
@@ -324,7 +332,14 @@ def plot_likelihood(
 
 @anim_decorator
 def plot_position_x(
-    Trk, bodyparts="all", ax=None, fig=None, figsize=(12, 6), animate_video=False, animate_fus=False, **ax_kwargs
+    Trk,
+    bodyparts="all",
+    ax=None,
+    fig=None,
+    figsize=(12, 6),
+    animate_video=False,
+    animate_fus=False,
+    **ax_kwargs,
 ):
     """Plots X coordinates of requested `bodyparts`
 
@@ -361,12 +376,12 @@ def plot_position_x(
     for bp in bodyparts:
         x_bp, time_array, index = Trk.get_position_x(bodypart=bp)
 
-        lines = get_line_collection(x_array=time_array, y_array=x_bp, index=index)
+        lines = get_line_collection(x_array=Trk.time, y_array=x_bp, index=index)
 
         lc = LineCollection(lines, label=bp, linewidths=2, colors=Trk.colors[bp])
         ax.add_collection(lc)
 
-    ax.plot(time_array, x_bp, ".", markersize=0)
+    ax.plot(Trk.time, x_bp, ".", markersize=0)
 
     ax.set(ylabel="X pixel", xlabel="time (s)")
     ax.set(**ax_kwargs)
@@ -378,7 +393,14 @@ def plot_position_x(
 
 @anim_decorator
 def plot_position_y(
-    Trk, bodyparts="all", ax=None, fig=None, figsize=(12, 6), animate_video=False, animate_fus=False, **ax_kwargs
+    Trk,
+    bodyparts="all",
+    ax=None,
+    fig=None,
+    figsize=(12, 6),
+    animate_video=False,
+    animate_fus=False,
+    **ax_kwargs,
 ):
     """Plots Y coordinates of requested `bodyparts`
 
@@ -415,12 +437,12 @@ def plot_position_y(
     for bp in bodyparts:
         y_bp, time_array, index = Trk.get_position_y(bodypart=bp)
 
-        lines = get_line_collection(x_array=time_array, y_array=y_bp, index=index)
+        lines = get_line_collection(x_array=Trk.time, y_array=y_bp, index=index)
 
         lc = LineCollection(lines, label=bp, linewidths=2, colors=Trk.colors[bp])
         ax.add_collection(lc)
 
-    ax.plot(time_array, y_bp, ".", markersize=0)
+    ax.plot(Trk.time, y_bp, ".", markersize=0)
 
     ax.set(ylabel="Y pixel", xlabel="time (s)")
     ax.set(**ax_kwargs)
@@ -474,13 +496,13 @@ def plot_head_direction(
     clim=None,
     colormap="hsv",
     colorbar=True,
-    colorbar_label = None,
+    colorbar_label=None,
     figsize=(12, 6),
     ax=None,
     fig=None,
     animate_video=False,
     animate_fus=False,
-    **ax_kwargs
+    **ax_kwargs,
 ):
     """Plots head direction using `head_direction_vector_labels` to compute the head direction vector.
 
@@ -528,7 +550,7 @@ def plot_head_direction(
     lines = get_line_collection(
         x_array=Trk.time, y_array=head_direction_array, index=index
     )
-    
+
     if color_collection_array is not None:
         if clim is None:
             clim = (color_collection_array.min(), color_collection_array.max())
@@ -547,9 +569,9 @@ def plot_head_direction(
             "rad": np.arange(0, 2 * np.pi * (1 + 1 / 360), 2 * np.pi / 360),
         }
         norm = colors.BoundaryNorm(norm_dict[ang], cmap.N)
-        
+
         line_collection_array = head_direction_array[index]
-        
+
     lc = LineCollection(lines, linewidths=2, cmap=cmap, norm=norm)
     lc.set_array(line_collection_array)
 
@@ -561,7 +583,9 @@ def plot_head_direction(
 
     if colorbar:
         cax = fig.add_axes(rect=[0.92, 0.12, 0.025, 0.8])
-        fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=cax, label=colorbar_label)
+        fig.colorbar(
+            ScalarMappable(norm=norm, cmap=cmap), cax=cax, label=colorbar_label
+        )
 
     ax.plot(Trk.time, head_direction_array, ".", markersize=0)
     ax.grid(linestyle="--")
@@ -575,10 +599,22 @@ def plot_head_direction(
 
     return fig, ax
 
-@anim_decorator
-def plot_head_direction_interval(Trk, deg=180, only_running_bouts=False, figsize=(12,6), fig=None, ax=None, animate_video=False, animate_fus=False):
 
-    hd_interval_array, time_array, index = Trk.get_degree_interval_hd(deg, only_running_bouts=only_running_bouts)
+@anim_decorator
+def plot_head_direction_interval(
+    Trk,
+    deg=180,
+    only_running_bouts=False,
+    figsize=(12, 6),
+    fig=None,
+    ax=None,
+    animate_video=False,
+    animate_fus=False,
+):
+
+    hd_interval_array, time_array, index = Trk.get_degree_interval_hd(
+        deg, only_running_bouts=only_running_bouts
+    )
 
     lines = get_line_collection(time_array, hd_interval_array, index)
 
@@ -600,14 +636,23 @@ def plot_head_direction_interval(Trk, deg=180, only_running_bouts=False, figsize
         index = np.concatenate(index)
         plot_running_bouts(Trk, ax=ax)
 
-    ax.plot(time_array[index], hd_interval_array[index], ".", markersize=0, label=f"{deg} degrees")
+    ax.plot(
+        time_array[index],
+        hd_interval_array[index],
+        ".",
+        markersize=0,
+        label=f"{deg} degrees",
+    )
     ax.set(ylabel="a.u", xlabel="time (s)")
     ax.legend(loc="upper right")
     ax.grid(linestyle="--")
 
     return fig, ax
 
-def plot_occupancy(Trk, bins=40, only_running_bouts=True, figsize=(8,7), fig=None, ax=None):
+
+def plot_occupancy(
+    Trk, bins=40, only_running_bouts=True, figsize=(8, 7), fig=None, ax=None
+):
 
     if ax is None:
         if fig is None:
@@ -615,7 +660,7 @@ def plot_occupancy(Trk, bins=40, only_running_bouts=True, figsize=(8,7), fig=Non
         ax = fig.add_subplot(111)
 
     H = Trk.get_binned_position(bins=40, only_running_bouts=True)
-    H[0][H[0]==0] = np.nan
+    H[0][H[0] == 0] = np.nan
 
     i = ax.pcolormesh(H[1], H[2], H[0].T)
     ax.invert_yaxis()
@@ -628,6 +673,8 @@ def plot_occupancy(Trk, bins=40, only_running_bouts=True, figsize=(8,7), fig=Non
 
 def animation_behavior_fus(Trk, fig=None):
 
-    assert Trk.scan is not None, "Tracking class needs to have an attached scan for this animation"
+    assert (
+        Trk.scan is not None
+    ), "Tracking class needs to have an attached scan for this animation"
 
     return Animate_video_fUS(tracking=Trk, fig=fig)

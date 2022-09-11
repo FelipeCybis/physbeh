@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 from tracking_physmed.utils import BlitManager
 
+
 class Animate_plot_fUS:
     def __init__(self, fig, ax, scan, video_path, y_crop, x_crop):
 
@@ -60,7 +61,9 @@ class Animate_plot_fUS:
 
         self.time_stamp = self.ax_xlabel.annotate(
             "current video frame: {vfr:05} | current fUS frame: {fr:04} | time: {sec:06.2f} s".format(
-                vfr=self.current_video_frame, fr=self.current_fus_frame, sec=self.current_time
+                vfr=self.current_video_frame,
+                fr=self.current_fus_frame,
+                sec=self.current_time,
             ),
             (0.5, 0.5),
             xycoords="axes fraction",
@@ -149,7 +152,7 @@ class Animate_plot_fUS:
 
         if event.inaxes == self.ax:
             # self.current_time = event.xdata
-            self.current_video_frame = int(event.xdata // (1/self.video_fps))
+            self.current_video_frame = int(event.xdata // (1 / self.video_fps))
             if self.current_video_frame >= self.max_video_frames:
                 self.current_video_frame = int(self.max_video_frames - 1)
 
@@ -185,11 +188,11 @@ class Animate_plot_fUS:
         # simply grabbing requested frame
         # done like this to maybe add a goto frame capability
         pred_time = self.current_video_frame / self.video_fps
-        if (
-            pred_time > self.ax.get_xlim()[1]
-            or pred_time < self.ax.get_xlim()[0]
-        ):
-            if self.ax.get_xlim()[0] >= 0 and self.ax.get_xlim()[0] < self.scan_time[-1]:
+        if pred_time > self.ax.get_xlim()[1] or pred_time < self.ax.get_xlim()[0]:
+            if (
+                self.ax.get_xlim()[0] >= 0
+                and self.ax.get_xlim()[0] < self.scan_time[-1]
+            ):
                 new_time = self.ax.get_xlim()[0]
             else:
                 new_time = 0
@@ -197,19 +200,22 @@ class Animate_plot_fUS:
 
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_video_frame)
         _, frame = self.cap.read()
-        self.vid.set_array(frame[
+        self.vid.set_array(
+            frame[
                 self.y_crop[0] : self.y_crop[1], self.x_crop[0] : self.x_crop[1], ::-1
-            ])
+            ]
+        )
         self.current_time = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1e3
 
         self.current_fus_frame = self._get_fus_frame_from_time(self.current_time)
         self.fus_im.set_array(self.data[..., self.current_fus_frame])
 
-
         self.play_bar.set_xdata([self.current_time, self.current_time])
         self.time_stamp.set_text(
             "current video frame: {vfr:05} | current fUS frame: {fr:04} | time: {sec:06.2f} s".format(
-                vfr=self.current_video_frame, fr=self.current_fus_frame, sec=self.current_time
+                vfr=self.current_video_frame,
+                fr=self.current_fus_frame,
+                sec=self.current_time,
             )
         )
 
@@ -244,7 +250,6 @@ class Animate_video_fUS:
         if self.fig is None:
             self.fig = plt.figure()
 
-
         self.data = np.rot90(tracking.scan.get_data()[:, 0, :])
         self.scan_time = tracking.scan.time
         self.n_scan_frames = self.data.shape[-1]
@@ -264,7 +269,6 @@ class Animate_video_fUS:
         self.ax_fus = self.fig.add_axes([0.08, 0.12, 0.42, 0.8])
         self.ax_vid = self.fig.add_axes([0.54, 0.12, 0.42, 0.8])
 
-
         self.current_video_frame = 0
         self.current_fus_frame = 0
         self.current_time = 0
@@ -273,9 +277,7 @@ class Animate_video_fUS:
         if self.cap.isOpened() == False:
             raise cv2.error("Error opening video stream or file")
 
-        cropping = (
-                tracking.metadata["data"].get("cropping_parameters", [0, -1, 0, -1])
-        )
+        cropping = tracking.metadata["data"].get("cropping_parameters", [0, -1, 0, -1])
         self.x_crop = cropping[:2]
         self.y_crop = cropping[2:]
         self.grab_first_frame()
@@ -289,7 +291,9 @@ class Animate_video_fUS:
 
         self.time_stamp = self.ax_xlabel.annotate(
             "current video frame: {vfr:05} | current fUS frame: {fr:04} | time: {sec:06.2f} s".format(
-                vfr=self.current_video_frame, fr=self.current_fus_frame, sec=self.current_time
+                vfr=self.current_video_frame,
+                fr=self.current_fus_frame,
+                sec=self.current_time,
             ),
             (0.5, 0.5),
             xycoords="axes fraction",
@@ -405,12 +409,14 @@ class Animate_video_fUS:
         self.grab_frame()
 
     def grab_frame(self):
-        
+
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_video_frame)
         _, frame = self.cap.read()
-        self.vid.set_array(frame[
+        self.vid.set_array(
+            frame[
                 self.y_crop[0] : self.y_crop[1], self.x_crop[0] : self.x_crop[1], ::-1
-            ])
+            ]
+        )
         self.current_time = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1e3
 
         self.current_fus_frame = self._get_fus_frame_from_time(self.current_time)
@@ -418,7 +424,9 @@ class Animate_video_fUS:
 
         self.time_stamp.set_text(
             "current video frame: {vfr:05} | current fUS fr: {fr:04} | time: {sec:06.2f} s".format(
-                vfr=self.current_video_frame, fr=self.current_fus_frame, sec=self.current_time
+                vfr=self.current_video_frame,
+                fr=self.current_fus_frame,
+                sec=self.current_time,
             )
         )
 
