@@ -496,35 +496,13 @@ class Tracking(object):
 
         angular_velocity = np.gradient(resp_in_rad)
 
-            self.get_running_bouts()
-            angular_velocity_bouts = [
-                x
-                for x in np.split(
-                    np.where(self.running_bouts, angular_velocity, 0), self.final_change_idx + 1
-                )
-                if x[0] != 0
-            ]
-            time_bouts = [
-                x
-                for x in np.split(
-                    np.where(self.running_bouts, time_array, 0),
-                    self.final_change_idx + 1,
-                )
-                if x[1] != 0
-            ]
-            index_bouts = [
-                x
-                for x in np.split(
-                    np.where(self.running_bouts, index, 0), self.final_change_idx + 1
-                )
-                if x[0] != 0
-            ]
+        if only_running_bouts:
+            angular_velocity_bouts = self._split_in_running_bouts(angular_velocity)
+            index_bouts = self._split_in_running_bouts(index)
 
-            return angular_velocity_bouts, time_bouts, index_bouts
+            return angular_velocity_bouts, self.time_bouts, index_bouts
 
-        return angular_velocity, time_array, index
-        
-        
+        return angular_velocity, self.time, index
 
     def get_degree_interval_hd(self, deg, only_running_bouts=False):
         """Gets an array where the direction array (head direction here) is modulated by a guassian function centered in `deg`.
@@ -557,35 +535,12 @@ class Tracking(object):
 
         hd_array = get_gaussian_value(tmp, sigma)
 
-        if only_running_bouts == True:
+        if only_running_bouts:
+            hd_bouts = self._split_in_running_bouts(hd_array)
+            index_bouts = self._split_in_running_bouts(index)
+            return hd_bouts, self.time_bouts, index_bouts
 
-            self.get_running_bouts()
-            hd_bouts = [
-                x
-                for x in np.split(
-                    np.where(self.running_bouts, hd_array, 0), self.final_change_idx + 1
-                )
-                if x[0] != 0
-            ]
-            time_bouts = [
-                x
-                for x in np.split(
-                    np.where(self.running_bouts, time_array, 0),
-                    self.final_change_idx + 1,
-                )
-                if x[1] != 0
-            ]
-            index_bouts = [
-                x
-                for x in np.split(
-                    np.where(self.running_bouts, index, 0), self.final_change_idx + 1
-                )
-                if x[0] != 0
-            ]
-
-            return hd_bouts, time_bouts, index_bouts
-
-        return hd_array, time_array, index
+        return hd_array, self.time, index
 
     def get_xy_coords(self, bodypart="body"):
         """Gets array of x, y coordinates of the `bodypart` label in the shape [nframes, 2].
@@ -742,33 +697,11 @@ class Tracking(object):
 
         if only_running_bouts == True:
             self.get_running_bouts(speed_array=speed_array, time_array=time_array)
-            speed_bouts = [
-                x
-                for x in np.split(
-                    np.where(self.running_bouts, speed_array, 0),
-                    self.final_change_idx + 1,
-                )
-                if x[0] != 0
-            ]
-            time_bouts = [
-                x
-                for x in np.split(
-                    np.where(self.running_bouts, time_array, 0),
-                    self.final_change_idx + 1,
-                )
-                if x[1] != 0
-            ]
-            index_bouts = [
-                x
-                for x in np.split(
-                    np.where(self.running_bouts, index, 0), self.final_change_idx + 1
-                )
-                if x[0] != 0
-            ]
+            speed_array = self._split_in_running_bouts(speed_array)
+            index = self._split_in_running_bouts(index)
+            return speed_array, self.time_bouts, index, speed_units
 
-            return speed_bouts, time_bouts, index_bouts, speed_units
-        else:
-            return speed_array, time_array, index, speed_units
+        return speed_array, self.time, index, speed_units
 
     def get_running_bouts(self, speed_array=None, time_array=None):
         """Automatic gets running bouts given certain parameters, such as speed_threshold,
@@ -1018,4 +951,17 @@ class Tracking(object):
 
         self.grid_fields_array = np.array(self.grid_fields_list)
 
-        return self.grid_fields_array, time_array, params
+        return self.grid_fields_array, self.time, params
+
+    def _split_in_running_bouts(self, array):
+
+        if not hasattr(self, "running_bouts"):
+            self.get_running_bouts()
+
+        return [
+            x
+            for x in np.split(
+                np.where(self.running_bouts, array, 0), self.final_change_idx + 1
+            )
+            if x[0] != 0
+        ]
