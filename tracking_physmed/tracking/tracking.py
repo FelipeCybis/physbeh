@@ -534,7 +534,7 @@ class Tracking(object):
 
         tmp = hd_deg - deg
 
-        hd_array = get_gaussian_value(tmp, sigma)
+        hd_array = get_gaussian_value(x=tmp, sigma=sigma)
 
         if only_running_bouts:
             hd_bouts = self._split_in_running_bouts(hd_array)
@@ -842,7 +842,7 @@ class Tracking(object):
     def get_proximity_from_wall(
         self, wall="left", bodypart="probe", only_running_bouts=False
     ):
-        """Get a sigmoid response from the label position in relation to the specified wall
+        """Get a sigmoid response from the label position in relation to the specified wall.
 
         Parameters
         ----------
@@ -856,7 +856,7 @@ class Tracking(object):
         Returns
         -------
         tuple
-            _description_
+            Tuple of ``wall_activation``, time and likelihood indices
 
         Raises
         ------
