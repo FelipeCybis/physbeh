@@ -918,8 +918,8 @@ class Tracking(object):
         x_pos, _, index = self.get_position_x(bodypart=bodypart)
         y_pos, _, _ = self.get_position_y(bodypart=bodypart)
 
-        ax, bx = SIGMOID_PARAMETERS[corner.split[1]]
-        ay, by = SIGMOID_PARAMETERS[corner.split[0]]
+        ax, bx = SIGMOID_PARAMETERS[corner.split()[1]]
+        ay, by = SIGMOID_PARAMETERS[corner.split()[0]]
         corner_activation = custom_2d_sigmoid(
             x=x_pos * self.ratio_per_pixel,
             ax=ax,
