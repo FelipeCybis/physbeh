@@ -1,6 +1,8 @@
 from .tracking import load_tracking, to_tracking_time
 from .plotting import (
     plot_speed,
+    plot_wall_proximity,
+    plot_corner_proximity,
     plot_running_bouts,
     plot_position_2d,
     plot_likelihood,
@@ -17,6 +19,8 @@ __all__ = [
     "load_tracking",
     "to_tracking_time",
     "plot_speed",
+    "plot_wall_proximity",
+    "plot_corner_proximity",
     "plot_running_bouts",
     "plot_position_2d",
     "plot_likelihood",

@@ -131,8 +131,54 @@ def plot_wall_proximity(
     ax.set(ylabel=f"Proximity from {wall} wall (a.u)", xlabel="time (s)")
     ax.legend(loc="upper right")
     ax.grid(linestyle="--")
+    ax.set(**ax_kwargs)
 
     return fig, ax
+
+
+@anim_decorator
+def plot_corner_proximity(
+    Trk,
+    corner,
+    bodypart="probe",
+    only_running_bouts=False,
+    ax=None,
+    fig=None,
+    figsize=(14, 7),
+    **ax_kwargs,
+):
+
+    corner_proximity, time_array, index = Trk.get_proximity_from_corner(
+        corner=corner, bodypart=bodypart, only_running_bouts=only_running_bouts
+    )
+
+    lines = get_line_collection(time_array, corner_proximity, index)
+
+    lc = LineCollection(
+        lines,
+        label=bodypart,
+        linewidths=2,
+        colors=Trk.colors[bodypart],
+    )
+
+    if ax is None:
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+
+    ax.add_collection(lc)
+
+    if only_running_bouts:
+        time_array = np.concatenate(time_array)
+        wall_proximity = np.concatenate(wall_proximity)
+        index = np.concatenate(index)
+        plot_running_bouts(Trk, ax=ax)
+
+    ax.plot(time_array[index], wall_proximity[index], ".", markersize=0)
+    ax.set(ylabel=f"Proximity from {corner} corner (a.u)", xlabel="time (s)")
+    ax.legend(loc="upper right")
+    ax.grid(linestyle="--")
+    ax.set(**ax_kwargs)
 
 
 @anim_decorator
