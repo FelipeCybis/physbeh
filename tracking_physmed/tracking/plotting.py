@@ -99,6 +99,7 @@ def plot_wall_proximity(
     ax=None,
     fig=None,
     figsize=(14, 7),
+    **ax_kwargs,
 ):
 
     wall_proximity, time_array, index = Trk.get_proximity_from_wall(
@@ -545,7 +546,7 @@ def plot_position_y(
     return fig, ax
 
 
-def plot_position(Trk, bodyparts="all", figsize=(12, 6), fig=None):
+def plot_position(Trk, bodyparts="all", figsize=(12, 6), fig=None, **ax_kwargs):
     """Plots X and Y coordinates of requested `bodyparts` in two subplots, top one is for X coordinates and bottom one is for Y coordinates
 
     Parameters
@@ -572,8 +573,8 @@ def plot_position(Trk, bodyparts="all", figsize=(12, 6), fig=None):
     ax_x = fig.add_subplot(211)
     ax_y = fig.add_subplot(212)
 
-    plot_position_x(Trk, bodyparts=bodyparts, ax=ax_x, xlabel="")
-    plot_position_y(Trk, bodyparts=bodyparts, ax=ax_y)
+    plot_position_x(Trk, bodyparts=bodyparts, ax=ax_x, xlabel="", **ax_kwargs)
+    plot_position_y(Trk, bodyparts=bodyparts, ax=ax_y, **ax_kwargs)
 
     return fig
 
@@ -656,7 +657,7 @@ def plot_head_direction(
         line_collection_array = color_collection_array[index]
     else:
 
-        cmap = get_cmap(name="hsv", n=360)
+        cmap = get_cmap(name=colormap, n=360)
         norm_dict = {
             "deg": np.arange(0, 361),
             "rad": np.arange(0, 2 * np.pi * (1 + 1 / 360), 2 * np.pi / 360),
@@ -666,6 +667,8 @@ def plot_head_direction(
         line_collection_array = head_direction_array[index]
 
     lc = LineCollection(lines, linewidths=2, cmap=cmap, norm=norm)
+    if colormap is None:
+        lc = LineCollection(lines, linewidths=2, colors="#1f77b4")
     lc.set_array(line_collection_array)
 
     if ax is None:
@@ -703,6 +706,7 @@ def plot_head_direction_interval(
     ax=None,
     animate_video=False,
     animate_fus=False,
+    **ax_kwargs,
 ):
 
     hd_interval_array, time_array, index = Trk.get_degree_interval_hd(
@@ -739,6 +743,7 @@ def plot_head_direction_interval(
     ax.set(ylabel="a.u", xlabel="time (s)")
     ax.legend(loc="upper right")
     ax.grid(linestyle="--")
+    ax.set(**ax_kwargs)
 
     return fig, ax
 
