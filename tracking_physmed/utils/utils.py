@@ -53,9 +53,11 @@ def get_line_collection(x_array, y_array, index):
     return segments[segment_index]
 
 
-def get_gaussian_value(n, sigma):
-    """Gets value of n in a gaussian curve centered in 0 with sigma = sigma"""
-    return np.e ** (-1 / 2 * (n / sigma) ** 2)
+def get_gaussian_value(x, u=0, sigma=10):
+    """Gets value of x in a gaussian curve centered in ``u`` with standard deviation ``sigma``"""
+    return (
+        1 / (sigma * np.sqrt(2 * np.pi)) * np.e ** (-((x - u) ** 2) / (2 * sigma ** 2))
+    )
 
 
 def get_rectangular_value(n, width):
@@ -63,8 +65,12 @@ def get_rectangular_value(n, width):
     return np.where(abs(n) < width, 1, 0)
 
 
-def custom_sigmoid(x, a=0.3, b=80):
+def custom_sigmoid(x, a=0.2, b=70):
     return 1 / (1 + np.e ** (-a * (x - b)))
+
+
+def custom_2d_sigmoid(x, y, ax=0.2, bx=70, ay=0.2, by=70):
+    return custom_sigmoid(x, ax, bx) * custom_sigmoid(y, ay, by)
 
 
 def _plot_color_wheel(ax, cmap):

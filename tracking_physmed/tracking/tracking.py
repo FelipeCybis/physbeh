@@ -10,6 +10,7 @@ from tracking_physmed.utils import (
     get_gaussian_value,
     get_rectangular_value,
     custom_sigmoid,
+    custom_2d_sigmoid,
     get_value_from_hexagonal_grid,
     set_hexagonal_parameters,
     get_place_field_coords,
@@ -883,11 +884,57 @@ class Tracking(object):
 
         return wall_activation, self.time, index
 
-    def get_proximity_from_corner(self, corner="tr"):
-        pass
-        if corner not in ("tr", "tl", "br", "bl"):
-            raise ValueError
-            
+    def get_proximity_from_corner(
+        self, corner="top right", bodypart="probe", only_running_bouts=False
+    ):
+        """Get a 2D sigmoid response from the x and y label position in relation to the specified corner.
+
+        Parameters
+        ----------
+        corner : str, optional
+            Must be one of the four corners of a rectangle ("top right", "top left", "bottom right", "bottom left"),
+            by default "top right".
+        bodypart : str, optional
+            Bodypart to use for computations, by default "probe".
+        only_running_bouts : bool, optional
+            Use only running bouts of the experiment, by default False.
+
+        Returns
+        -------
+        tuple
+            Tuple of ``corner_activation``, time and likelihood indices
+
+        Raises
+        ------
+        ValueError
+            If corner parameter is not on of the possibilities to choose from.
+        """
+        if corner not in ("top right", "top left", "bottom right", "bottom left"):
+            raise ValueError(
+                "corner parameter must be on of the following: top right, top left, "
+                f"bottom right, bottom left, not {corner}."
+            )
+
+        x_pos, _, index = self.get_position_x(bodypart=bodypart)
+        y_pos, _, _ = self.get_position_y(bodypart=bodypart)
+
+        ax, bx = SIGMOID_PARAMETERS[corner.split[1]]
+        ay, by = SIGMOID_PARAMETERS[corner.split[0]]
+        corner_activation = custom_2d_sigmoid(
+            x=x_pos * self.ratio_per_pixel,
+            ax=ax,
+            bx=bx,
+            y=y_pos * self.ratio_per_pixel,
+            ay=ay,
+            by=by,
+        )
+
+        if only_running_bouts:
+            corner_activation = self._split_in_running_bouts(corner_activation)
+            index = self._split_in_running_bouts(index)
+            return corner_activation, self.time_bouts, index
+
+        return corner_activation, self.time, index
 
     def get_place_field_array(
         self,

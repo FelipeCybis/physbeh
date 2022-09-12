@@ -4,6 +4,7 @@ from .utils import (
     get_rectangular_value,
     get_gaussian_value,
     custom_sigmoid,
+    custom_2d_sigmoid,
     _plot_color_wheel,
     BlitManager,
 )
@@ -19,6 +20,7 @@ __all__ = [
     "get_rectangular_value",
     "get_gaussian_value",
     "custom_sigmoid",
+    "custom_2d_sigmoid",
     "_plot_color_wheel",
     "BlitManager",
     "get_value_from_hexagonal_grid",
