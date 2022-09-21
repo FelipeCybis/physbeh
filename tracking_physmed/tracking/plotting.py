@@ -171,15 +171,17 @@ def plot_corner_proximity(
 
     if only_running_bouts:
         time_array = np.concatenate(time_array)
-        wall_proximity = np.concatenate(wall_proximity)
+        corner_proximity = np.concatenate(corner_proximity)
         index = np.concatenate(index)
         plot_running_bouts(Trk, ax=ax)
 
-    ax.plot(time_array[index], wall_proximity[index], ".", markersize=0)
+    ax.plot(time_array[index], corner_proximity[index], ".", markersize=0)
     ax.set(ylabel=f"Proximity from {corner} corner (a.u)", xlabel="time (s)")
     ax.legend(loc="upper right")
     ax.grid(linestyle="--")
     ax.set(**ax_kwargs)
+
+    return fig, ax
 
 
 @anim_decorator
