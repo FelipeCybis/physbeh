@@ -17,10 +17,10 @@ from tracking_physmed.utils import (
 )
 
 SIGMOID_PARAMETERS = {
-    "left": (-0.3, 20),
-    "right": (0.3, 80),
-    "bottom": (-0.3, 20),
-    "top": (0.3, 80),
+    "left": (-0.3, 30),
+    "right": (0.3, 70),
+    "top": (-0.3, 30),
+    "bottom": (0.3, 70),
 }
 
 
@@ -846,7 +846,7 @@ class Tracking(object):
 
         Parameters
         ----------
-        wall : str, optional
+        wall : str or list of str or tuple of list, optional
             Wall to use for computations. Can be one of ("left", "right", "top", "bottom"), by default "left"
         bodypart : str, optional
             Bodypart to use for computations, by default "probe".
@@ -863,19 +863,30 @@ class Tracking(object):
         ValueError
             If wall parameter is not on of the possibilities to choose from.
         """
+        if wall == "all":
+            wall = ("left", "right", "top", "bottom")
+            
+        if not isinstance(wall, (list, tuple)):
+            wall = [wall]
 
-        if wall not in ("left", "right", "top", "bottom"):
+        if not set(wall).issubset(("left", "right", "top", "bottom")):
             raise ValueError(
                 f"wall parameter must be one of the following: left, right, top or bottom, not {wall}."
             )
 
-        if wall in ("left", "right"):
-            pos, _, index = self.get_position_x(bodypart=bodypart)
-        elif wall in ("top", "bottom"):
-            pos, _, index = self.get_position_y(bodypart=bodypart)
+        coords, _, index = self.get_xy_coords(bodypart=bodypart)
 
-        a, b = SIGMOID_PARAMETERS[wall]
-        wall_activation = custom_sigmoid(pos * self.ratio_per_pixel, a=a, b=b)
+        subset_wall_activation = []
+        for w in wall:
+            a, b = SIGMOID_PARAMETERS[w]
+            if w in ("left", "right"):
+                pos = coords[:, 0]
+            elif w in ("top", "bottom"):
+                pos = coords[:, 1]
+
+            subset_wall_activation.append(custom_sigmoid(pos, a=a, b=b))
+
+        wall_activation = np.max(subset_wall_activation, axis=0)
 
         if only_running_bouts:
             wall_activation = self._split_in_running_bouts(wall_activation)
@@ -909,25 +920,36 @@ class Tracking(object):
         ValueError
             If corner parameter is not on of the possibilities to choose from.
         """
-        if corner not in ("top right", "top left", "bottom right", "bottom left"):
+        if corner == "all":
+            corner = ("top right", "top left", "bottom right", "bottom left")
+
+        if not isinstance(corner, (list, tuple)):
+            corner = [corner]
+
+        if not set(corner).issubset(("top right", "top left", "bottom right", "bottom left")):
             raise ValueError(
-                "corner parameter must be on of the following: top right, top left, "
+                "corner parameter must be among the following: top right, top left, "
                 f"bottom right, bottom left, not {corner}."
             )
 
-        x_pos, _, index = self.get_position_x(bodypart=bodypart)
-        y_pos, _, _ = self.get_position_y(bodypart=bodypart)
+        coords, _, index = self.get_xy_coords(bodypart=bodypart)
 
-        ax, bx = SIGMOID_PARAMETERS[corner.split()[1]]
-        ay, by = SIGMOID_PARAMETERS[corner.split()[0]]
-        corner_activation = custom_2d_sigmoid(
-            x=x_pos * self.ratio_per_pixel,
-            ax=ax,
-            bx=bx,
-            y=y_pos * self.ratio_per_pixel,
-            ay=ay,
-            by=by,
-        )
+        subset_corner_activation = []
+        for c in corner:
+            ax, bx = SIGMOID_PARAMETERS[c.split()[1]]
+            ay, by = SIGMOID_PARAMETERS[c.split()[0]]
+            subset_corner_activation.append(
+                custom_2d_sigmoid(
+                    x=coords[:, 0],
+                    ax=ax,
+                    bx=bx,
+                    y=coords[:, 1],
+                    ay=ay,
+                    by=by,
+                )
+            )
+
+        corner_activation = np.max(subset_corner_activation, axis=0)
 
         if only_running_bouts:
             corner_activation = self._split_in_running_bouts(corner_activation)
