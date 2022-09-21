@@ -7,12 +7,13 @@ from tracking_physmed.utils import BlitManager
 
 
 class Animate_plot_fUS:
-    def __init__(self, fig, ax, scan, video_path, y_crop, x_crop):
+    def __init__(self, fig, ax, scan, video_path, y_crop, x_crop, fus_colorbar=True):
 
         self.fig = fig
         self.ax = ax
 
         self.data = np.rot90(scan.get_data()[:, 0, :])
+        
         self.scan_time = scan.time
         self.n_scan_frames = self.data.shape[-1]
         self.dt_scan = scan.voxdim[-1]
@@ -52,7 +53,17 @@ class Animate_plot_fUS:
         self.x_crop = x_crop
         self.grab_first_frame()
 
-        self.fus_im = self.ax_fus.imshow(self.data[..., 0], cmap="gray")
+        self.data[np.isinf(self.data)] = np.nan
+        vmax = np.nanmax(self.data)
+        vmin = np.nanmin(self.data)
+        if np.abs(vmax) > np.abs(vmin):
+            vmin = -vmax
+        else:
+            vmax = -vmin
+            
+        self.fus_im = self.ax_fus.imshow(self.data[..., 0], cmap="gray", vmin=vmin, vmax=vmax)
+        if fus_colorbar:
+            plt.colorbar(self.fus_im)
         self.bm.add_artist(self.fus_im)
 
         self.ax_xlabel = self.fig.add_axes([0.35, 0.001, 0.3, 0.07], frameon=False)
