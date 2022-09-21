@@ -247,6 +247,7 @@ class Tracking(object):
         self._get_cm2px_ratio()
         self._spatial_units = "cm"
         self._ratio_per_pixel = self.ratio_cm_per_pixel
+        # self._downsample
 
         self._scan = None
 
@@ -429,6 +430,14 @@ class Tracking(object):
             return hd_bouts, self.time_bouts, index_bouts
 
         return hd_array, self.time, index
+
+    def get_direction_histogram(self, degrees=4):
+
+        bins = 360 // degrees
+
+        hd_deg, index = self.get_direction_array()
+
+        return np.histogram(hd_deg[index], bins=bins, range=(0,360))
 
     def get_xy_coords(self, bodypart="body"):
         """Gets array of x, y coordinates of the `bodypart` label in the shape [nframes, 2].
