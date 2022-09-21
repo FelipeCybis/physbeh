@@ -298,93 +298,6 @@ class Tracking(object):
                 y_crop=y_crop,
             )
 
-    def _write_corner_coords(self, coords_list):
-        """Writes corner coordinates in the metadata of the analysis so it is there for the next time
-        and set_ratio_coords does not need to be called again.
-        """
-        with open(self.metadata_filename, "wb") as f:
-            try:
-                self.metadata["data"]["corner_coords"] = {}
-                self.metadata["data"]["corner_coords"]["top_left"] = np.array(
-                    coords_list[0]
-                )
-                self.metadata["data"]["corner_coords"]["top_right"] = np.array(
-                    coords_list[1]
-                )
-                self.metadata["data"]["corner_coords"]["bottom_left"] = np.array(
-                    coords_list[2]
-                )
-                self.metadata["data"]["corner_coords"]["bottom_right"] = np.array(
-                    coords_list[3]
-                )
-                print("Corner coordinates saved correctly!")
-            except AttributeError:
-                print("Corner coordinates were not saved!")
-                pass
-            pickle.dump(self.metadata, f)
-
-    def _get_cm2px_ratio(self):
-        """Helper function that calculates the cm/px ratio from the user inputs of the corners of the arena.
-
-        Parameters
-        ----------
-        w : width in cm
-            Distance between right and left corners. The default is 100.
-        h : height in cm
-            Distance between top and bottom corners. The default is 100.
-
-        Returns
-        -------
-        float
-            Returns the ratio of cm/px of the images being analysed.
-        """
-        try:
-            estimates = np.empty(4)
-            estimates[0] = np.sqrt(
-                np.sum(
-                    (
-                        self.metadata["data"]["corner_coords"]["top_right"]
-                        - self.metadata["data"]["corner_coords"]["top_left"]
-                    )
-                    ** 2
-                )
-            )
-            estimates[1] = np.sqrt(
-                np.sum(
-                    (
-                        self.metadata["data"]["corner_coords"]["bottom_right"]
-                        - self.metadata["data"]["corner_coords"]["bottom_left"]
-                    )
-                    ** 2
-                )
-            )
-
-            estimates[2] = np.sqrt(
-                np.sum(
-                    (
-                        self.metadata["data"]["corner_coords"]["top_left"]
-                        - self.metadata["data"]["corner_coords"]["bottom_left"]
-                    )
-                    ** 2
-                )
-            )
-            estimates[3] = np.sqrt(
-                np.sum(
-                    (
-                        self.metadata["data"]["corner_coords"]["top_right"]
-                        - self.metadata["data"]["corner_coords"]["bottom_right"]
-                    )
-                    ** 2
-                )
-            )
-
-            w_estimate = self.w / estimates[:2].mean()
-            h_estimate = self.h / estimates[2:].mean()
-            self.ratio_cm_per_pixel = (w_estimate + h_estimate) / 2
-            return self.ratio_cm_per_pixel
-
-        except KeyError:
-            print("Ratio cm/px not yet calculated. See function self.set_ratio_coords.")
 
     def get_index(self, label, pcutout=None):
         """Gets likelihood indices for `label` and threshold `pcutout`. Returns an array of booleans with True when index >= pcutout and False otherwise.
@@ -404,34 +317,6 @@ class Tracking(object):
             pcutout = self.pcutout
 
         return self.Dataframe[self.scorer][label]["likelihood"].values >= pcutout
-
-    def get_vector_from_two_labels(self, label0, label1):
-        """Gets the vector 'label0'->'label1' by simple subtraction label1 - label0.
-
-        Parameters
-        ----------
-        label0 : str
-            Label where the vector will start.
-        label1 : str
-            Label where the vector will finish.
-
-        Returns
-        -------
-        vec_x : numpy.ndarray
-            Vector distance in the x coordinate. label1_x - label0_x
-        vec_y : numpy.ndarray
-            Vector distance in the y coordinate. label1_y - label0_y
-        """
-
-        vec_x = (
-            self.Dataframe[self.scorer][label1]["x"]
-            - self.Dataframe[self.scorer][label0]["x"]
-        )
-        vec_y = (
-            self.Dataframe[self.scorer][label1]["y"]
-            - self.Dataframe[self.scorer][label0]["y"]
-        )
-        return vec_x.to_numpy(), vec_y.to_numpy()
 
     def get_direction_array(
         self, label0="neck", label1="probe", mode="deg", smooth=False
@@ -453,8 +338,10 @@ class Tracking(object):
 
         """
 
-        hd_x, hd_y = self.get_vector_from_two_labels(label0=label0, label1=label1)
-        index = self.get_index(label=label1)
+        hd_x, hd_y = self._get_vector_from_two_labels(label0=label0, label1=label1)
+        index0 = self.get_index(label=label0)
+        index1 = self.get_index(label=label1)
+        index = index0 + index1
 
         resp_in_rad = np.arctan2(
             hd_y * (-1), hd_x
@@ -479,7 +366,7 @@ class Tracking(object):
         self, label0="neck", label1="probe", only_running_bouts=False
     ):
 
-        hd_x, hd_y = self.get_vector_from_two_labels(label0=label0, label1=label1)
+        hd_x, hd_y = self._get_vector_from_two_labels(label0=label0, label1=label1)
         index = self.get_index(label=label1)
 
         resp_in_rad = np.arctan2(
@@ -554,8 +441,8 @@ class Tracking(object):
         Returns
         -------
         tuple
-            x_bp : numpy.ndarray
-                Pixel values in x for bodypart.
+            coords : numpy.ndarray
+                Values in x and y multiplied by ``ratio_per_pixel`` for bodypart.
             time_array : numpy.ndarray
                 Time array in seconds.
             # index : numpy.ndarray
@@ -633,26 +520,6 @@ class Tracking(object):
 
         return y_bp, self.time, index
 
-    def get_distance_between_frames(self, bodypart="body", backup_bps=["probe"]):
-        """Get distance from one frame to another for the specific bodypart along the whole analysis.
-
-        Parameters
-        ----------
-        bodypart : str, optional
-            The default is 'body'.
-
-        Returns
-        -------
-        distance between frames : numpy.ndarray
-            First values is set to 0 so that the returned array has the same size of self.nframes.
-
-        """
-        x_pts = self.get_position_x(bodypart=bodypart)[0]
-        y_pts = self.get_position_y(bodypart=bodypart)[0]
-
-        dist_in_px = np.sqrt(np.diff(x_pts) ** 2 + np.diff(y_pts) ** 2)
-
-        return np.insert(dist_in_px, 0, 0)
 
     def get_speed(
         self, bodypart="body", smooth=True, speed_cutout=0, only_running_bouts=False
@@ -681,7 +548,7 @@ class Tracking(object):
             speed_units : str
                 String telling the units of the speed_array
         """
-        dist_in_px = self.get_distance_between_frames(bodypart=bodypart)
+        dist_in_px = self._get_distance_between_frames(bodypart=bodypart)
         speed_in_px_per_second = dist_in_px * self.fps
 
         index = self.get_index(bodypart, self.pcutout)
@@ -1034,3 +901,140 @@ class Tracking(object):
             )
             if x[0] != 0
         ]
+
+    def _get_distance_between_frames(self, bodypart="body", backup_bps=["probe"]):
+        """Get distance from one frame to another for the specific bodypart along the whole analysis.
+
+        Parameters
+        ----------
+        bodypart : str, optional
+            The default is 'body'.
+
+        Returns
+        -------
+        distance between frames : numpy.ndarray
+            First values is set to 0 so that the returned array has the same size of self.nframes.
+
+        """
+        x_pts = self.get_position_x(bodypart=bodypart)[0]
+        y_pts = self.get_position_y(bodypart=bodypart)[0]
+
+        dist_in_px = np.sqrt(np.diff(x_pts) ** 2 + np.diff(y_pts) ** 2)
+
+        return np.insert(dist_in_px, 0, 0)
+
+    def _get_vector_from_two_labels(self, label0, label1):
+        """Gets the vector 'label0'->'label1' by simple subtraction label1 - label0.
+
+        Parameters
+        ----------
+        label0 : str
+            Label where the vector will start.
+        label1 : str
+            Label where the vector will finish.
+
+        Returns
+        -------
+        vec_x : numpy.ndarray
+            Vector distance in the x coordinate. label1_x - label0_x
+        vec_y : numpy.ndarray
+            Vector distance in the y coordinate. label1_y - label0_y
+        """
+
+        vec_x = (
+            self.Dataframe[self.scorer][label1]["x"]
+            - self.Dataframe[self.scorer][label0]["x"]
+        )
+        vec_y = (
+            self.Dataframe[self.scorer][label1]["y"]
+            - self.Dataframe[self.scorer][label0]["y"]
+        )
+        return vec_x.to_numpy(), vec_y.to_numpy()
+
+    def _write_corner_coords(self, coords_list):
+        """Writes corner coordinates in the metadata of the analysis so it is there for the next time
+        and set_ratio_coords does not need to be called again.
+        """
+        with open(self.metadata_filename, "wb") as f:
+            try:
+                self.metadata["data"]["corner_coords"] = {}
+                self.metadata["data"]["corner_coords"]["top_left"] = np.array(
+                    coords_list[0]
+                )
+                self.metadata["data"]["corner_coords"]["top_right"] = np.array(
+                    coords_list[1]
+                )
+                self.metadata["data"]["corner_coords"]["bottom_left"] = np.array(
+                    coords_list[2]
+                )
+                self.metadata["data"]["corner_coords"]["bottom_right"] = np.array(
+                    coords_list[3]
+                )
+                print("Corner coordinates saved correctly!")
+            except AttributeError:
+                print("Corner coordinates were not saved!")
+                pass
+            pickle.dump(self.metadata, f)
+
+    def _get_cm2px_ratio(self):
+        """Helper function that calculates the cm/px ratio from the user inputs of the corners of the arena.
+
+        Parameters
+        ----------
+        w : width in cm
+            Distance between right and left corners. The default is 100.
+        h : height in cm
+            Distance between top and bottom corners. The default is 100.
+
+        Returns
+        -------
+        float
+            Returns the ratio of cm/px of the images being analysed.
+        """
+        try:
+            estimates = np.empty(4)
+            estimates[0] = np.sqrt(
+                np.sum(
+                    (
+                        self.metadata["data"]["corner_coords"]["top_right"]
+                        - self.metadata["data"]["corner_coords"]["top_left"]
+                    )
+                    ** 2
+                )
+            )
+            estimates[1] = np.sqrt(
+                np.sum(
+                    (
+                        self.metadata["data"]["corner_coords"]["bottom_right"]
+                        - self.metadata["data"]["corner_coords"]["bottom_left"]
+                    )
+                    ** 2
+                )
+            )
+
+            estimates[2] = np.sqrt(
+                np.sum(
+                    (
+                        self.metadata["data"]["corner_coords"]["top_left"]
+                        - self.metadata["data"]["corner_coords"]["bottom_left"]
+                    )
+                    ** 2
+                )
+            )
+            estimates[3] = np.sqrt(
+                np.sum(
+                    (
+                        self.metadata["data"]["corner_coords"]["top_right"]
+                        - self.metadata["data"]["corner_coords"]["bottom_right"]
+                    )
+                    ** 2
+                )
+            )
+
+            w_estimate = self.w / estimates[:2].mean()
+            h_estimate = self.h / estimates[2:].mean()
+            self.ratio_cm_per_pixel = (w_estimate + h_estimate) / 2
+            return self.ratio_cm_per_pixel
+
+        except KeyError:
+            print("Ratio cm/px not yet calculated. See function self.set_ratio_coords.")
