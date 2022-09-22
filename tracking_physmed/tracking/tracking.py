@@ -741,7 +741,7 @@ class Tracking(object):
         """
         if wall == "all":
             wall = ("left", "right", "top", "bottom")
-            
+
         if not isinstance(wall, (list, tuple)):
             wall = [wall]
 
@@ -770,6 +770,45 @@ class Tracking(object):
             return wall_activation, self.time_bouts, index
 
         return wall_activation, self.time, index
+
+    def get_proximity_from_center(
+        self, bodypart="probe", only_running_bouts=False
+    ):
+        """Get a sigmoid response from the label position in relation to the center of the stage.
+
+        Parameters
+        ----------
+        bodypart : str, optional
+            Bodypart to use for computations, by default "probe".
+        only_running_bouts : bool, optional
+            Use only running bouts of the experiment, by default False
+
+        Returns
+        -------
+        tuple
+            Tuple of ``center_activation``, time and likelihood indices
+
+        """
+        coords, _, index = self.get_xy_coords(bodypart=bodypart)
+
+        subset_wall_activation = []
+        for w in ("left", "right", "top", "bottom"):
+            a, b = SIGMOID_PARAMETERS[w]
+            if w in ("left", "right"):
+                pos = coords[:, 0]
+            elif w in ("top", "bottom"):
+                pos = coords[:, 1]
+
+            subset_wall_activation.append(custom_sigmoid(pos, a=-a, b=b))
+
+        center_activation = np.min(subset_wall_activation, axis=0)
+
+        if only_running_bouts:
+            center_activation = self._split_in_running_bouts(center_activation)
+            index = self._split_in_running_bouts(index)
+            return center_activation, self.time_bouts, index
+
+        return center_activation, self.time, index
 
     def get_proximity_from_corner(
         self, corner="top right", bodypart="probe", only_running_bouts=False

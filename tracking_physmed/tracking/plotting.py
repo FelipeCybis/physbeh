@@ -138,6 +138,52 @@ def plot_wall_proximity(
 
 
 @anim_decorator
+def plot_center_proximity(
+    Trk,
+    bodypart="probe",
+    only_running_bouts=False,
+    ax=None,
+    fig=None,
+    figsize=(14, 7),
+    **ax_kwargs,
+):
+
+    center_proximity, time_array, index = Trk.get_proximity_from_center(
+        bodypart=bodypart, only_running_bouts=only_running_bouts
+    )
+
+    lines = get_line_collection(time_array, center_proximity, index)
+
+    lc = LineCollection(
+        lines,
+        label=bodypart,
+        linewidths=2,
+        colors=Trk.colors[bodypart],
+    )
+
+    if ax is None:
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+
+    ax.add_collection(lc)
+
+    if only_running_bouts:
+        time_array = np.concatenate(time_array)
+        center_proximity = np.concatenate(center_proximity)
+        index = np.concatenate(index)
+        plot_running_bouts(Trk, ax=ax)
+
+    ax.plot(time_array[index], center_proximity[index], ".", markersize=0)
+    ax.set(ylabel=f"Proximity from center of stage (a.u)", xlabel="time (s)")
+    ax.legend(loc="upper right")
+    ax.grid(linestyle="--")
+    ax.set(**ax_kwargs)
+
+    return fig, ax
+
+
+@anim_decorator
 def plot_corner_proximity(
     Trk,
     corner,
