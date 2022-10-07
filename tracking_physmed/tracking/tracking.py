@@ -271,7 +271,7 @@ class Tracking(object):
         from tracking_physmed.gui import Manual_relabel
 
         return Manual_relabel(
-            self.tracking_filepath, self.metadata_filepath, self.video_filepath
+            self.filename, self.metadata_filename, self.video_filepath
         )
 
     def set_ratio_coords(self, coord_list=[], type="rectangle"):

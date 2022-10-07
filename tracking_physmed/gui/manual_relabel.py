@@ -6,6 +6,7 @@ Created on Tue Jan 04 10:01:54 2022
 Script for manually relabel DLC labels
 """
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Button
 import pandas as pd
 import cv2
 
@@ -67,13 +68,22 @@ class Manual_relabel:
         self.ckey_press = self.fig.canvas.mpl_connect("key_press_event", self.key_press)
         self.cpick = self.fig.canvas.mpl_connect("pick_event", self.onpick)
 
+        ax_bounds = self.ax.get_position().bounds
+        button_y_position = ax_bounds[1] + ax_bounds[3] - 0.25
+        button_x_position = ax_bounds[0] + ax_bounds[2] + 0.05
+        self.ax_save_button = self.fig.add_axes(
+            [button_x_position, button_y_position, 0.12, 0.06]
+        )
+        self.save_btn = Button(self.ax_save_button, "Save labels")
+        self.save_btn.on_clicked(self.save_Dataframe)
+
         self.last_picked_artist = None
         self.press = False
         self.move = False
 
         self.modyfied_frames = dict()
 
-    def save_Dataframe(self):
+    def save_Dataframe(self, event):
 
         Dataframe = pd.read_hdf(self.Dataframe_filepath)
         scorer = Dataframe.columns.get_level_values("scorer")[0]
@@ -84,6 +94,7 @@ class Manual_relabel:
                 Dataframe[scorer][bpt]["likelihood"][frame] = 0.98
 
         Dataframe.to_hdf(self.Dataframe_filepath, key="k", mode="w")
+        print("Relabeled data correctly saved!")
 
     def modifying_bpt(self, x, y, frame):
         """{
