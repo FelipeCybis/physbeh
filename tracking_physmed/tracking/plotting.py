@@ -23,6 +23,7 @@ def plot_speed(
     figsize=(12, 6),
     animate_video=False,
     animate_fus=False,
+    **ax_kwargs,
 ):
     """Plot speed of given label.
 
@@ -86,6 +87,7 @@ def plot_speed(
     ax.set(ylabel=speed_units, xlabel="time (s)")
     ax.legend(loc="upper right")
     ax.grid(linestyle="--")
+    ax.set(**ax_kwargs)
 
     return fig, ax
 
