@@ -15,6 +15,8 @@ from .animate_plot_fUS import Animate_video_fUS
 def plot_speed(
     Trk_cls,
     bodypart="body",
+    speed_axis="xy",
+    euclidean=False,
     smooth=True,
     speed_cutout=0,
     only_running_bouts=False,
@@ -56,6 +58,8 @@ def plot_speed(
 
     speed_array, time_array, index, speed_units = Trk_cls.get_speed(
         bodypart=bodypart,
+        axis=speed_axis,
+        euclidean_distance=euclidean,
         smooth=smooth,
         speed_cutout=speed_cutout,
         only_running_bouts=only_running_bouts,

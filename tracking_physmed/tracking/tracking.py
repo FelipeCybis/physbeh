@@ -531,7 +531,7 @@ class Tracking(object):
 
 
     def get_speed(
-        self, bodypart="body", smooth=True, speed_cutout=0, only_running_bouts=False
+        self, bodypart="body", axis="xy", euclidean_distance=False, smooth=True, speed_cutout=0, only_running_bouts=False,
     ):
         """Gets speed for given `bodypart`. When getting the distance between frames, the first index is hard set to be 0 so that the output array has the same length as the number of frames.
 
@@ -539,6 +539,10 @@ class Tracking(object):
         ----------
         bodypart : str, optional
             Name of the label to get the speed from, by default 'body'.
+        axis : str, optional
+            To compute Vx, Vy or V, axis is 'x', 'y' or 'xy', respectively. By default 'xy'.
+        euclidean_distance : bool, optional
+            If ``axis`` is only one dimension, the distance can be the euclidean (absolute) or real. By default False.
         smooth : bool, optional
             If True a Gaussian window will convolve the speed array, by default True.
             The parameters of the Gaussian window can be set via the self.speed_smooth_window variable.
@@ -557,12 +561,10 @@ class Tracking(object):
             speed_units : str
                 String telling the units of the speed_array
         """
-        dist_in_px = self._get_distance_between_frames(bodypart=bodypart)
+        dist_in_px = self._get_distance_between_frames(bodypart=bodypart, axis=axis, euclidean=euclidean_distance)
         speed_in_px_per_second = dist_in_px * self.fps
 
         index = self.get_index(bodypart, self.pcutout)
-
-        time_array = np.array(self.Dataframe.index) / self.fps
 
         speed_units = self.spatial_units + "/s"
         speed_array = speed_in_px_per_second * self.ratio_per_pixel
@@ -942,32 +944,39 @@ class Tracking(object):
         if not hasattr(self, "running_bouts"):
             self.get_running_bouts()
 
-        return [
-            x
-            for x in np.split(
-                np.where(self.running_bouts, array, 0), self.final_change_idx + 1
-            )
-            if x[0] != 0
-        ]
+        return np.split(array[self.running_bouts], np.where(np.diff(np.where(self.running_bouts)[0]) > 1)[0] + 1)
 
-    def _get_distance_between_frames(self, bodypart="body", backup_bps=["probe"]):
+
+    def _get_distance_between_frames(self, bodypart="body", axis="xy", euclidean=False, backup_bps=["probe"]):
         """Get distance from one frame to another for the specific bodypart along the whole analysis.
 
         Parameters
         ----------
         bodypart : str, optional
             The default is 'body'.
+        axis : str, optional
+            To compute Vx, Vy or V, axis is 'x', 'y' or 'xy', respectively. By default 'xy'.
+        euclidean : bool, optional
+            If ``axis`` is only one dimension, the distance can be the euclidean (absolute) or real. By default False.
 
         Returns
         -------
         distance between frames : numpy.ndarray
             First values is set to 0 so that the returned array has the same size of self.nframes.
-
         """
-        x_pts = self.get_position_x(bodypart=bodypart)[0]
-        y_pts = self.get_position_y(bodypart=bodypart)[0]
+        if axis is None:
+            axis = "xy"
+        coords = []
+        if axis in ("x", "xy", None):
+            coords.append(self.get_position_x(bodypart=bodypart)[0])
 
-        dist_in_px = np.sqrt(np.diff(x_pts) ** 2 + np.diff(y_pts) ** 2)
+        if axis in ("y", "xy", None):
+            coords.append(self.get_position_y(bodypart=bodypart)[0])
+
+        if len(axis) == 1 and not euclidean:
+            dist_in_px = np.diff(coords[0])
+        else:
+            dist_in_px = np.sqrt(np.sum([np.diff(c) ** 2 for c in coords], axis=0))
 
         return np.insert(dist_in_px, 0, 0)
 
