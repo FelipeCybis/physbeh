@@ -267,13 +267,7 @@ def plot_running_bouts(
         ax = fig.add_subplot(111)
         ax.set(xlabel="time (s)")
 
-    xmin = Trk.time[0]
-    for bout_id, idx in enumerate(Trk.final_change_idx):
-        if Trk.running_bouts[idx] == True:
-            xmax = Trk.time[idx]
-            ax.axvspan(xmin, xmax, color="orange", alpha=0.5)
-        else:
-            xmin = Trk.time[idx]
+    ax.fill_between(Trk.time, 0, 1, where=Trk.running_bouts, transform=ax.get_xaxis_transform(), color="orange", alpha=0.5)
 
     return fig, ax
 

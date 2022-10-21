@@ -574,8 +574,7 @@ class Tracking(object):
             speed_array = np.convolve(self.speed_smooth_window, speed_array, "same")
             speed_array[speed_array < speed_cutout] = 0
 
-        if only_running_bouts == True:
-            self.get_running_bouts(speed_array=speed_array, time_array=time_array)
+        if only_running_bouts:
             speed_array = self._split_in_running_bouts(speed_array)
             index = self._split_in_running_bouts(index)
             return speed_array, self.time_bouts, index, speed_units
@@ -600,8 +599,6 @@ class Tracking(object):
                 Boolean array with True when the animal is running and False otherwise.
             time_array : np.array
                 Array mapping the index of the tracking data to time in seconds.
-            final_change_idx : np.array
-                Tells at which index the running_bout ends (either True or False).
         """
         if speed_array is None or time_array is None:
             speed_array, time_array, _, _ = self.get_speed(bodypart="body", smooth=True)
@@ -641,21 +638,9 @@ class Tracking(object):
                         temp_change_idx[i - 1] : temp_change_idx[i] + 1
                     ] = False
 
-        self.final_change_idx = np.where(np.diff(self.running_bouts))[0]
-        # final_change_idx tells at which index the running_bout ends (either True or False)
-        # using running_bouts[final_change_idx[i]] you have True if the True running bout is
-        # ending or False if the False running bout is ending
+        self.time_bouts = np.split(self.time[self.running_bouts], np.where(np.diff(np.where(self.running_bouts)[0]) > 1)[0] + 1)
 
-        self.time_bouts = [
-            x
-            for x in np.split(
-                np.where(self.running_bouts, self.time, 0),
-                self.final_change_idx + 1,
-            )
-            if x[1] != 0
-        ]
-
-        return self.running_bouts, self.time, self.final_change_idx
+        return self.running_bouts, self.time_bouts
 
     def get_binned_position(
         self, bodypart="body", bins=[10, 10], only_running_bouts=False
