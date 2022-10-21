@@ -5,7 +5,7 @@ import numpy as np
 from scipy import signal
 from scipy.stats import multivariate_normal
 
-from tracking_physmed.utils import (
+from ..utils import (
     get_cmap,
     get_gaussian_value,
     get_rectangular_value,
@@ -268,7 +268,7 @@ class Tracking(object):
         )
 
     def manual_relabel(self):
-        from tracking_physmed.gui import Manual_relabel
+        from ..gui import Manual_relabel
 
         return Manual_relabel(
             self.filename, self.metadata_filename, self.video_filepath
