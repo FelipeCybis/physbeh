@@ -357,7 +357,7 @@ def plot_position_2d(
 
         cmap = get_cmap(name=colormap, n=200)
         norm = colors.BoundaryNorm(
-            np.arange(clim[0], clim[1], (clim[1] - clim[0]) / 100), cmap.N
+            np.linspace(clim[0], clim[1], cmap.N), cmap.N
         )
 
         lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)
@@ -366,9 +366,12 @@ def plot_position_2d(
         # ax_1.set_position([0.12, 0.12, 0.7, 0.8])
         # ax_2 = fig.add_axes(rect=[0.85, 0.12, 0.03, 0.8])
         if colorbar:
-            fig.colorbar(
-                ScalarMappable(norm=norm, cmap=cmap), ax=ax_1, label=colorbar_label
+            cbar = fig.colorbar(
+                ScalarMappable(norm=norm, cmap=cmap), ax=ax_1, label=colorbar_label,
             )
+            # cbar.ax.locator_params(nbins=4)
+            cbar.set_ticks(np.linspace(clim[0], clim[1], 4))
+            cbar.minorticks_off()
 
     elif head_direction:
 
