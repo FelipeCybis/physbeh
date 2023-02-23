@@ -513,10 +513,12 @@ def plot_position_x(
         else:
             bodyparts = [bodyparts]
 
-    if ax == None:
+    if ax is None:
         if fig is None:
             fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
+    else:
+        fig = ax.figure
 
     for bp in bodyparts:
         x_bp, time_array, index = Trk.get_position_x(bodypart=bp)
@@ -530,7 +532,8 @@ def plot_position_x(
 
     ax.set(ylabel="X pixel", xlabel="time (s)")
     ax.set(**ax_kwargs)
-    ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
+    # ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
+    ax.legend(loc="upper right")
     ax.grid(linestyle="--")
 
     return fig, ax
@@ -574,10 +577,12 @@ def plot_position_y(
         else:
             bodyparts = [bodyparts]
 
-    if ax == None:
+    if ax is None:
         if fig is None:
             fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
+    else:
+        fig = ax.figure
 
     for bp in bodyparts:
         y_bp, time_array, index = Trk.get_position_y(bodypart=bp)
@@ -591,7 +596,8 @@ def plot_position_y(
 
     ax.set(ylabel="Y pixel", xlabel="time (s)")
     ax.set(**ax_kwargs)
-    ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
+    # ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
+    ax.legend(loc="upper right")
     ax.grid(linestyle="--")
 
     return fig, ax
