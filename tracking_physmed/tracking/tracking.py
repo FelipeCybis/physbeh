@@ -110,14 +110,17 @@ def to_tracking_time(arr, time, new_time, offset=0):
 class Tracking(object):
     @property
     def tracking_filepath(self):
+        """Fullpath to .h5 file."""
         return self._tracking_filepath
 
     @property
     def tracking_directory(self):
+        """Fullpath to parent folder of .h5 file."""
         return self._tracking_directory
 
     @property
     def video_filepath(self):
+        """Fullpath to labeled video of .h5 file."""
         return self._video_filepath
 
     @video_filepath.setter
@@ -144,6 +147,7 @@ class Tracking(object):
 
     @property
     def pcutout(self):
+        """p-value cutout to consider a acceptable labeled frame."""
         return self._pcutout
 
     @pcutout.setter
@@ -152,6 +156,7 @@ class Tracking(object):
 
     @property
     def w(self):
+        """Width of open-field in pixels."""
         return self._w
 
     @w.setter
@@ -160,6 +165,7 @@ class Tracking(object):
 
     @property
     def h(self):
+        """Height of open-field in pixels."""
         return self._h
 
     @h.setter
@@ -168,10 +174,12 @@ class Tracking(object):
 
     @property
     def ratio_per_pixel(self):
+        """Ratio per ``spatial_units`` per pixel."""
         return self._ratio_per_pixel
 
     @property
     def spatial_units(self):
+        """Spatial units to calculate the ratio per pixel."""
         return self._spatial_units
 
     @spatial_units.setter
@@ -196,6 +204,7 @@ class Tracking(object):
 
     @property
     def speed_smooth_window(self):
+        """Gaussian window for smoothing."""
         return self._speed_smooth_window
 
     @speed_smooth_window.setter
@@ -209,9 +218,11 @@ class Tracking(object):
 
     @property
     def scan(self):
+        """Related pythmed.scan.Scan object (optional)."""
         return self._scan
 
     def attach_scan(self, Scan):
+        """Attach the corresponding Scan object to the Tracking."""
         self._scan = Scan
 
     def __init__(self, data, metadata_filename, video_filename):
@@ -268,6 +279,7 @@ class Tracking(object):
         )
 
     def manual_relabel(self):
+        """Manual relabeling function (TODO: docstring)"""
         from ..gui import Manual_relabel
 
         return Manual_relabel(
@@ -366,6 +378,7 @@ class Tracking(object):
     def get_direction_angular_velocity(
         self, label0="neck", label1="probe", only_running_bouts=False
     ):
+        """(TODO: docstring)"""
 
         hd_x, hd_y = self._get_vector_from_two_labels(label0=label0, label1=label1)
         index = self.get_index(label=label1)
@@ -432,6 +445,7 @@ class Tracking(object):
         return hd_array, self.time, index
 
     def get_direction_histogram(self, degrees=4):
+        """(TODO: docstring)"""
 
         bins = 360 // degrees
 
@@ -554,12 +568,12 @@ class Tracking(object):
         Returns
         -------
         tuple
-            speed_array : numpy.ndarray
-            time_array : numpy.ndarray
-            index : numpy.ndarray
-                Index where p-value > pcutout is True, index is False otherwise.
-            speed_units : str
-                String telling the units of the speed_array
+            - speed_array : (numpy.ndarray)
+            - time_array : (numpy.ndarray)
+            - index : (numpy.ndarray)
+              Index where p-value > pcutout is True, index is False otherwise.
+            - speed_units : (str)
+              String telling the units of the speed_array
         """
         dist_in_px = self._get_distance_between_frames(bodypart=bodypart, axis=axis, euclidean=euclidean_distance)
         speed_in_px_per_second = dist_in_px * self.fps
@@ -645,6 +659,7 @@ class Tracking(object):
     def get_binned_position(
         self, bodypart="body", bins=[10, 10], only_running_bouts=False
     ):
+        """(TODO: docstring)"""
 
         x_pos, _, index = self.get_position_x(bodypart=bodypart)
         y_pos = self.get_position_y(bodypart=bodypart)[0]
@@ -662,6 +677,7 @@ class Tracking(object):
         )
 
     def get_infos(self, bins=10, bin_only_running_bouts=False):
+        """(TODO: docstring)"""
         H = self.get_binned_position(
             "body", bins, only_running_bouts=bin_only_running_bouts
         )[0]
@@ -688,6 +704,7 @@ class Tracking(object):
         return info_dict
 
     def print_infos(self, bins=10):
+        """(TODO: docstring)"""
         info_dict = self.get_infos(bins=bins)
         print(
             "--------------------------------------------------------------\n"
@@ -905,6 +922,7 @@ class Tracking(object):
         return self.place_fields_array, (self.time, coords)
 
     def get_grid_field_array(self, params=None, bodypart="body"):
+        """(TODO: docstring)"""
 
         animal_coords, time_array, index = self.get_xy_coords(bodypart=bodypart)
 

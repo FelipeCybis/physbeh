@@ -14,12 +14,17 @@ matplotlib = "^3.5.1"
 opencv-python-headless = "^4.5.5"
 scipy = "^1.7.3"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^5.2"
 ipython = "^8.0.1"
 ipykernel = "^6.7.0"
 black = "^21.12b0"
 poetry2setup = "^1.0.0"
+sphinx = "^5"
+furo = "^2022.12.7"
+sphinx-copybutton = "^0.5.1"
+sphinx-design = "^0.3.0"
+numpydoc = "^1.5.0"
 
 [build-system]
 requires = ["setuptools", "poetry-core>=1.0.0"]
