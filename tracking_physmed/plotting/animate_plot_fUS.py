@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 
-from tracking_physmed.utils import BlitManager
+from ..utils import BlitManager
 
 
 class Animate_plot_fUS:

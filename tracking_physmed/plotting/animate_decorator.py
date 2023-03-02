@@ -1,5 +1,5 @@
 import cv2
-from .tracking import Tracking
+from ..tracking import Tracking
 from ..utils import BlitManager
 from .animate_plot_fUS import Animate_plot_fUS
 

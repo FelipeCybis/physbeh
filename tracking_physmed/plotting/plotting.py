@@ -5,7 +5,7 @@ from matplotlib.cm import ScalarMappable
 
 import numpy as np
 
-from tracking_physmed.utils import get_line_collection, _plot_color_wheel, get_cmap
+from ..utils import get_line_collection, _plot_color_wheel, get_cmap
 from .animate_decorator import anim_decorator
 from .animate2d_decorator import anim2d_decorator
 from .animate_plot_fUS import Animate_video_fUS

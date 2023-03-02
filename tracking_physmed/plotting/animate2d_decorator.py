@@ -1,6 +1,6 @@
 from matplotlib.path import Path as mPath
-from .tracking import Tracking
-from tracking_physmed.utils import BlitManager
+from ..tracking import Tracking
+from ..utils import BlitManager
 
 import warnings
 from functools import wraps
