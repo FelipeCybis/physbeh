@@ -84,7 +84,6 @@ class Manual_relabel:
         self.modyfied_frames = dict()
 
     def save_Dataframe(self, event):
-
         Dataframe = pd.read_hdf(self.Dataframe_filepath)
         scorer = Dataframe.columns.get_level_values("scorer")[0]
         for frame in self.modyfied_frames.keys():
@@ -110,7 +109,7 @@ class Manual_relabel:
         # self.last_picked_artist
 
     def onpick(self, event):
-        for (bpt_line, bpt) in self.bpts_scatter.values():
+        for bpt_line, bpt in self.bpts_scatter.values():
             if event.artist == bpt_line[0]:
                 self.last_picked_artist = (bpt, event.artist)
                 print(self.last_picked_artist[0])
@@ -136,7 +135,6 @@ class Manual_relabel:
 
     def onclick(self, event):
         if event.inaxes == self.ax and event.button == 3:
-
             ratio = event.xdata / (self.ax.get_xlim()[1] - self.ax.get_xlim()[0])
             new_frame = int(ratio * self.total_frames)
             self.grab_frame(new_frame)
@@ -149,7 +147,6 @@ class Manual_relabel:
                 self.grab_frame(frame_no=new_frame)
 
     def grab_frame(self, frame_no):
-
         self.current_frame = frame_no
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
         _, frame = self.cap.read()

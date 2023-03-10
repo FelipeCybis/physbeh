@@ -34,7 +34,6 @@ def anim2d_decorator(plot_function):
 
 class Animate_plot2D:
     def __init__(self, fig, ax, lines, fps):
-
         self.fig = fig
         self.ax = ax
         self.lines = lines
@@ -109,7 +108,6 @@ class Animate_plot2D:
         self.custom_ani.add_callback(self.bm.update)
 
     def onkeypress(self, event):
-
         if event.key == " ":
             self.play()
 
@@ -159,7 +157,6 @@ class Animate_plot2D:
         pass
 
     def update_frame(self):
-
         self.ax.collections[0]._paths += [
             mPath(line)
             for line in self.lines[
@@ -183,7 +180,6 @@ class Animate_plot2D:
         # )
 
     def play(self):
-
         if self.is_playing:
             self.custom_ani.stop()
             self.is_playing = False

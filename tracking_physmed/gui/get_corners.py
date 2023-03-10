@@ -19,7 +19,6 @@ class Corner_Coords:
     def __init__(
         self, videopath, function_after_done, x_crop=[None, None], y_crop=[None, None]
     ):
-
         self.x_crop = [int(value) if value is not None else None for value in x_crop]
         self.y_crop = [int(value) if value is not None else None for value in y_crop]
 
@@ -64,7 +63,6 @@ class Corner_Coords:
         plt.show()
 
     def grab_frame(self, frame):
-
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame)
         fr = self.cap.read()[1]
 
@@ -93,12 +91,10 @@ class Corner_Coords:
         self.fig.canvas.draw()
 
     def next_frame(self):
-
         self.current_frame += 1
         self.grab_frame(self.current_frame)
 
     def prev_frame(self):
-
         if self.current_frame == 0:
             return
         else:
@@ -106,7 +102,6 @@ class Corner_Coords:
             self.grab_frame(self.current_frame)
 
     def done(self, function_after_done):
-
         if len(self.coords_list) == 4:
             plt.close(0)
             print(
@@ -141,7 +136,6 @@ class Corner_Coords:
         self.move = False
 
     def onclick(self, event):
-
         if event.inaxes == self.ax:
             if len(self.pts_list) < 4:
                 if event.button == 1:  # LEFT BUTTON

@@ -341,7 +341,15 @@ def plot_running_bouts(
         ax = fig.add_subplot(111)
         ax.set(xlabel="time (s)")
 
-    ax.fill_between(Trk.time, 0, 1, where=Trk.running_bouts, transform=ax.get_xaxis_transform(), color="orange", alpha=0.5)
+    ax.fill_between(
+        Trk.time,
+        0,
+        1,
+        where=Trk.running_bouts,
+        transform=ax.get_xaxis_transform(),
+        color="orange",
+        alpha=0.5,
+    )
 
     return fig, ax
 
@@ -430,9 +438,7 @@ def plot_position_2d(
             clim = (color_collection_array.min(), color_collection_array.max())
 
         cmap = get_cmap(name=colormap, n=200)
-        norm = colors.BoundaryNorm(
-            np.linspace(clim[0], clim[1], cmap.N), cmap.N
-        )
+        norm = colors.BoundaryNorm(np.linspace(clim[0], clim[1], cmap.N), cmap.N)
 
         lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)
         lc.set_alpha(0.7)
@@ -441,14 +447,15 @@ def plot_position_2d(
         # ax_2 = fig.add_axes(rect=[0.85, 0.12, 0.03, 0.8])
         if colorbar:
             cbar = fig.colorbar(
-                ScalarMappable(norm=norm, cmap=cmap), ax=ax_1, label=colorbar_label,
+                ScalarMappable(norm=norm, cmap=cmap),
+                ax=ax_1,
+                label=colorbar_label,
             )
             # cbar.ax.locator_params(nbins=4)
             cbar.set_ticks(np.linspace(clim[0], clim[1], 4))
             cbar.minorticks_off()
 
     elif head_direction:
-
         index = Trk_cls.get_index(head_direction_vector_labels[0], Trk_cls.pcutout)
         if only_running_bouts:
             index = Trk_cls.running_bouts
@@ -787,7 +794,6 @@ def plot_head_direction(
 
         line_collection_array = color_collection_array[index]
     else:
-
         cmap = get_cmap(name=colormap, n=360)
         norm_dict = {
             "deg": np.arange(0, 361),
@@ -839,7 +845,6 @@ def plot_head_direction_interval(
     animate_fus=False,
     **ax_kwargs,
 ):
-
     hd_interval_array, time_array, index = Trk.get_degree_interval_hd(
         deg, only_running_bouts=only_running_bouts
     )
@@ -882,7 +887,6 @@ def plot_head_direction_interval(
 def plot_occupancy(
     Trk, bins=40, only_running_bouts=True, figsize=(8, 7), fig=None, ax=None
 ):
-
     if ax is None:
         if fig is None:
             fig = plt.figure(figsize=figsize)
@@ -901,7 +905,6 @@ def plot_occupancy(
 
 
 def animation_behavior_fus(Trk, fig=None):
-
     assert (
         Trk.scan is not None
     ), "Tracking class needs to have an attached scan for this animation"

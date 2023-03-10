@@ -184,7 +184,6 @@ class Tracking(object):
 
     @spatial_units.setter
     def spatial_units(self, units):
-
         assert units in (
             "mm",
             "cm",
@@ -226,7 +225,6 @@ class Tracking(object):
         self._scan = Scan
 
     def __init__(self, data, metadata_filename, video_filename):
-
         self.Dataframe = data
         self.metadata = pd.read_pickle(metadata_filename)
         self.metadata_filename = metadata_filename
@@ -310,7 +308,6 @@ class Tracking(object):
                 x_crop=x_crop,
                 y_crop=y_crop,
             )
-
 
     def get_index(self, label, pcutout=None):
         """Gets likelihood indices for `label` and threshold `pcutout`. Returns an array of booleans with True when index >= pcutout and False otherwise.
@@ -451,7 +448,7 @@ class Tracking(object):
 
         hd_deg, index = self.get_direction_array()
 
-        return np.histogram(hd_deg[index], bins=bins, range=(0,360))
+        return np.histogram(hd_deg[index], bins=bins, range=(0, 360))
 
     def get_xy_coords(self, bodypart="body"):
         """Gets array of x, y coordinates of the `bodypart` label in the shape [nframes, 2].
@@ -543,9 +540,14 @@ class Tracking(object):
 
         return y_bp, self.time, index
 
-
     def get_speed(
-        self, bodypart="body", axis="xy", euclidean_distance=False, smooth=True, speed_cutout=0, only_running_bouts=False,
+        self,
+        bodypart="body",
+        axis="xy",
+        euclidean_distance=False,
+        smooth=True,
+        speed_cutout=0,
+        only_running_bouts=False,
     ):
         """Gets speed for given `bodypart`. When getting the distance between frames, the first index is hard set to be 0 so that the output array has the same length as the number of frames.
 
@@ -575,7 +577,9 @@ class Tracking(object):
             - speed_units : (str)
               String telling the units of the speed_array
         """
-        dist_in_px = self._get_distance_between_frames(bodypart=bodypart, axis=axis, euclidean=euclidean_distance)
+        dist_in_px = self._get_distance_between_frames(
+            bodypart=bodypart, axis=axis, euclidean=euclidean_distance
+        )
         speed_in_px_per_second = dist_in_px * self.fps
 
         index = self.get_index(bodypart, self.pcutout)
@@ -652,7 +656,10 @@ class Tracking(object):
                         temp_change_idx[i - 1] : temp_change_idx[i] + 1
                     ] = False
 
-        self.time_bouts = np.split(self.time[self.running_bouts], np.where(np.diff(np.where(self.running_bouts)[0]) > 1)[0] + 1)
+        self.time_bouts = np.split(
+            self.time[self.running_bouts],
+            np.where(np.diff(np.where(self.running_bouts)[0]) > 1)[0] + 1,
+        )
 
         return self.running_bouts, self.time_bouts
 
@@ -775,9 +782,7 @@ class Tracking(object):
 
         return wall_activation, self.time, index
 
-    def get_proximity_from_center(
-        self, bodypart="probe", only_running_bouts=False
-    ):
+    def get_proximity_from_center(self, bodypart="probe", only_running_bouts=False):
         """Get a sigmoid response from the label position in relation to the center of the stage.
 
         Parameters
@@ -845,7 +850,9 @@ class Tracking(object):
         if not isinstance(corner, (list, tuple)):
             corner = [corner]
 
-        if not set(corner).issubset(("top right", "top left", "bottom right", "bottom left")):
+        if not set(corner).issubset(
+            ("top right", "top left", "bottom right", "bottom left")
+        ):
             raise ValueError(
                 "corner parameter must be among the following: top right, top left, "
                 f"bottom right, bottom left, not {corner}."
@@ -943,14 +950,17 @@ class Tracking(object):
         return self.grid_fields_array, self.time, params
 
     def _split_in_running_bouts(self, array):
-
         if not hasattr(self, "running_bouts"):
             self.get_running_bouts()
 
-        return np.split(array[self.running_bouts], np.where(np.diff(np.where(self.running_bouts)[0]) > 1)[0] + 1)
+        return np.split(
+            array[self.running_bouts],
+            np.where(np.diff(np.where(self.running_bouts)[0]) > 1)[0] + 1,
+        )
 
-
-    def _get_distance_between_frames(self, bodypart="body", axis="xy", euclidean=False, backup_bps=["probe"]):
+    def _get_distance_between_frames(
+        self, bodypart="body", axis="xy", euclidean=False, backup_bps=["probe"]
+    ):
         """Get distance from one frame to another for the specific bodypart along the whole analysis.
 
         Parameters

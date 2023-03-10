@@ -257,9 +257,9 @@ def anim_decorator(plot_function):
 #             self.is_playing = True
 #             self.resume()
 
+
 class Animate_plot:
     def __init__(self, fig, ax, video_path=None, x_crop=[0, -1], y_crop=[0, -1]):
-
         self.fig = fig
         self.ax = ax
 
@@ -278,7 +278,6 @@ class Animate_plot:
         self.bm = BlitManager(self.fig.canvas)
 
         if video_path:
-
             self.ax.set_xlabel("")
 
             self.y_crop = y_crop
@@ -343,7 +342,6 @@ class Animate_plot:
         self.custom_ani.add_callback(self.bm.update)
 
     def onkeypress(self, event):
-
         if event.key == " ":
             self.play()
 
@@ -390,7 +388,6 @@ class Animate_plot:
         self.move = False
 
     def onclick(self, event):
-
         if event.inaxes == self.ax:
             # self.current_time = event.xdata
             self.current_frame = int(event.xdata * self.fps)
@@ -408,7 +405,6 @@ class Animate_plot:
                 self.bm.update()
 
     def grab_first_frame(self):
-
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
         ret, frame = self.cap.read()
 
@@ -424,7 +420,6 @@ class Animate_plot:
         self.max_frames = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
 
     def grab_frame(self, fr):
-
         if fr < 0:
             fr = 0
         self.current_frame = fr
@@ -440,7 +435,6 @@ class Animate_plot:
         self.current_time = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1e3
 
     def update_frame(self):
-
         if (
             self.current_time < self.ax.get_xlim()[1]
             and self.current_time > self.ax.get_xlim()[0]
@@ -465,7 +459,6 @@ class Animate_plot:
         )
 
     def play(self):
-
         if self.is_playing:
             self.custom_ani.stop()
             self.is_playing = False

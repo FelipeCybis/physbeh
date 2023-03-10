@@ -31,5 +31,5 @@ __all__ = [
     "plot_head_direction",
     "plot_head_direction_interval",
     "plot_occupancy",
-    "animation_behavior_fus"
+    "animation_behavior_fus",
 ]

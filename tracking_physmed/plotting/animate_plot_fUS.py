@@ -8,12 +8,11 @@ from ..utils import BlitManager
 
 class Animate_plot_fUS:
     def __init__(self, fig, ax, scan, video_path, y_crop, x_crop, fus_colorbar=True):
-
         self.fig = fig
         self.ax = ax
 
         self.data = np.rot90(scan.get_data()[:, 0, :])
-        
+
         self.scan_time = scan.time
         self.n_scan_frames = self.data.shape[-1]
         self.dt_scan = scan.voxdim[-1]
@@ -60,8 +59,10 @@ class Animate_plot_fUS:
             vmin = -vmax
         else:
             vmax = -vmin
-            
-        self.fus_im = self.ax_fus.imshow(self.data[..., 0], cmap="gray", vmin=vmin, vmax=vmax)
+
+        self.fus_im = self.ax_fus.imshow(
+            self.data[..., 0], cmap="gray", vmin=vmin, vmax=vmax
+        )
         if fus_colorbar:
             plt.colorbar(self.fus_im)
         self.bm.add_artist(self.fus_im)
@@ -114,7 +115,6 @@ class Animate_plot_fUS:
         self.custom_ani.add_callback(self.bm.update)
 
     def onkeypress(self, event):
-
         if event.key == " ":
             self.play()
 
@@ -160,7 +160,6 @@ class Animate_plot_fUS:
         self.move = False
 
     def onclick(self, event):
-
         if event.inaxes == self.ax:
             # self.current_time = event.xdata
             self.current_video_frame = int(event.xdata // (1 / self.video_fps))
@@ -172,7 +171,6 @@ class Animate_plot_fUS:
                 self.bm.update()
 
     def grab_first_frame(self):
-
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_video_frame)
         ret, frame = self.cap.read()
 
@@ -231,7 +229,6 @@ class Animate_plot_fUS:
         )
 
     def play(self):
-
         if self.is_playing:
             self.custom_ani.stop()
             self.is_playing = False
@@ -256,7 +253,6 @@ class Animate_plot_fUS:
 
 class Animate_video_fUS:
     def __init__(self, tracking, fig=None):
-
         self.fig = fig
         if self.fig is None:
             self.fig = plt.figure()
@@ -339,7 +335,6 @@ class Animate_video_fUS:
         self.custom_ani.add_callback(self.bm.update)
 
     def onkeypress(self, event):
-
         if event.key == " ":
             self.play()
 
@@ -385,7 +380,6 @@ class Animate_video_fUS:
         self.move = False
 
     def onclick(self, event):
-
         if event.inaxes in (self.ax_fus, self.ax_vid):
             # self.current_time = event.xdata
             print(event.x)
@@ -396,7 +390,6 @@ class Animate_video_fUS:
                 self.bm.update()
 
     def grab_first_frame(self):
-
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_video_frame)
         ret, frame = self.cap.read()
 
@@ -420,7 +413,6 @@ class Animate_video_fUS:
         self.grab_frame()
 
     def grab_frame(self):
-
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_video_frame)
         _, frame = self.cap.read()
         self.vid.set_array(
@@ -442,7 +434,6 @@ class Animate_video_fUS:
         )
 
     def play(self):
-
         if self.is_playing:
             self.custom_ani.stop()
             self.is_playing = False
