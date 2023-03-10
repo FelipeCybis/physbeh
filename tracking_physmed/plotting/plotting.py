@@ -31,25 +31,25 @@ def plot_speed(
 
     Parameters
     ----------
-    Trk_cls : `Tracking` instance
+    Trk_cls : :class:`tracking_physmed.tracking.Tracking` instance
     bodypart : str, optional
-        Bodypart label. By default `body`
+        Bodypart label. Default is "body"
     smooth : bool, optional
-        If speed array is to be smoothed using a gaussian kernel. By default `True`
+        If speed array is to be smoothed using a gaussian kernel. Default is ``True``.
     speed_cutout : int, optional
-        If speed is to be thresholded by some value. By default `0`
+        If speed is to be thresholded by some value. Default is 0
     only_running_bouts : bool, optional
-        If should plot only the running periods using `Tracking.get_running_bouts` function. By default `False`
+        If should plot only the running periods using :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default is ``False``.
     ax : matplotlib Axes, optional
-        If None, new axes is created in `fig`. By default ``None``
+        If None, new axes is created in `fig`. Default is ``None``.
     figsize : tuple, optional
-        Figure size, if `fig` is ``None``. By default `(12,6)`
+        Figure size, if `fig=None`. Default is ``(12,6)``.
     fig : matplotlib Figure, optional
-        If ``None``, new figure is created. By default ``None``
+        If ``None``, new figure is created. Default is ``None``.
     animate_video : bool, optional
-        If set to `True`, plots an animation synched with the video of the Tracking class.
+        If set to ``True``, plots an animation synched with the video of the Tracking class.
     animate_fus : bool, optional
-        If set to `True`, plots an animation synched with the associated scan (should be attached to Tracking).
+        If set to ``True``, plots an animation synched with the associated scan (should be attached to Tracking).
 
     Returns
     -------
@@ -107,6 +107,31 @@ def plot_wall_proximity(
     figsize=(14, 7),
     **ax_kwargs,
 ):
+    """Plot proximity to specified wall. See :class:`tracking_physmed.tracking.Tracking.get_proximity_from_wall`. for more information.
+
+    Parameters
+    ----------
+    Trk : :class:`tracking_physmed.tracking.Tracking` instance
+    wall : str or list of str or tuple of str
+        Wall to use for computations. Can be one of ("left", "right", "top", "bottom"). Default is "left".
+    bodypart : str, optional
+        Bodypart to use for computations. Default "probe".
+    only_running_bouts : bool, optional
+        If should plot only the running periods using :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default is ``False``.
+    ax : matplotlib Axes, optional
+        If None, new axes is created in `fig`. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if `fig=None`. Default is ``(12,6)``.
+    fig : matplotlib Figure, optional
+        If ``None``, new figure is created. Default is ``None``.
+    **ax_kwargs
+        Keywords to pass to ``ax.set(**ax_kwargs)``.
+
+    Returns
+    -------
+    tuple
+        matplotlib Figure, matplotlib Axis
+    """
 
     wall_proximity, time_array, index = Trk.get_proximity_from_wall(
         wall=wall, bodypart=bodypart, only_running_bouts=only_running_bouts
@@ -153,6 +178,29 @@ def plot_center_proximity(
     figsize=(14, 7),
     **ax_kwargs,
 ):
+    """Plot proximity to the center of the environment. See :class:`tracking_physmed.tracking.Tracking.get_proximity_from_center`. for more information.
+
+    Parameters
+    ----------
+    Trk : :class:`tracking_physmed.tracking.Tracking` instance
+    bodypart : str, optional
+        Bodypart to use for computations. Default "probe".
+    only_running_bouts : bool, optional
+        If should plot only the running periods using :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default is ``False``.
+    ax : matplotlib Axes, optional
+        If None, new axes is created in `fig`. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if `fig=None`. Default is ``(12,6)``.
+    fig : matplotlib Figure, optional
+        If ``None``, new figure is created. Default is ``None``.
+    **ax_kwargs
+        Keywords to pass to ``ax.set(**ax_kwargs)``.
+
+    Returns
+    -------
+    tuple
+        matplotlib Figure, matplotlib Axis
+    """
 
     center_proximity, time_array, index = Trk.get_proximity_from_center(
         bodypart=bodypart, only_running_bouts=only_running_bouts
@@ -200,6 +248,32 @@ def plot_corner_proximity(
     figsize=(14, 7),
     **ax_kwargs,
 ):
+    """Plot proximity to specified corner. See :class:`tracking_physmed.tracking.Tracking.get_proximity_from_corner`. for more information.
+
+    Parameters
+    ----------
+    Trk : :class:`tracking_physmed.tracking.Tracking` instance
+    corner : str, optional
+        Must be one of the four corners of a rectangle ("top right", "top left", "bottom right", "bottom left").
+        Default is ``"top right"``.
+    bodypart : str, optional
+        Bodypart to use for computations. Default "probe".
+    only_running_bouts : bool, optional
+        If should plot only the running periods using :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default is ``False``.
+    ax : matplotlib Axes, optional
+        If None, new axes is created in `fig`. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if `fig=None`. Default is ``(12,6)``.
+    fig : matplotlib Figure, optional
+        If ``None``, new figure is created. Default is ``None``.
+    **ax_kwargs
+        Keywords to pass to ``ax.set(**ax_kwargs)``.
+
+    Returns
+    -------
+    tuple
+        matplotlib Figure, matplotlib Axis
+    """
 
     corner_proximity, time_array, index = Trk.get_proximity_from_corner(
         corner=corner, bodypart=bodypart, only_running_bouts=only_running_bouts
@@ -244,7 +318,7 @@ def plot_running_bouts(
 
     Parameters
     ----------
-    Trk : `Tracking` instance
+    Trk : :class:`tracking_physmed.tracking.Tracking` instance
     ax : matplotlib Axes, optional
         If None, new axes is created in `fig`. By default ``None``
     figsize : tuple, optional
@@ -252,7 +326,7 @@ def plot_running_bouts(
     fig : matplotlib Figure, optional
         If ``None``, new figure is created. By default ``None``
     animate : bool, optional
-        If set to `True`, plots an animation synched with the video of the Tracking class.
+        If set to ``True``, plots an animation alongside the video of the Tracking class.
 
     Returns
     -------
@@ -297,7 +371,7 @@ def plot_position_2d(
 
     Parameters
     ----------
-    Trk_cls : `Tracking` instance
+    Trk_cls : :class:`tracking_physmed.tracking.Tracking` instance
     bodypart : str, optional
         Bodypart label, by default "body"
     color_collection_array : [type], optional
@@ -432,7 +506,7 @@ def plot_likelihood(
 
     Parameters
     ----------
-    Trk : `Tracking` instance
+    Trk : :class:`tracking_physmed.tracking.Tracking` instance
     bodyparts : list or str, optional
         Labels to be plotted, it can be a string, a list of strings or `"all"` for all labels. By default `"all"`
     ax : matplotlib Axes, optional

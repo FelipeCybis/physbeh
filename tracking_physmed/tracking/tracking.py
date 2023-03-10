@@ -726,12 +726,12 @@ class Tracking(object):
 
         Parameters
         ----------
-        wall : str or list of str or tuple of list, optional
-            Wall to use for computations. Can be one of ("left", "right", "top", "bottom"), by default "left"
+        wall : str or list of str or tuple of str, optional
+            Wall to use for computations. Can be one of ("left", "right", "top", "bottom"). Default is "left".
         bodypart : str, optional
-            Bodypart to use for computations, by default "probe".
+            Bodypart to use for computations. Default "probe".
         only_running_bouts : bool, optional
-            Use only running bouts of the experiment, by default False
+            Use only running bouts of the experiment. Default ``False``.
 
         Returns
         -------
