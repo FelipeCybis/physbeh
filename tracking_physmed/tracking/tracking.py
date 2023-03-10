@@ -586,7 +586,7 @@ class Tracking(object):
         if smooth:
             speed_array[~index] = 0
             speed_array = np.convolve(self.speed_smooth_window, speed_array, "same")
-            speed_array[speed_array < speed_cutout] = 0
+            speed_array[np.abs(speed_array) < speed_cutout] = 0
 
         if only_running_bouts:
             speed_array = self._split_in_running_bouts(speed_array)
