@@ -6,6 +6,12 @@ __pycache__/
 # Packaging
 *egg-info/
 
+# virtualenv
+venv/
+venv*/
+.venv*/
+.python-version
+
 # VS Code
 .vscode
 
