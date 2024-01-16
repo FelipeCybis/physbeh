@@ -13,18 +13,27 @@ tables = "^3.7.0"
 matplotlib = "^3.5.1"
 opencv-python-headless = "^4.5.5"
 scipy = "^1.7.3"
+pytest = {version = "^7.4.4", optional = true}
+ipykernel = {version = "^6.28.0", optional = true}
+black = {version = "^23.12.1", optional = true}
+sphinx = {version = "^5", optional = true}
+sphinx-copybutton = {version = "^0.5.1", optional = true}
+sphinx-design = {version = "^0.3.0", optional = true}
+numpydoc = {version = "^1.5.0", optional = true}
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^5.2"
-ipython = "^8.0.1"
-ipykernel = "^6.7.0"
-black = "^23"
-poetry2setup = "^1.0.0"
-sphinx = "^5"
-furo = "^2022.12.7"
-sphinx-copybutton = "^0.5.1"
-sphinx-design = "^0.3.0"
-numpydoc = "^1.5.0"
+[tool.poetry.extras]
+docs = ["numpydoc", "sphinx", "sphinx-copybutton", "sphinx-design"]
+test = ["pytest"]
+dev = ["black", "ipykernel"]
+all = [
+    "numpydoc",
+    "sphinx",
+    "sphinx-copybutton",
+    "sphinx-design",
+    "pytest",
+    "black",
+    "ipykernel",
+]
 
 [build-system]
 requires = ["setuptools", "poetry-core>=1.0.0"]
