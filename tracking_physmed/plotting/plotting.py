@@ -462,7 +462,7 @@ def plot_position_2d(
 
         cmap = get_cmap(name=colormap, n=360)
 
-        head_direction_array, _ = Trk_cls.get_direction_array(
+        head_direction_array, _, _ = Trk_cls.get_direction_array(
             label0=head_direction_vector_labels[0],
             label1=head_direction_vector_labels[1],
             mode="deg",
@@ -765,7 +765,7 @@ def plot_head_direction(
             Trk.get_running_bouts()
         index = Trk.running_bouts
 
-    head_direction_array, _ = Trk.get_direction_array(
+    head_direction_array, _, _ = Trk.get_direction_array(
         label0=head_direction_vector_labels[0],
         label1=head_direction_vector_labels[1],
         mode=ang,

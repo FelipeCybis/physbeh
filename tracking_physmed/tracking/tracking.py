@@ -329,7 +329,7 @@ class Tracking(object):
         return self.Dataframe[self.scorer][label]["likelihood"].values >= pcutout
 
     def get_direction_array(
-        self, label0="neck", label1="probe", mode="deg", smooth=False
+        self, label0="neck", label1="probe", mode="deg", smooth=False, only_running_bouts=False
     ):
         """Gets the direction vector 'label0'->'label1' by simple subtraction label1 - label0.
         Default vector is 'neck'->'probe'. This can be used to get the head direction of the animal, for example.
@@ -368,9 +368,16 @@ class Tracking(object):
             resp_in_rad = np.arctan2(np.sin(resp_in_rad), np.cos(resp_in_rad))
 
         resp_in_rad[resp_in_rad < 0] += 2 * np.pi
+        resp = resp_in_rad
         if mode in ("deg", "degree"):
-            return np.degrees(resp_in_rad), index
-        return resp_in_rad, index
+            resp = np.degrees(resp_in_rad)
+
+        if only_running_bouts:
+            resp_bouts = self._split_in_running_bouts(resp)
+            index_bouts = self._split_in_running_bouts(index)
+
+            return resp_bouts, self.time_bouts, index_bouts
+        return resp, self.time, index
 
     def get_direction_angular_velocity(
         self, label0="neck", label1="probe", only_running_bouts=False
@@ -418,7 +425,7 @@ class Tracking(object):
         [type]
             [description]
         """
-        hd_deg, index = self.get_direction_array(
+        hd_deg, _, index = self.get_direction_array(
             label0="neck", label1="probe", mode="deg"
         )
 
@@ -446,7 +453,9 @@ class Tracking(object):
 
         bins = 360 // degrees
 
-        hd_deg, index = self.get_direction_array()
+        hd_deg, _, index = self.get_direction_array(
+            label0="neck", label1="probe", mode="deg"
+        )
 
         return np.histogram(hd_deg[index], bins=bins, range=(0, 360))
 
