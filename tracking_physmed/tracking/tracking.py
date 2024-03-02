@@ -1037,18 +1037,10 @@ class Tracking(object):
         with open(self.metadata_filename, "wb") as f:
             try:
                 self.metadata["data"]["corner_coords"] = {}
-                self.metadata["data"]["corner_coords"]["top_left"] = np.array(
-                    coords_list[0]
-                )
-                self.metadata["data"]["corner_coords"]["top_right"] = np.array(
-                    coords_list[1]
-                )
-                self.metadata["data"]["corner_coords"]["bottom_left"] = np.array(
-                    coords_list[2]
-                )
-                self.metadata["data"]["corner_coords"]["bottom_right"] = np.array(
-                    coords_list[3]
-                )
+                self.metadata["data"]["corner_coords"]["top_left"] =  coords_list[0]
+                self.metadata["data"]["corner_coords"]["top_right"] =  coords_list[1]
+                self.metadata["data"]["corner_coords"]["bottom_left"] =  coords_list[2]
+                self.metadata["data"]["corner_coords"]["bottom_right"] = coords_list[3]
                 print("Corner coordinates saved correctly!")
             except AttributeError:
                 print("Corner coordinates were not saved!")
