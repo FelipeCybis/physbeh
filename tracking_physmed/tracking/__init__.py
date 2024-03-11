@@ -1,3 +1,3 @@
-from .tracking import load_tracking, to_tracking_time, Tracking
+from .tracking import Tracking, calculate_rectangle_cm_per_pixel, to_tracking_time
 
-__all__ = ["load_tracking", "to_tracking_time", "Tracking"]
+__all__ = ["to_tracking_time", "Tracking", "calculate_rectangle_cm_per_pixel"]

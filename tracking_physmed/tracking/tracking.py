@@ -1,19 +1,19 @@
-import pickle, warnings
+import warnings
 from pathlib import Path
-import pandas as pd
+
 import numpy as np
+import numpy.typing as npt
+import polars as pl
 from scipy import signal
 from scipy.stats import multivariate_normal
 
 from ..utils import (
-    get_cmap,
-    get_gaussian_value,
-    get_rectangular_value,
-    custom_sigmoid,
     custom_2d_sigmoid,
+    custom_sigmoid,
+    get_gaussian_value,
+    get_place_field_coords,
     get_value_from_hexagonal_grid,
     set_hexagonal_parameters,
-    get_place_field_coords,
 )
 
 SIGMOID_PARAMETERS = {
@@ -22,51 +22,6 @@ SIGMOID_PARAMETERS = {
     "top": (-0.3, 30),
     "bottom": (0.3, 70),
 }
-
-
-def load_tracking(filename, metadata_filename=None, video_filename=None):
-    try:
-        filename = Path(filename)
-    except TypeError:
-        raise TypeError(
-            "filename argument must be a pathlib.Path (or a type that supports"
-            " casting to pathlib.Path, such as string)."
-        )
-
-    filename = filename.expanduser().resolve()
-
-    if not filename.is_file():
-        raise ValueError(f"File not found: {filename}.")
-
-    assert (
-        filename.suffix == ".h5"
-    ), f"Accepted filename needs to have extension `.h5` and not `{filename.suffix}`"
-
-    Dataframe = pd.read_hdf(filename)
-
-    if metadata_filename is None:
-        metadata_filename = filename.with_name(
-            filename.name.replace("filtered", "meta").replace("h5", "pickle")
-        )
-
-    if not metadata_filename.is_file():
-        raise ValueError(f"Metadata file not found: {metadata_filename}")
-
-    if video_filename is None:
-        video_filename = filename.with_name(
-            filename.name.replace("tracking-filtered", "recording-labeled").replace(
-                "beh.h5", "video.mp4"
-            )
-        )
-
-    if not video_filename.is_file():
-        video_filename = None
-        # !TODO raise warning to say there is no video
-
-    track = Tracking(Dataframe, metadata_filename, video_filename)
-    track.filename = filename
-
-    return track
 
 
 def to_tracking_time(arr, time, new_time, offset=0):
@@ -107,17 +62,7 @@ def to_tracking_time(arr, time, new_time, offset=0):
     return new_arr
 
 
-class Tracking(object):
-    @property
-    def tracking_filepath(self):
-        """Fullpath to .h5 file."""
-        return self._tracking_filepath
-
-    @property
-    def tracking_directory(self):
-        """Fullpath to parent folder of .h5 file."""
-        return self._tracking_directory
-
+class Tracking:
     @property
     def video_filepath(self):
         """Fullpath to labeled video of .h5 file."""
@@ -143,7 +88,7 @@ class Tracking(object):
     @property
     def time(self):
         """Timing index calculated using the `fps` property."""
-        return self._time
+        return np.arange(len(self.Dataframe)) / self.fps
 
     @property
     def pcutout(self):
@@ -153,53 +98,6 @@ class Tracking(object):
     @pcutout.setter
     def pcutout(self, value):
         self._pcutout = value
-
-    @property
-    def w(self):
-        """Width of open-field in pixels."""
-        return self._w
-
-    @w.setter
-    def w(self, value):
-        self._w = value
-
-    @property
-    def h(self):
-        """Height of open-field in pixels."""
-        return self._h
-
-    @h.setter
-    def h(self, value):
-        self._h = value
-
-    @property
-    def ratio_per_pixel(self):
-        """Ratio per ``spatial_units`` per pixel."""
-        return self._ratio_per_pixel
-
-    @property
-    def spatial_units(self):
-        """Spatial units to calculate the ratio per pixel."""
-        return self._spatial_units
-
-    @spatial_units.setter
-    def spatial_units(self, units):
-        assert units in (
-            "mm",
-            "cm",
-            "m",
-            "px",
-        ), f"Units can only be one of these strings: 'mm', 'cm', 'm' or 'px'. It is '{units}'"
-        if units == "px":
-            self._ratio_per_pixel = 1
-        else:
-            assert (
-                self.ratio_cm_per_pixel is not None
-            ), "The cm/px ratio has not yet been set."
-            ratio_factor_dict = {"mm": 10, "cm": 1, "m": 0.1}
-            self._ratio_per_pixel = self.ratio_cm_per_pixel * ratio_factor_dict[units]
-
-        self._spatial_units = units
 
     @property
     def speed_smooth_window(self):
@@ -224,39 +122,33 @@ class Tracking(object):
         """Attach the corresponding Scan object to the Tracking."""
         self._scan = Scan
 
-    def __init__(self, data, metadata_filename, video_filename):
+    def __init__(
+        self,
+        data: pl.DataFrame,
+        fps: int | float = 50.0,
+        video_filename: Path | None = None,
+        filename: Path | None = None,
+    ):
         self.Dataframe = data
-        self.metadata = pd.read_pickle(metadata_filename)
-        self.metadata_filename = metadata_filename
+
+        self.labels = [
+            label.replace("_x", "")
+            .replace("_y", "")
+            .replace("_z", "")
+            .replace("_likelihood", "")
+            for label in data.columns
+        ]
+        self.labels = sorted(set(self.labels), key=self.labels.index)
+
+        self.filename = filename
         self._video_filepath = video_filename
 
-        self.scorer = self.metadata["data"]["Scorer"]
         self.nframes = data.shape[0]
-        self.bodyparts = self.metadata["data"]["DLC-model-config file"][
-            "all_joints_names"
-        ]
-        self._fps = self.metadata["data"]["fps"]
-        self._time = np.array(data.index / self.fps)
-        self.colormap = "plasma"
-        colors = get_cmap(len(self.bodyparts), name=self.colormap)
-        self.colors = {self.bodyparts[i]: colors(i) for i in range(len(self.bodyparts))}
+        self._fps = fps
+
         self._pcutout = 0.8
         self._speed_smooth_window = signal.gaussian(M=101, std=6)
         self._speed_smooth_window /= sum(self._speed_smooth_window)
-
-        try:
-            # checking if coordinates for corners have already been set
-            # if not, calls function to do it
-            self.metadata["data"]["corner_coords"]
-        except KeyError:
-            self.set_ratio_coords()
-
-        self._w = 100
-        self._h = 100
-        self._get_cm2px_ratio()
-        self._spatial_units = "cm"
-        self._ratio_per_pixel = self.ratio_cm_per_pixel
-        # self._downsample
 
         self._scan = None
 
@@ -326,10 +218,15 @@ class Tracking(object):
         if pcutout is None:
             pcutout = self.pcutout
 
-        return self.Dataframe[self.scorer][label]["likelihood"].values >= pcutout
+        return np.array(self.Dataframe[label + "_likelihood"] >= pcutout)
 
     def get_direction_array(
-        self, label0="neck", label1="probe", mode="deg", smooth=False, only_running_bouts=False
+        self,
+        label0="neck",
+        label1="probe",
+        mode="deg",
+        smooth=False,
+        only_running_bouts=False,
     ):
         """Gets the direction vector 'label0'->'label1' by simple subtraction label1 - label0.
         Default vector is 'neck'->'probe'. This can be used to get the head direction of the animal, for example.
@@ -481,9 +378,6 @@ class Tracking(object):
         x, _, index = self.get_position_x(bodypart=bodypart, pcutout=self.pcutout)
         y, _, _ = self.get_position_y(bodypart=bodypart, pcutout=self.pcutout)
 
-        x *= self.ratio_per_pixel
-        y *= self.ratio_per_pixel
-
         coords = np.array([x, y]).T
 
         return coords, self.time, index
@@ -509,13 +403,7 @@ class Tracking(object):
 
         """
         index = self.get_index(bodypart, pcutout)
-        x_bp = self.Dataframe[self.scorer][bodypart]["x"].values
-        if absolute is False:
-            x_bp = (
-                self.Dataframe[self.scorer][bodypart]["x"].values
-                - self.metadata["data"]["corner_coords"]["top_left"][0]
-            )
-
+        x_bp = self.Dataframe[bodypart + "_x"].to_numpy()
         return x_bp, self.time, index
 
     def get_position_y(self, bodypart, pcutout=None, absolute=False):
@@ -540,13 +428,7 @@ class Tracking(object):
         """
 
         index = self.get_index(bodypart, pcutout)
-        y_bp = self.Dataframe[self.scorer][bodypart]["y"].values
-        if absolute is False:
-            y_bp = (
-                self.Dataframe[self.scorer][bodypart]["y"].values
-                - self.metadata["data"]["corner_coords"]["top_left"][1]
-            )
-
+        y_bp = self.Dataframe[bodypart + "_y"].to_numpy()
         return y_bp, self.time, index
 
     def get_speed(
@@ -586,15 +468,12 @@ class Tracking(object):
             - speed_units : (str)
               String telling the units of the speed_array
         """
-        dist_in_px = self._get_distance_between_frames(
+        dist = self._get_distance_between_frames(
             bodypart=bodypart, axis=axis, euclidean=euclidean_distance
         )
-        speed_in_px_per_second = dist_in_px * self.fps
+        speed_array = dist * self.fps
 
         index = self.get_index(bodypart, self.pcutout)
-
-        speed_units = self.spatial_units + "/s"
-        speed_array = speed_in_px_per_second * self.ratio_per_pixel
 
         if smooth:
             speed_array[~index] = 0
@@ -604,9 +483,9 @@ class Tracking(object):
         if only_running_bouts:
             speed_array = self._split_in_running_bouts(speed_array)
             index = self._split_in_running_bouts(index)
-            return speed_array, self.time_bouts, index, speed_units
+            return speed_array, self.time_bouts, index, "cm/s"
 
-        return speed_array, self.time, index, speed_units
+        return speed_array, self.time, index, "cm/s"
 
     def get_running_bouts(self, speed_array=None, time_array=None):
         """Automatic gets running bouts given certain parameters, such as speed_threshold,
@@ -679,8 +558,6 @@ class Tracking(object):
 
         x_pos, _, index = self.get_position_x(bodypart=bodypart)
         y_pos = self.get_position_y(bodypart=bodypart)[0]
-        x_pos *= self.ratio_per_pixel
-        y_pos *= self.ratio_per_pixel
 
         if only_running_bouts:
             if not hasattr(self, "running_bouts"):
@@ -1020,92 +897,38 @@ class Tracking(object):
             Vector distance in the y coordinate. label1_y - label0_y
         """
 
-        vec_x = (
-            self.Dataframe[self.scorer][label1]["x"]
-            - self.Dataframe[self.scorer][label0]["x"]
-        )
-        vec_y = (
-            self.Dataframe[self.scorer][label1]["y"]
-            - self.Dataframe[self.scorer][label0]["y"]
-        )
+        vec_x = self.Dataframe[label1 + "_x"] - self.Dataframe[label0 + "_x"]
+        vec_y = self.Dataframe[label1 + "_y"] - self.Dataframe[label0 + "_y"]
         return vec_x.to_numpy(), vec_y.to_numpy()
 
-    def _write_corner_coords(self, coords_list):
-        """Writes corner coordinates in the metadata of the analysis so it is there for the next time
-        and set_ratio_coords does not need to be called again.
-        """
-        with open(self.metadata_filename, "wb") as f:
-            try:
-                self.metadata["data"]["corner_coords"] = {}
-                self.metadata["data"]["corner_coords"]["top_left"] =  coords_list[0]
-                self.metadata["data"]["corner_coords"]["top_right"] =  coords_list[1]
-                self.metadata["data"]["corner_coords"]["bottom_left"] =  coords_list[2]
-                self.metadata["data"]["corner_coords"]["bottom_right"] = coords_list[3]
-                print("Corner coordinates saved correctly!")
-            except AttributeError:
-                print("Corner coordinates were not saved!")
-                pass
-            pickle.dump(self.metadata, f)
 
-    def _get_cm2px_ratio(self):
-        """Helper function that calculates the cm/px ratio from the user inputs of the corners of the arena.
+def calculate_rectangle_cm_per_pixel(
+    coords: npt.ArrayLike, real_width_cm: int | float, real_height_cm: int | float
+):
+    """Helper function to calculate the centimeter per pixel ratio in a rectangle.
 
-        Parameters
-        ----------
-        w : width in cm
-            Distance between right and left corners. The default is 100.
-        h : height in cm
-            Distance between top and bottom corners. The default is 100.
+    Parameters
+    ----------
+    coords : npt.ArrayLike
+        ``xy`` coordinates of the rectangle in the order [({top_left_x},
+        {top_left_y}), ({top_right_x}, {top_right_y}), ({bottom_left_x},
+        {bottom_left_y}), ({bottom_right_x}, {bottom_right_y})].
+    real_width_cm : int | float
+        Rectangle width in centimeters.
+    real_height_cm : int | float
+        Rectangle height in centimeters.
+    """
 
-        Returns
-        -------
-        float
-            Returns the ratio of cm/px of the images being analysed.
-        """
-        try:
-            estimates = np.empty(4)
-            estimates[0] = np.sqrt(
-                np.sum(
-                    (
-                        self.metadata["data"]["corner_coords"]["top_right"]
-                        - self.metadata["data"]["corner_coords"]["top_left"]
-                    )
-                    ** 2
-                )
-            )
-            estimates[1] = np.sqrt(
-                np.sum(
-                    (
-                        self.metadata["data"]["corner_coords"]["bottom_right"]
-                        - self.metadata["data"]["corner_coords"]["bottom_left"]
-                    )
-                    ** 2
-                )
-            )
+    def distance(p1, p2):
+        return np.sqrt(np.sum((p1 - p2) ** 2))
 
-            estimates[2] = np.sqrt(
-                np.sum(
-                    (
-                        self.metadata["data"]["corner_coords"]["top_left"]
-                        - self.metadata["data"]["corner_coords"]["bottom_left"]
-                    )
-                    ** 2
-                )
-            )
-            estimates[3] = np.sqrt(
-                np.sum(
-                    (
-                        self.metadata["data"]["corner_coords"]["top_right"]
-                        - self.metadata["data"]["corner_coords"]["bottom_right"]
-                    )
-                    ** 2
-                )
-            )
+    width_estimates = [distance(coords[0], coords[1]), distance(coords[2], coords[3])]
+    height_estimates = [distance(coords[0], coords[2]), distance(coords[1], coords[3])]
+    diag_estimates = [distance(coords[0], coords[3]), distance(coords[1], coords[2])]
 
-            w_estimate = self.w / estimates[:2].mean()
-            h_estimate = self.h / estimates[2:].mean()
-            self.ratio_cm_per_pixel = (w_estimate + h_estimate) / 2
-            return self.ratio_cm_per_pixel
+    real_diag_cm = np.sqrt(real_width_cm**2 + real_height_cm**2)
+    cm2px_ratio_width = real_width_cm / np.mean(width_estimates)
+    cm2px_ratio_height = real_height_cm / np.mean(height_estimates)
+    cm2px_ratio_diag = real_diag_cm / np.mean(diag_estimates)
 
-        except KeyError:
-            print("Ratio cm/px not yet calculated. See function self.set_ratio_coords.")
+    return np.mean((cm2px_ratio_diag, cm2px_ratio_height, cm2px_ratio_width))

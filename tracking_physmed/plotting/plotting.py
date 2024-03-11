@@ -1,19 +1,25 @@
 import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
+import numpy as np
 from matplotlib import colors
 from matplotlib.cm import ScalarMappable
+from matplotlib.collections import LineCollection
 
-import numpy as np
+from tracking_physmed.tracking import Tracking
 
-from ..utils import get_line_collection, _plot_color_wheel, get_cmap
-from .animate_decorator import anim_decorator
+from ..utils import _plot_color_wheel, get_cmap, get_line_collection
 from .animate2d_decorator import anim2d_decorator
+from .animate_decorator import anim_decorator
 from .animate_plot_fUS import Animate_video_fUS
+
+
+def get_label_color(Trk: Tracking, bodypart: str, cmap_name: str = "plasma"):
+    cmap = plt.cm.get_cmap(name=cmap_name, lut=len(Trk.labels))
+    return cmap(Trk.labels.index(bodypart))
 
 
 @anim_decorator
 def plot_speed(
-    Trk_cls,
+    Trk_cls: Tracking,
     bodypart="body",
     speed_axis="xy",
     euclidean=False,
@@ -71,7 +77,7 @@ def plot_speed(
         lines,
         label=bodypart,
         linewidths=2,
-        colors=Trk_cls.colors[bodypart],
+        colors=get_label_color(Trk_cls, bodypart),
     )
 
     if ax is None:
@@ -98,7 +104,7 @@ def plot_speed(
 
 @anim_decorator
 def plot_wall_proximity(
-    Trk,
+    Trk: Tracking,
     wall,
     bodypart="probe",
     only_running_bouts=False,
@@ -143,7 +149,7 @@ def plot_wall_proximity(
         lines,
         label=bodypart,
         linewidths=2,
-        colors=Trk.colors[bodypart],
+        colors=get_label_color(Trk, bodypart),
     )
 
     if ax is None:
@@ -170,7 +176,7 @@ def plot_wall_proximity(
 
 @anim_decorator
 def plot_center_proximity(
-    Trk,
+    Trk: Tracking,
     bodypart="probe",
     only_running_bouts=False,
     ax=None,
@@ -212,7 +218,7 @@ def plot_center_proximity(
         lines,
         label=bodypart,
         linewidths=2,
-        colors=Trk.colors[bodypart],
+        colors=get_label_color(Trk, bodypart),
     )
 
     if ax is None:
@@ -229,7 +235,7 @@ def plot_center_proximity(
         plot_running_bouts(Trk, ax=ax)
 
     ax.plot(time_array[index], center_proximity[index], ".", markersize=0)
-    ax.set(ylabel=f"Proximity from center of stage (a.u)", xlabel="time (s)")
+    ax.set(ylabel="Proximity from center of stage (a.u)", xlabel="time (s)")
     ax.legend(loc="upper right")
     ax.grid(linestyle="--")
     ax.set(**ax_kwargs)
@@ -239,7 +245,7 @@ def plot_center_proximity(
 
 @anim_decorator
 def plot_corner_proximity(
-    Trk,
+    Trk: Tracking,
     corner,
     bodypart="probe",
     only_running_bouts=False,
@@ -285,7 +291,7 @@ def plot_corner_proximity(
         lines,
         label=bodypart,
         linewidths=2,
-        colors=Trk.colors[bodypart],
+        colors=get_label_color(Trk, bodypart),
     )
 
     if ax is None:
@@ -312,7 +318,12 @@ def plot_corner_proximity(
 
 @anim_decorator
 def plot_running_bouts(
-    Trk, ax=None, figsize=(12, 6), fig=None, animate_video=False, animate_fus=False
+    Trk: Tracking,
+    ax=None,
+    figsize=(12, 6),
+    fig=None,
+    animate_video=False,
+    animate_fus=False,
 ):
     """Plots the running periods of the animal automatically computed by `Tracking.get_running_bouts`.
 
@@ -356,7 +367,7 @@ def plot_running_bouts(
 
 @anim2d_decorator
 def plot_position_2d(
-    Trk_cls,
+    Trk_cls: Tracking,
     bodypart="body",
     absolute=False,
     color_collection_array=None,
@@ -500,7 +511,7 @@ def plot_position_2d(
 
 @anim_decorator
 def plot_likelihood(
-    Trk,
+    Trk: Tracking,
     bodyparts="all",
     ax=None,
     figsize=(12, 6),
@@ -532,7 +543,7 @@ def plot_likelihood(
 
     if isinstance(bodyparts, str):
         if bodyparts == "all":
-            bodyparts = Trk.bodyparts
+            bodyparts = Trk.labels
         else:
             bodyparts = [bodyparts]
 
@@ -545,7 +556,13 @@ def plot_likelihood(
         lk = Trk.Dataframe[Trk.scorer][bp]["likelihood"].values
 
         ax.plot(
-            Trk.time, lk, ".", markersize=4, color=Trk.colors[bp], label=bp, alpha=0.6
+            Trk.time,
+            lk,
+            ".",
+            markersize=4,
+            color=get_label_color(Trk, bp),
+            label=bp,
+            alpha=0.6,
         )
 
     ax.set(ylabel="likelihood", xlabel="frames", ylim=(-0.05, 1.05))
@@ -558,7 +575,7 @@ def plot_likelihood(
 
 @anim_decorator
 def plot_position_x(
-    Trk,
+    Trk: Tracking,
     bodyparts="all",
     ax=None,
     fig=None,
@@ -590,7 +607,7 @@ def plot_position_x(
 
     if isinstance(bodyparts, str):
         if bodyparts == "all":
-            bodyparts = Trk.bodyparts
+            bodyparts = Trk.labels
         else:
             bodyparts = [bodyparts]
 
@@ -606,7 +623,9 @@ def plot_position_x(
 
         lines = get_line_collection(x_array=Trk.time, y_array=x_bp, index=index)
 
-        lc = LineCollection(lines, label=bp, linewidths=2, colors=Trk.colors[bp])
+        lc = LineCollection(
+            lines, label=bp, linewidths=2, colors=get_label_color(Trk, bp)
+        )
         ax.add_collection(lc)
 
     ax.plot(Trk.time, x_bp, ".", markersize=0)
@@ -622,7 +641,7 @@ def plot_position_x(
 
 @anim_decorator
 def plot_position_y(
-    Trk,
+    Trk: Tracking,
     bodyparts="all",
     ax=None,
     fig=None,
@@ -654,7 +673,7 @@ def plot_position_y(
 
     if isinstance(bodyparts, str):
         if bodyparts == "all":
-            bodyparts = Trk.bodyparts
+            bodyparts = Trk.labels
         else:
             bodyparts = [bodyparts]
 
@@ -670,7 +689,9 @@ def plot_position_y(
 
         lines = get_line_collection(x_array=Trk.time, y_array=y_bp, index=index)
 
-        lc = LineCollection(lines, label=bp, linewidths=2, colors=Trk.colors[bp])
+        lc = LineCollection(
+            lines, label=bp, linewidths=2, colors=get_label_color(Trk, bp)
+        )
         ax.add_collection(lc)
 
     ax.plot(Trk.time, y_bp, ".", markersize=0)
@@ -703,7 +724,7 @@ def plot_position(Trk, bodyparts="all", figsize=(12, 6), fig=None, **ax_kwargs):
     """
 
     if bodyparts == "all":
-        bodyparts = Trk.bodyparts
+        bodyparts = Trk.labels
 
     if fig is None:
         fig = plt.figure(figsize=figsize)
@@ -719,7 +740,7 @@ def plot_position(Trk, bodyparts="all", figsize=(12, 6), fig=None, **ax_kwargs):
 
 @anim_decorator
 def plot_head_direction(
-    Trk,
+    Trk: Tracking,
     head_direction_vector_labels=["neck", "probe"],
     ang="deg",
     smooth=False,
@@ -835,7 +856,7 @@ def plot_head_direction(
 
 @anim_decorator
 def plot_head_direction_interval(
-    Trk,
+    Trk: Tracking,
     deg=180,
     only_running_bouts=False,
     figsize=(12, 6),
@@ -885,7 +906,7 @@ def plot_head_direction_interval(
 
 
 def plot_occupancy(
-    Trk, bins=40, only_running_bouts=True, figsize=(8, 7), fig=None, ax=None
+    Trk: Tracking, bins=40, only_running_bouts=True, figsize=(8, 7), fig=None, ax=None
 ):
     if ax is None:
         if fig is None:

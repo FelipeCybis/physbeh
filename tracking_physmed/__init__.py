@@ -2,7 +2,8 @@
 
 __version__ = "0.1.0"
 
-from .tracking import load_tracking
+from .io import load_tracking
 from .plotting import plotting
+from .tracking import tracking
 
-__all__ = ["load_tracking", "plotting"]
+__all__ = ["load_tracking", "plotting", "tracking"]
