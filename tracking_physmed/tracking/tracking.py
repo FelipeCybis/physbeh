@@ -147,7 +147,7 @@ class Tracking:
         self._fps = fps
 
         self._pcutout = 0.8
-        self._speed_smooth_window = signal.gaussian(M=101, std=6)
+        self._speed_smooth_window = signal.window.gaussian(M=101, std=6)
         self._speed_smooth_window /= sum(self._speed_smooth_window)
 
         self._scan = None
@@ -256,7 +256,7 @@ class Tracking:
 
         if smooth:
             resp_in_rad = np.unwrap(resp_in_rad)
-            smooth_window = signal.gaussian(M=101, std=10)
+            smooth_window = signal.window.gaussian(M=101, std=10)
             smooth_window /= sum(smooth_window)
 
             resp_in_rad[~index] = 0
@@ -292,7 +292,7 @@ class Tracking:
             resp_in_rad
         )  # unwrapping so smoothing and derivative can be done
 
-        smooth_window = signal.gaussian(M=101, std=10)
+        smooth_window = signal.window.gaussian(M=101, std=10)
         smooth_window /= sum(smooth_window)
         resp_in_rad[~index] = 0
         resp_in_rad = np.convolve(smooth_window, resp_in_rad, "same")
