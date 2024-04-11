@@ -110,7 +110,7 @@ class Tracking:
             len(params) == 2
         ), "To set the gaussian window, a tuple with (lenght, std) should be passed."
         m, sigma = params
-        self._speed_smooth_window = signal.gaussian(M=m, std=sigma)
+        self._speed_smooth_window = signal.windows.gaussian(M=m, std=sigma)
         self._speed_smooth_window /= sum(self._speed_smooth_window)
 
     @property
