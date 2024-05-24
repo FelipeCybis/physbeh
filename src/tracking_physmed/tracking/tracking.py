@@ -125,7 +125,7 @@ class Tracking:
     def __init__(
         self,
         data: pl.DataFrame,
-        fps: int | float = 50.0,
+        fps: int | float,
         video_filename: Path | None = None,
         filename: Path | None = None,
     ):

@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -54,6 +55,15 @@ def _hdf52track(
     filename: Path, pkl_filename: Path | None = None, video_filename: Path | None = None
 ) -> Tracking:
     df = pd.read_hdf(filename)
+    if pkl_filename is None:
+        pkl_files = list(filename.parent.glob("*.pickle"))
+        if len(pkl_files) != 1:
+            warnings.warn(
+                "Could not find exactly one pickle file containing behavioral metadata"
+                f" in the same directory. Found [{len(pkl_files)}] *.pickle files.",
+                UserWarning,
+            )
+        pkl_filename = pkl_files[0]
     metadata = pd.read_pickle(pkl_filename) if pkl_filename is not None else None
 
     motion_df = {}
@@ -87,7 +97,7 @@ def _hdf52track(
 
     track = Tracking(
         dataframe,
-        fps=metadata["data"]["fps"],
+        fps=50.0 if metadata is None else metadata["data"]["fps"],
         video_filename=video_filename,
         filename=filename,
     )

@@ -11,6 +11,7 @@ venv/
 venv*/
 .venv*/
 .python-version
+*.lock
 
 # VS Code
 .vscode
