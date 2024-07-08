@@ -1,0 +1,16 @@
+name	component	type	tracked_point	units	sampling_frequency	scorer	units/px
+body_x	x	POS	body	cm	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	0.2756541912231301
+body_y	y	POS	body	cm	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	0.2756541912231301
+body_likelihood	n/a	MISC	body	n/a	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	NaN
+neck_x	x	POS	neck	cm	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	0.2756541912231301
+neck_y	y	POS	neck	cm	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	0.2756541912231301
+neck_likelihood	n/a	MISC	neck	n/a	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	NaN
+probe_x	x	POS	probe	cm	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	0.2756541912231301
+probe_y	y	POS	probe	cm	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	0.2756541912231301
+probe_likelihood	n/a	MISC	probe	n/a	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	NaN
+snout_x	x	POS	snout	cm	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	0.2756541912231301
+snout_y	y	POS	snout	cm	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	0.2756541912231301
+snout_likelihood	n/a	MISC	snout	n/a	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	NaN
+tailbase_x	x	POS	tailbase	cm	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	0.2756541912231301
+tailbase_y	y	POS	tailbase	cm	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	0.2756541912231301
+tailbase_likelihood	n/a	MISC	tailbase	n/a	50.0	DLC_effnet_b3_locomotion_HpcSep13shuffle4_50000	NaN

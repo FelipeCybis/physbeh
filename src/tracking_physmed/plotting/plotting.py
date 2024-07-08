@@ -3,13 +3,11 @@ import numpy as np
 from matplotlib import colors
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import LineCollection
-
+from tracking_physmed.plotting.animate2d_decorator import anim2d_decorator
+from tracking_physmed.plotting.animate_decorator import anim_decorator
+from tracking_physmed.plotting.animate_plot_fUS import Animate_video_fUS
 from tracking_physmed.tracking import Tracking
-
-from ..utils import _plot_color_wheel, get_cmap, get_line_collection
-from .animate2d_decorator import anim2d_decorator
-from .animate_decorator import anim_decorator
-from .animate_plot_fUS import Animate_video_fUS
+from tracking_physmed.utils import _plot_color_wheel, get_cmap, get_line_collection
 
 
 def get_label_color(Trk: Tracking, bodypart: str, cmap_name: str = "plasma"):
@@ -26,6 +24,7 @@ def plot_speed(
     smooth=True,
     speed_cutout=0,
     only_running_bouts=False,
+    alpha=1.0,
     ax=None,
     fig=None,
     figsize=(12, 6),
@@ -77,6 +76,7 @@ def plot_speed(
         lines,
         label=bodypart,
         linewidths=2,
+        alpha=alpha,
         colors=get_label_color(Trk_cls, bodypart),
     )
 
@@ -106,7 +106,7 @@ def plot_speed(
 def plot_wall_proximity(
     Trk: Tracking,
     wall,
-    bodypart="probe",
+    bodypart="neck",
     only_running_bouts=False,
     ax=None,
     fig=None,

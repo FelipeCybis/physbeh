@@ -3,9 +3,10 @@ from pathlib import Path
 
 import numpy as np
 import numpy.typing as npt
-import polars as pl
+import pandas as pd
 from scipy import signal
 from scipy.stats import multivariate_normal
+from tracking_physmed.arena import BaseArena
 
 from ..utils import (
     custom_2d_sigmoid,
@@ -17,10 +18,10 @@ from ..utils import (
 )
 
 SIGMOID_PARAMETERS = {
-    "left": (-0.3, 30),
-    "right": (0.3, 70),
-    "top": (-0.3, 30),
-    "bottom": (0.3, 70),
+    "left": (-0.3, 20),
+    "right": (0.3, 80),
+    "top": (-0.3, 20),
+    "bottom": (0.3, 80),
 }
 
 
@@ -64,12 +65,23 @@ def to_tracking_time(arr, time, new_time, offset=0):
 
 class Tracking:
     @property
-    def video_filepath(self):
-        """Fullpath to labeled video of .h5 file."""
+    def video_filepath(self) -> Path | None:
+        """Fullpath to labeled video of ``.h5`` file.
+
+        Parameters
+        ----------
+        path : str or pathlib.Path
+            File path to associated video.
+
+        Returns
+        -------
+        pathlib.Path or None
+            The fullpath to the labeled video if it exists.
+        """
         return self._video_filepath
 
     @video_filepath.setter
-    def video_filepath(self, str_path):
+    def video_filepath(self, str_path: str | Path):
         accepted_extensions = (".mp4", ".avi", ".mpg")
         if Path(str(str_path)).suffix not in accepted_extensions:
             self._video_filepath = None
@@ -81,9 +93,53 @@ class Tracking:
             self._video_filepath = Path(str(str_path))
 
     @property
-    def fps(self):
-        """Frames per second from metadata of chosen analysis."""
+    def fps(self) -> float:
+        """Frames per second from metadata of chosen analysis.
+
+        Returns
+        -------
+        float
+            The frames per second parameter.
+        """
         return self._fps
+
+    @property
+    def space_units(self):
+        """Units of coordinates in the dataframe."""
+        return self.Dataframe.dtypes
+
+    @property
+    def space_units_per_pixel(self) -> float:
+        """Per pixel ratio of the space units in the dataframe.
+
+        Parameters
+        ----------
+        value : float
+            The per pixel ratio.
+
+        Returns
+        -------
+        float
+            The space units per pixel ratio.
+        """
+        return self._space_units_per_pixel
+
+    @space_units_per_pixel.setter
+    def space_units_per_pixel(self, value: float):
+        self._space_units_per_pixel = value
+
+    @property
+    def arena(self) -> BaseArena:
+        return self._arena
+
+    @arena.setter
+    def arena(self, arena: BaseArena):
+        self._arena = arena
+
+    @property
+    def time_units(self):
+        """Units of the timing index `.time`."""
+        return "seconds"
 
     @property
     def time(self):
@@ -91,13 +147,24 @@ class Tracking:
         return np.arange(len(self.Dataframe)) / self.fps
 
     @property
-    def pcutout(self):
-        """p-value cutout to consider a acceptable labeled frame."""
+    def pcutout(self) -> float:
+        """p-value cutout to consider an acceptable labeled frame.
+
+        Parameters
+        ----------
+        value : int or float
+            p-value cutout.
+
+        Returns
+        -------
+        float
+            The p-value cutout.
+        """
         return self._pcutout
 
     @pcutout.setter
-    def pcutout(self, value):
-        self._pcutout = value
+    def pcutout(self, value: int | float):
+        self._pcutout = float(value)
 
     @property
     def speed_smooth_window(self):
@@ -124,7 +191,7 @@ class Tracking:
 
     def __init__(
         self,
-        data: pl.DataFrame,
+        data: pd.DataFrame,
         fps: int | float,
         video_filename: Path | None = None,
         filename: Path | None = None,
@@ -144,8 +211,10 @@ class Tracking:
         self._video_filepath = video_filename
 
         self.nframes = data.shape[0]
-        self._fps = fps
+        self._fps = float(fps)
 
+        self._arena = BaseArena()
+        self._space_units_per_pixel = 1.0
         self._pcutout = 0.8
         self._speed_smooth_window = signal.windows.gaussian(M=101, std=6)
         self._speed_smooth_window /= sum(self._speed_smooth_window)
@@ -201,19 +270,20 @@ class Tracking:
                 y_crop=y_crop,
             )
 
-    def get_index(self, label, pcutout=None):
-        """Gets likelihood indices for `label` and threshold `pcutout`. Returns an array of booleans with True when index >= pcutout and False otherwise.
+    def get_index(self, label: str, pcutout: float | None = None) -> npt.NDArray:
+        """Get likelihood acceptability for `label` and threshold `pcutout`.
 
         Parameters
         ----------
         label : str
+            The labels to extract the likelihood from.
         pcutout : float, optional
-            Between 0 and 1. If `None`, uses the self.pcutout property. The default is `None`
+            Between 0 and 1. If `None`, uses the ``self.pcutout`` property. The default is `None`.
 
         Returns
         -------
         array_like
-            Array of Trues when index >= pcutout and False otherwise
+            Array of ``True`` when ``index >= pcutout`` and ``False`` otherwise.
         """
         if pcutout is None:
             pcutout = self.pcutout
@@ -403,7 +473,11 @@ class Tracking:
 
         """
         index = self.get_index(bodypart, pcutout)
-        x_bp = self.Dataframe[bodypart + "_x"].to_numpy()
+        if hasattr(self.Dataframe, "pint"):
+            x_bp = self.Dataframe.pint.dequantify()[bodypart + "_x"].to_numpy()[:, 0]
+        else:
+            x_bp = self.Dataframe[bodypart + "_x"].to_numpy()
+
         return x_bp, self.time, index
 
     def get_position_y(self, bodypart, pcutout=None, absolute=False):
@@ -428,7 +502,10 @@ class Tracking:
         """
 
         index = self.get_index(bodypart, pcutout)
-        y_bp = self.Dataframe[bodypart + "_y"].to_numpy()
+        if hasattr(self.Dataframe, "pint"):
+            y_bp = self.Dataframe.pint.dequantify()[bodypart + "_y"].to_numpy()[:, 0]
+        else:
+            y_bp = self.Dataframe[bodypart + "_y"].to_numpy()
         return y_bp, self.time, index
 
     def get_speed(
@@ -566,7 +643,10 @@ class Tracking:
             index = self.running_bouts
 
         return np.histogram2d(
-            x_pos[index], y_pos[index], bins=bins, range=[[0, 100], [0, 100]]
+            x_pos[index],
+            y_pos[index],
+            bins=bins,
+            range=[[0, 100], [0, 100]],
         )
 
     def get_infos(self, bins=10, bin_only_running_bouts=False):
@@ -599,21 +679,31 @@ class Tracking:
     def print_infos(self, bins=10):
         """(TODO: docstring)"""
         info_dict = self.get_infos(bins=bins)
+        spatial_units = self.space_units[self.labels[0] + "_x"].units
         print(
             "--------------------------------------------------------------\n"
-            + f"Total tracking time: {info_dict['total_time']} s\n"
-            + f"Total running time: {info_dict['total_running_time']:.2f} s\n"
-            + f"Total distance run: {info_dict['total_distance']:.2f} cm\n"
-            + f"Running time ratio (running time / all time): {info_dict['running_ratio']:.2f}\n"
-            + f"Exploration ratio (ratio of visited bins): {info_dict['exploration_ratio']:.3f}\n"
-            + f"Exploration std (std of visits on each bin): {info_dict['exploration_std']:.3f}\n"
-            + f"Mean running speed (only running periods): {info_dict['mean_running_speed']:.2f} {self.spatial_units}/s\n"
-            + f"Mean running speed: {info_dict['mean_speed']:.2f} {self.spatial_units}/s\n"
-            + "--------------------------------------------------------------"
+            + f"Total tracking time: {info_dict['total_time']} {self.time_units}\n"
+            + f"Total running time: {info_dict['total_running_time']:.2f} {self.time_units}\n"
+            + f"Total distance run: {info_dict['total_distance']:.2f} {spatial_units}\n"
+            + "Running time ratio (running time / all time): "
+            f"{info_dict['running_ratio']:.2f}\n"
+            + "Exploration ratio (ratio of visited bins): "
+            f"{info_dict['exploration_ratio']:.3f}\n"
+            + "Exploration std (std of visits on each bin): "
+            f"{info_dict['exploration_std']:.3f}\n"
+            + "Running speed (only running periods): "
+            f"{info_dict['mean_running_speed']:.2f} {spatial_units}/{self.time_units}\n"
+            + f"Mean running speed: {info_dict['mean_speed']:.2f} {spatial_units}/{self.time_units}\n"
+            "--------------------------------------------------------------"
         )
 
     def get_proximity_from_wall(
-        self, wall="left", bodypart="probe", only_running_bouts=False
+        self,
+        wall="left",
+        bodypart="probe",
+        only_running_bouts=False,
+        sigmoid_a=None,
+        sigmoid_b=None,
     ):
         """Get a sigmoid response from the label position in relation to the specified wall.
 
@@ -865,19 +955,21 @@ class Tracking:
         """
         if axis is None:
             axis = "xy"
+
         coords = []
-        if axis in ("x", "xy", None):
+        if axis in ("x", "xy"):
             coords.append(self.get_position_x(bodypart=bodypart)[0])
 
-        if axis in ("y", "xy", None):
+        if axis in ("y", "xy"):
             coords.append(self.get_position_y(bodypart=bodypart)[0])
 
+        coords = np.stack(coords)
         if len(axis) == 1 and not euclidean:
-            dist_in_px = np.diff(coords[0])
+            distance = np.diff(coords)
         else:
-            dist_in_px = np.sqrt(np.sum([np.diff(c) ** 2 for c in coords], axis=0))
+            distance = np.sum(np.diff(coords) ** 2, axis=0) ** 0.5
 
-        return np.insert(dist_in_px, 0, 0)
+        return np.insert(distance, 0, 0)
 
     def _get_vector_from_two_labels(self, label0, label1):
         """Gets the vector 'label0'->'label1' by simple subtraction label1 - label0.
@@ -897,8 +989,19 @@ class Tracking:
             Vector distance in the y coordinate. label1_y - label0_y
         """
 
-        vec_x = self.Dataframe[label1 + "_x"] - self.Dataframe[label0 + "_x"]
-        vec_y = self.Dataframe[label1 + "_y"] - self.Dataframe[label0 + "_y"]
+        if hasattr(self.Dataframe, "pint"):
+            vec_x = (
+                self.Dataframe.pint.dequantify()[label1 + "_x"]
+                - self.Dataframe.pint.dequantify()[label0 + "_x"]
+            )
+            vec_y = (
+                self.Dataframe.pint.dequantify()[label1 + "_y"]
+                - self.Dataframe.pint.dequantify()[label0 + "_y"]
+            )
+        else:
+            vec_x = self.Dataframe[label1 + "_x"] - self.Dataframe[label0 + "_x"]
+            vec_y = self.Dataframe[label1 + "_y"] - self.Dataframe[label0 + "_y"]
+
         return vec_x.to_numpy(), vec_y.to_numpy()
 
 

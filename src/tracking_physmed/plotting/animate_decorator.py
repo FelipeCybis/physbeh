@@ -1,10 +1,11 @@
+import warnings
+from functools import wraps
+
 import cv2
+
 from ..tracking import Tracking
 from ..utils import BlitManager
 from .animate_plot_fUS import Animate_plot_fUS
-
-import warnings
-from functools import wraps
 
 
 def anim_decorator(plot_function):
@@ -32,13 +33,21 @@ def anim_decorator(plot_function):
             if Trk[0].video_filepath is None:
                 return fig, ax
 
-            cropping = (
-                Trk[0].metadata["data"].get("cropping_parameters", [0, -1, 0, -1])
-            )
+            if hasattr(Trk[0], "metadata"):
+                cropping = (
+                    Trk[0].metadata["data"].get("cropping_parameters", [0, -1, 0, -1])
+                )
+            else:
+                cropping = [0, -1, 0, -1]
             xcrop = cropping[:2]
             ycrop = cropping[2:]
             anim = Animate_plot(
-                fig, ax, video_path=Trk[0].video_filepath, x_crop=xcrop, y_crop=ycrop
+                fig,
+                ax,
+                video_path=Trk[0].video_filepath,
+                x_crop=xcrop,
+                y_crop=ycrop,
+                arena=Trk[0].arena,
             )
             return fig, ax, anim
         elif anim_fus:
@@ -51,9 +60,12 @@ def anim_decorator(plot_function):
             if Trk[0].scan is None:
                 return fig, ax
 
-            cropping = (
-                Trk[0].metadata["data"].get("cropping_parameters", [0, -1, 0, -1])
-            )
+            if hasattr(Trk[0], "metadata"):
+                cropping = (
+                    Trk[0].metadata["data"].get("cropping_parameters", [0, -1, 0, -1])
+                )
+            else:
+                cropping = [0, -1, 0, -1]
             xcrop = cropping[:2]
             ycrop = cropping[2:]
 
@@ -259,7 +271,9 @@ def anim_decorator(plot_function):
 
 
 class Animate_plot:
-    def __init__(self, fig, ax, video_path=None, x_crop=[0, -1], y_crop=[0, -1]):
+    def __init__(
+        self, fig, ax, video_path=None, x_crop=[0, -1], y_crop=[0, -1], arena=None
+    ):
         self.fig = fig
         self.ax = ax
 
@@ -279,10 +293,6 @@ class Animate_plot:
 
         if video_path:
             self.ax.set_xlabel("")
-
-            self.y_crop = y_crop
-            self.x_crop = x_crop
-
             self.ax.set_position([0.4, 0.13, 0.55, 0.75])
             self.ax_vid = self.fig.add_axes([0.05, 0.13, 0.3, 0.75])
 
@@ -290,8 +300,22 @@ class Animate_plot:
             self.current_time = 0
 
             self.cap = cv2.VideoCapture(str(video_path))
-            if self.cap.isOpened() == False:
+            if not self.cap.isOpened():
                 raise cv2.error("Error opening video stream or file")
+
+            camera_height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            camera_width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+            if y_crop[-1] < 0:
+                y_crop[1] = int(camera_height)
+
+            if x_crop[1] < 0:
+                x_crop[1] = int(camera_width)
+
+            self.y_slice = slice(*y_crop)
+            self.x_slice = slice(*x_crop)
+
+            self.extent = arena.get_extent(camera_width, camera_height)
+
             self.grab_first_frame()
 
             self.ax_vid.set(xlabel="X pixel", ylabel="Y pixel")
@@ -409,10 +433,9 @@ class Animate_plot:
         ret, frame = self.cap.read()
 
         self.vid = self.ax_vid.imshow(
-            frame[
-                self.y_crop[0] : self.y_crop[1], self.x_crop[0] : self.x_crop[1], ::-1
-            ],
+            frame[self.y_slice, self.x_slice, ::-1],
             animated=self.useblit,
+            extent=self.extent,
         )
         self.bm.add_artist(self.vid)
         self.current_time = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1e3
@@ -426,11 +449,7 @@ class Animate_plot:
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, fr)
         _, frame = self.cap.read()
 
-        self.vid.set_array(
-            frame[
-                self.y_crop[0] : self.y_crop[1], self.x_crop[0] : self.x_crop[1], ::-1
-            ]
-        )
+        self.vid.set_array(frame[self.y_slice, self.x_slice, ::-1])
 
         self.current_time = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1e3
 

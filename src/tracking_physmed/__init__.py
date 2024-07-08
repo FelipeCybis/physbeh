@@ -1,6 +1,8 @@
 """Helper package to visualise and analyse DeepLabCut data"""
 
-__version__ = "0.1.0"
+from importlib import metadata
+
+__version__ = metadata.version("tracking-physmed")
 
 from .io import load_tracking
 from .plotting import plotting
