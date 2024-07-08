@@ -5,16 +5,20 @@ Created on Tue Jan 04 10:01:54 2022
 
 Script for manually relabel DLC labels
 """
-import matplotlib.pyplot as plt
-from matplotlib.widgets import Button
-import pandas as pd
+
 import cv2
+import matplotlib.pyplot as plt
+import pandas as pd
+from matplotlib.widgets import Button
 
 
 class Manual_relabel:
     def __init__(self, Dataframe_filepath, metadata_filepath, video):
-        """GUI to manully relabel tracking frames. This is based on HDF5 files created using DeepLabCut python package.
-        This GUI is ment to be used sporadically since the goal is that DeepLabCut gets to label correctly all frames.
+        """GUI to manully relabel tracking frames.
+
+        This is based on HDF5 files created using DeepLabCut python package.
+        This GUI is ment to be used sporadically since the goal is that DeepLabCut gets
+        to label correctly all frames.
 
         Parameters
         ----------
@@ -186,7 +190,10 @@ class Manual_relabel:
                         "o",
                         color=color,
                         alpha=alpha_value,
-                        label=f"{bpt} {self.df_likelihood[ind][self.current_frame]:.5f}",
+                        label=(
+                            f"{bpt} "
+                            f"{self.df_likelihood[ind][self.current_frame]:.5f}"
+                        ),
                         picker=True,
                     ),
                     bpt,

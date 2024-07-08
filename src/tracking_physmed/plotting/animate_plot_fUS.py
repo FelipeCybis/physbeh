@@ -1,7 +1,8 @@
-import cv2
 import warnings
-import numpy as np
+
+import cv2
 import matplotlib.pyplot as plt
+import numpy as np
 
 from ..utils import BlitManager
 
@@ -25,9 +26,12 @@ class Animate_plot_fUS:
         self.frame_step = 1
         if not self.useblit:
             self.interval_limit = 100
-            warnings.warn(
-                "Matplotlib figure does not support blit. Animation will not be optimal. This happens because the backend used does not support matplotlib blitting."
+            warn_msg = (
+                "Matplotlib figure does not support blit. Animation will not be"
+                "optimal. This happens because the backend used does not support"
+                " matplotlib blitting."
             )
+            warnings.warn(warn_msg)
 
         self.bm = BlitManager(self.fig.canvas)
 
@@ -45,7 +49,7 @@ class Animate_plot_fUS:
         self.current_time = 0
 
         self.cap = cv2.VideoCapture(str(video_path))
-        if self.cap.isOpened() == False:
+        if self.cap.isOpened() is False:
             raise cv2.error("Error opening video stream or file")
 
         self.y_crop = y_crop
@@ -72,11 +76,7 @@ class Animate_plot_fUS:
         self.ax_xlabel.yaxis.set_visible(False)
 
         self.time_stamp = self.ax_xlabel.annotate(
-            "current video frame: {vfr:05} | current fUS frame: {fr:04} | time: {sec:06.2f} s".format(
-                vfr=self.current_video_frame,
-                fr=self.current_fus_frame,
-                sec=self.current_time,
-            ),
+            self._get_timestamp(),
             (0.5, 0.5),
             xycoords="axes fraction",
             ha="center",
@@ -186,7 +186,8 @@ class Animate_plot_fUS:
         self.max_video_frames = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
 
     def next_frame(self):
-        # handles the next frame, if outside of the time dimension, goes back to the beginning
+        # handles the next frame, if outside of the time dimension, goes back to the
+        # beginning
         self.current_video_frame += self.frame_step
         if self.current_video_frame >= self.max_video_frames:
             self.current_video_frame -= self.max_video_frames
@@ -220,13 +221,7 @@ class Animate_plot_fUS:
         self.fus_im.set_array(self.data[..., self.current_fus_frame])
 
         self.play_bar.set_xdata([self.current_time, self.current_time])
-        self.time_stamp.set_text(
-            "current video frame: {vfr:05} | current fUS frame: {fr:04} | time: {sec:06.2f} s".format(
-                vfr=self.current_video_frame,
-                fr=self.current_fus_frame,
-                sec=self.current_time,
-            )
-        )
+        self.time_stamp.set_text(self._get_timestamp())
 
     def play(self):
         if self.is_playing:
@@ -242,6 +237,12 @@ class Animate_plot_fUS:
 
             elif not self.is_starting:
                 self.custom_ani.start()
+
+    def _get_timestamp(self):
+        return (
+            f"current video frame: {self.current_video_frame:05} | current fUS frame:"
+            f" {self.current_fus_frame:04} | time: {self.current_time:06.2f} s",
+        )
 
     def _get_fus_frame_from_time(self, time):
         idx = list(np.where(time < self.scan_time)[0])
@@ -267,9 +268,12 @@ class Animate_video_fUS:
         self.frame_step = 1
         if not self.useblit:
             self.interval_limit = 100
-            warnings.warn(
-                "Matplotlib figure does not support blit. Animation will not be optimal. This happens because the backend used does not support matplotlib blitting."
+            warn_msg = (
+                "Matplotlib figure does not support blit. Animation will not be"
+                "optimal. This happens because the backend used does not support"
+                " matplotlib blitting."
             )
+            warnings.warn(warn_msg)
 
         self.bm = BlitManager(self.fig.canvas)
 
@@ -281,7 +285,7 @@ class Animate_video_fUS:
         self.current_time = 0
 
         self.cap = cv2.VideoCapture(str(tracking.video_filepath))
-        if self.cap.isOpened() == False:
+        if self.cap.isOpened() is False:
             raise cv2.error("Error opening video stream or file")
 
         cropping = tracking.metadata["data"].get("cropping_parameters", [0, -1, 0, -1])
@@ -296,12 +300,12 @@ class Animate_video_fUS:
         self.ax_xlabel.xaxis.set_visible(False)
         self.ax_xlabel.yaxis.set_visible(False)
 
+        timestamp_msg = (
+            f"current video frame: {self.current_video_frame:05} | current fUS frame:"
+            f" {self.current_fus_frame:04} | time: {self.current_time:06.2f} s",
+        )
         self.time_stamp = self.ax_xlabel.annotate(
-            "current video frame: {vfr:05} | current fUS frame: {fr:04} | time: {sec:06.2f} s".format(
-                vfr=self.current_video_frame,
-                fr=self.current_fus_frame,
-                sec=self.current_time,
-            ),
+            timestamp_msg,
             (0.5, 0.5),
             xycoords="axes fraction",
             ha="center",
@@ -405,7 +409,8 @@ class Animate_video_fUS:
         self.max_video_frames = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
 
     def next_frame(self):
-        # handles the next frame, if outside of the time dimension, goes back to the beginning
+        # handles the next frame, if outside of the time dimension, goes back to the
+        # beginning
         self.current_video_frame += self.frame_step
         if self.current_video_frame >= self.max_video_frames:
             self.current_video_frame -= self.max_video_frames
@@ -425,13 +430,11 @@ class Animate_video_fUS:
         self.current_fus_frame = self._get_fus_frame_from_time(self.current_time)
         self.fus_im.set_array(self.data[..., self.current_fus_frame])
 
-        self.time_stamp.set_text(
-            "current video frame: {vfr:05} | current fUS fr: {fr:04} | time: {sec:06.2f} s".format(
-                vfr=self.current_video_frame,
-                fr=self.current_fus_frame,
-                sec=self.current_time,
-            )
+        timestamp_msg = (
+            f"current video frame: {self.current_video_frame:05} | current fUS frame:"
+            f" {self.current_fus_frame:04} | time: {self.current_time:06.2f} s",
         )
+        self.time_stamp.set_text(timestamp_msg)
 
     def play(self):
         if self.is_playing:

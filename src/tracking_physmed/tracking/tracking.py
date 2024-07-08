@@ -6,6 +6,7 @@ import numpy.typing as npt
 import pandas as pd
 from scipy import signal
 from scipy.stats import multivariate_normal
+
 from tracking_physmed.arena import BaseArena
 
 from ..utils import (
@@ -26,7 +27,9 @@ SIGMOID_PARAMETERS = {
 
 
 def to_tracking_time(arr, time, new_time, offset=0):
-    """Returns upsampled array to match `new_time` array. Simply duplicates data to fill new array indices.
+    """Returns upsampled array to match `new_time` array.
+
+    Simply duplicates data to fill new array indices.
 
     Parameters
     ----------
@@ -44,9 +47,10 @@ def to_tracking_time(arr, time, new_time, offset=0):
     _type_
         _description_
     """
-    assert (
-        arr.shape[-1] == time.shape[-1]
-    ), f"`arr` and `time` arguments must have the same length, but they are {arr.shape[-1]} and {time.shape[-1]} respectively"
+    assert arr.shape[-1] == time.shape[-1], (
+        "`arr` and `time` arguments must have the same length, but they are"
+        f" {arr.shape[-1]} and {time.shape[-1]} respectively"
+    )
     new_arr = np.zeros(arr.shape[:-1] + new_time.shape)
     fps = 1 / (new_time[1] - new_time[0])
 
@@ -86,7 +90,8 @@ class Tracking:
         if Path(str(str_path)).suffix not in accepted_extensions:
             self._video_filepath = None
             warnings.warn(
-                f"Video file should have extensions {accepted_extensions} and not {Path(str(str_path)).suffix}. Returning `NoneType`",
+                f"Video file should have extensions {accepted_extensions} and not "
+                f"{Path(str(str_path)).suffix}. Returning `NoneType`",
                 category=UserWarning,
             )
         else:
@@ -230,9 +235,12 @@ class Tracking:
             f"Time running: {infos['total_running_time']:.2f} s\n"
             f"Distance run: {infos['total_distance']:.2f} cm\n"
             f"Running ratio (running time / all time): {infos['running_ratio']:.2f}\n"
-            f"Exploration ratio (ratio of visited bins): {infos['exploration_ratio']:.2f}\n"
-            f"Exploration std. (std of visits on each bin): {infos['exploration_std']:.2f}\n"
-            f"Mean running speed (only running periods): {infos['mean_running_speed']:.2f} cm/s\n"
+            "Exploration ratio (ratio of visited bins): "
+            f"{infos['exploration_ratio']:.2f}\n"
+            "Exploration std. (std of visits on each bin): "
+            f"{infos['exploration_std']:.2f}\n"
+            "Mean running speed (only running periods): "
+            f"{infos['mean_running_speed']:.2f} cm/s\n"
             f"Mean speed: {infos['mean_speed']:.2f} cm/s\n"
             "-----------------------------------------------------------"
         )
@@ -246,15 +254,18 @@ class Tracking:
         )
 
     def set_ratio_coords(self, coord_list=[], type="rectangle"):
-        """If coord_list is not given, it calls Corner_Coords class GUI so the user can label
-        the four corners and the Tracking class is able to calculate the ratio px/cm.
-        It rights the corner coordinates in the metadata pickle file.
+        """Set the edge coordinates of a rectangle.
+
+        If coord_list is not given, it calls Corner_Coords class GUI so the user can
+        label the four corners and the Tracking class is able to calculate the ratio
+        px/cm. It rights the corner coordinates in the metadata pickle file.
 
         Parameters
         ----------
         coord_list : list, optional
-            Should be a list of [x, y] coordinates for the top left, top right, bottom left and
-            bottom right corners such that coord_list = [[tl_x, tl_y], [tr_x, tr_y], ...], by default []
+            Should be a list of ``[x, y]`` coordinates for the top left, top right,
+            bottom left and bottom right corners such that ``coord_list = [[tl_x, tl_y],
+            [tr_x, tr_y], ...]``. Default is ``[]``.
         """
         if coord_list:
             self._write_corner_coords(coord_list)
@@ -278,7 +289,8 @@ class Tracking:
         label : str
             The labels to extract the likelihood from.
         pcutout : float, optional
-            Between 0 and 1. If `None`, uses the ``self.pcutout`` property. The default is `None`.
+            Between 0 and 1. If `None`, uses the ``self.pcutout`` property. Default
+            is ``None``.
 
         Returns
         -------
@@ -298,15 +310,17 @@ class Tracking:
         smooth=False,
         only_running_bouts=False,
     ):
-        """Gets the direction vector 'label0'->'label1' by simple subtraction label1 - label0.
-        Default vector is 'neck'->'probe'. This can be used to get the head direction of the animal, for example.
+        """Get direction vector ``'label0'->'label1'`` doing ``label1 - label0``.
+
+        Default vector is ``'neck'->'probe'``. This can be used to get the head
+        direction of the animal, for example.
 
         Parameters
         ----------
         label0 : str, optional
-            Label where the vector will start. The default is 'neck'.
+            Label where the vector will start. Default is ``'neck'``.
         label1 : str, optional
-            Label where the vector will finish. The default is 'probe'.
+            Label where the vector will finish. Default is ``'probe'``.
 
         Returns
         -------
@@ -378,14 +392,14 @@ class Tracking:
         return angular_velocity, self.time, index
 
     def get_degree_interval_hd(self, deg, only_running_bouts=False):
-        """Gets an array where the direction array (head direction here) is modulated by a guassian function centered in `deg`.
+        """Get head direction array modulated by a guassian function centered in `deg`.
 
         Parameters
         ----------
         deg : int or float
             Head direction in degrees, between 0 and 360.
         only_running_bouts : bool, optional
-            [description], by default False
+            Use only running bouts of the experiment. Default is ``False``.
 
         Returns
         -------
@@ -427,12 +441,12 @@ class Tracking:
         return np.histogram(hd_deg[index], bins=bins, range=(0, 360))
 
     def get_xy_coords(self, bodypart="body"):
-        """Gets array of x, y coordinates of the `bodypart` label in the shape [nframes, 2].
+        """Get array of ``x, y`` coordinates of the `bodypart`.
 
         Parameters
         ----------
         bodypart : str, optional
-            By default 'body'
+            The bodypart. Default is ``'body'``.
 
         Returns
         -------
@@ -459,7 +473,8 @@ class Tracking:
         ----------
         bodypart : str
         pcutout : float, optional
-            Between 0 and 1. If `None`, uses the self.pcutout property. The default is `None`.
+            Between 0 and 1. If ``None``, uses the ``self.pcutout`` property. Default is
+            ``None``.
 
         Returns
         -------
@@ -487,7 +502,8 @@ class Tracking:
         ----------
         bodypart : str
         pcutout : float, optional
-            Between 0 and 1. If `None`, uses the self.pcutout property. The default is `None`.
+            Between 0 and 1. If `None`, uses the self.pcutout property. Default is
+            ``None``.
 
         Returns
         -------
@@ -517,23 +533,30 @@ class Tracking:
         speed_cutout=0,
         only_running_bouts=False,
     ):
-        """Gets speed for given `bodypart`. When getting the distance between frames, the first index is hard set to be 0 so that the output array has the same length as the number of frames.
+        """Get speed for given ``bodypart``.
+
+        When getting the distance between frames, the first index is hard set to be 0 so
+        that the output array has the same length as the number of frames.
 
         Parameters
         ----------
         bodypart : str, optional
             Name of the label to get the speed from, by default 'body'.
         axis : str, optional
-            To compute Vx, Vy or V, axis is 'x', 'y' or 'xy', respectively. By default 'xy'.
+            To compute Vx, Vy or V, axis is ``'x'``, ``'y'`` or ``'xy'``, respectively.
+            Default is ``'xy'``.
         euclidean_distance : bool, optional
-            If ``axis`` is only one dimension, the distance can be the euclidean (absolute) or real. By default False.
+            If ``axis`` is only one dimension, the distance can be the euclidean
+            (absolute) or real. Default is ``False``.
         smooth : bool, optional
-            If True a Gaussian window will convolve the speed array, by default True.
-            The parameters of the Gaussian window can be set via the self.speed_smooth_window variable.
+            If ``True`` a Gaussian window will convolve the speed array. The parameters
+            of the Gaussian window can be set via the self.speed_smooth_window variable.
+            Default is ``True``.
         speed_cutout : int, optional
-            If given it will set the speed values under this threshold to 0, by default 0.
+            If given it will set the speed values under this threshold to 0. Default is
+            ``0``.
         only_running_bouts : bool, optional
-            [description], by default False.
+            Use only running bouts of the experiment. Default is ``False``.
 
         Returns
         -------
@@ -565,15 +588,16 @@ class Tracking:
         return speed_array, self.time, index, "cm/s"
 
     def get_running_bouts(self, speed_array=None, time_array=None):
-        """Automatic gets running bouts given certain parameters, such as speed_threshold,
+        """Get running bouts given certain parameters, such as speed_threshold,
         minimal duration of running bout and minimal duration of resting bout.
 
         Parameters
         ----------
         speed_array : array_like, optional
-            Array to get automatic running bouts from, if None then Tracking.get_speed() is called, by default None.
+            Array to get automatic running bouts from, if ``None`` then
+            `Tracking.get_speed()` is called. Default is ``None``.
         time_array : array_like, optional
-            Time array to be passed as output, by default None.
+            Time array to be passed as output. Default is ``None``.
 
         Returns
         -------
@@ -588,15 +612,17 @@ class Tracking:
 
         # getting True False array where speed is above 10 cm/s
         self.running_bouts = speed_array > 10
-        # getting indices where this True False array changes from True to False or False to True
+        # getting indices where this True False array changes from True to False or
+        # False to True
         change_idx = np.where(np.diff(self.running_bouts))[0]
         # getting length from one change_idx to the next one
         bout_lengths = np.insert(np.diff(change_idx), 0, change_idx[0])
 
         # This for loop gets every False bout (no running) shorter than 15 seconds,
-        # either in the beginning or between running bouts and sets them to True (running)
+        # either in the beginning or between running bouts and sets them to True
+        # (running)
         for i in range(len(bout_lengths)):
-            if bout_lengths[i] < 750 and self.running_bouts[change_idx[i]] == False:
+            if bout_lengths[i] < 750 and self.running_bouts[change_idx[i]] is False:
                 if i == 0:
                     self.running_bouts[: change_idx[i] + 1] = True
                 else:
@@ -608,11 +634,12 @@ class Tracking:
         temp_bout_lengths = np.insert(np.diff(temp_change_idx), 0, temp_change_idx[0])
 
         # This for loop gets every True bout (running) shorter then 15 seconds,
-        # either in the beginning or between no running bouts and sets them to False (no running)
+        # either in the beginning or between no running bouts and sets them to False (no
+        # running)
         for i in range(len(temp_bout_lengths)):
             if (
                 temp_bout_lengths[i] < 750
-                and self.running_bouts[temp_change_idx[i]] == True
+                and self.running_bouts[temp_change_idx[i]] is True
             ):
                 if i == 0:
                     self.running_bouts[: temp_change_idx[i] + 1] = False
@@ -683,7 +710,8 @@ class Tracking:
         print(
             "--------------------------------------------------------------\n"
             + f"Total tracking time: {info_dict['total_time']} {self.time_units}\n"
-            + f"Total running time: {info_dict['total_running_time']:.2f} {self.time_units}\n"
+            + f"Total running time: {info_dict['total_running_time']:.2f}"
+            + f" {self.time_units}\n"
             + f"Total distance run: {info_dict['total_distance']:.2f} {spatial_units}\n"
             + "Running time ratio (running time / all time): "
             f"{info_dict['running_ratio']:.2f}\n"
@@ -693,7 +721,8 @@ class Tracking:
             f"{info_dict['exploration_std']:.3f}\n"
             + "Running speed (only running periods): "
             f"{info_dict['mean_running_speed']:.2f} {spatial_units}/{self.time_units}\n"
-            + f"Mean running speed: {info_dict['mean_speed']:.2f} {spatial_units}/{self.time_units}\n"
+            + f"Mean running speed: {info_dict['mean_speed']:.2f} "
+            f"{spatial_units}/{self.time_units}\n"
             "--------------------------------------------------------------"
         )
 
@@ -705,16 +734,17 @@ class Tracking:
         sigmoid_a=None,
         sigmoid_b=None,
     ):
-        """Get a sigmoid response from the label position in relation to the specified wall.
+        """Get a sigmoid activation for the label in relation to the specified wall.
 
         Parameters
         ----------
         wall : str or list of str or tuple of str, optional
-            Wall to use for computations. Can be one of ("left", "right", "top", "bottom"). Default is "left".
+            Wall to use for computations. Can be one of ("left", "right", "top",
+            "bottom"). Default is ``"left"``.
         bodypart : str, optional
-            Bodypart to use for computations. Default "probe".
+            Bodypart to use for computations. Default is ``"probe"``.
         only_running_bouts : bool, optional
-            Use only running bouts of the experiment. Default ``False``.
+            Use only running bouts of the experiment. Default is ``False``.
 
         Returns
         -------
@@ -729,12 +759,13 @@ class Tracking:
         if wall == "all":
             wall = ("left", "right", "top", "bottom")
 
-        if not isinstance(wall, (list, tuple)):
+        if not isinstance(wall, list | tuple):
             wall = [wall]
 
         if not set(wall).issubset(("left", "right", "top", "bottom")):
             raise ValueError(
-                f"wall parameter must be one of the following: left, right, top or bottom, not {wall}."
+                "wall parameter must be one of the following: left, right, top or"
+                f" bottom, not {wall}."
             )
 
         coords, _, index = self.get_xy_coords(bodypart=bodypart)
@@ -759,14 +790,16 @@ class Tracking:
         return wall_activation, self.time, index
 
     def get_proximity_from_center(self, bodypart="probe", only_running_bouts=False):
-        """Get a sigmoid response from the label position in relation to the center of the stage.
+        """Get a sigmoid activation for the label in relation to the center.
+
+        This is the inverse of getting proximity from wall for all walls.
 
         Parameters
         ----------
         bodypart : str, optional
-            Bodypart to use for computations, by default "probe".
+            Bodypart to use for computations. Default is ``"probe"``.
         only_running_bouts : bool, optional
-            Use only running bouts of the experiment, by default False
+            Use only running bouts of the experiment. Default is ``False``.
 
         Returns
         -------
@@ -798,17 +831,17 @@ class Tracking:
     def get_proximity_from_corner(
         self, corner="top right", bodypart="probe", only_running_bouts=False
     ):
-        """Get a 2D sigmoid response from the x and y label position in relation to the specified corner.
+        """Get a 2D sigmoid activation for the label in relation to the `corner`.
 
         Parameters
         ----------
         corner : str, optional
-            Must be one of the four corners of a rectangle ("top right", "top left", "bottom right", "bottom left"),
-            by default "top right".
+            Must be one of the four corners of a rectangle ("top right", "top left",
+            "bottom right", "bottom left"). Default is ``"top right"``.
         bodypart : str, optional
-            Bodypart to use for computations, by default "probe".
+            Bodypart to use for computations. Default is ``"probe"``.
         only_running_bouts : bool, optional
-            Use only running bouts of the experiment, by default False.
+            Use only running bouts of the experiment. Default is ``False``.
 
         Returns
         -------
@@ -823,7 +856,7 @@ class Tracking:
         if corner == "all":
             corner = ("top right", "top left", "bottom right", "bottom left")
 
-        if not isinstance(corner, (list, tuple)):
+        if not isinstance(corner, list | tuple):
             corner = [corner]
 
         if not set(corner).issubset(
@@ -862,28 +895,32 @@ class Tracking:
 
     def get_place_field_array(
         self,
-        coords: tuple = None,
+        coords: tuple | None = None,
         random_coords=False,
         only_running_bouts=False,
         bodypart="body",
     ):
-        """Gets output array by applying the each frame's x, y coordinates to a specific place field.
+        """Get a place field activation array on specific ``x, y`` coordinate.
 
         Parameters
         ----------
         coords : tuple, optional
-            (x, y) coordinates to create the place field. If `None`, gets coordinates from utils.place_fields.get_place_field_coordinates. By default None
+            (x, y) coordinates to create the place field. If `None`, gets coordinates
+            from utils.place_fields.get_place_field_coordinates. Default is ``None``.
         random_coords : bool, optional
-            If `coords` is `None`, gets coordinates using the `random` parameter or not. By default False
+            If `coords` is `None`, gets coordinates using the `random` parameter or not.
+            Default is ``False``.
         only_running_bouts : bool, optional
-            Not yet implemented. By default False
+            not yet implemented. use only running bouts of the experiment. Default is
+            ``False``.
         bodypart : str, optional
-            Which bodypart label to use when getting coordinates. By default "body"
+            Which bodypart label to use when getting coordinates. Default is ``"body"``.
 
         Returns
         -------
         tuple (place field array, (time array, place field coordinates))
-            Each line in the place field array corresponds to one place field coordinate.
+            Each line in the place field array corresponds to one place field
+            coordinate.
         """
 
         animal_coords, time_array, index = self.get_xy_coords(bodypart=bodypart)
@@ -937,21 +974,24 @@ class Tracking:
     def _get_distance_between_frames(
         self, bodypart="body", axis="xy", euclidean=False, backup_bps=["probe"]
     ):
-        """Get distance from one frame to another for the specific bodypart along the whole analysis.
+        """Get distance from one frame to another for the specific bodypart.
 
         Parameters
         ----------
         bodypart : str, optional
             The default is 'body'.
         axis : str, optional
-            To compute Vx, Vy or V, axis is 'x', 'y' or 'xy', respectively. By default 'xy'.
+            To compute Vx, Vy or V, axis is ``'x'``, ``'y'`` or ``'xy'``, respectively.
+            Default is ``'xy'``.
         euclidean : bool, optional
-            If ``axis`` is only one dimension, the distance can be the euclidean (absolute) or real. By default False.
+            If ``axis`` is only one dimension, the distance can be the euclidean
+            (absolute) or real. Default is ``False``.
 
         Returns
         -------
-        distance between frames : numpy.ndarray
-            First values is set to 0 so that the returned array has the same size of self.nframes.
+        numpy.ndarray
+            Distance between frames. First values is set to ``0`` so that the returned
+            array has the same size of ``self.nframes``.
         """
         if axis is None:
             axis = "xy"

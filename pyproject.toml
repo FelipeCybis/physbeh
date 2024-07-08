@@ -37,7 +37,23 @@ test = [
 dev = [
     "ipykernel~=6.29.3",
     "ruff~=0.3.0",
+    "pre-commit",
 ]
+
+[tool.ruff]
+# Always generate Python 3.10-compatible code.
+target-version = "py310"
+line-length = 88
+src = ["src"]
+
+[tool.ruff.lint]
+# Enable the pycodestyle error and warnings (`E`, `W`) rules, Pyflakes (`F`) rules,
+# McCabe complexity (`C901`) rule, isort (`I`) rules for importing, pyupgrade (`UP`)
+# rules.
+select = ["E", "F", "W", "I", "UP"]
+
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
 
 [build-system]
 requires = ["hatchling"]

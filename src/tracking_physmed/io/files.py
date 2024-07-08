@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pint_pandas  # noqa: F401
+
 from tracking_physmed.arena import RectangularArena
 from tracking_physmed.tracking import Tracking, calculate_rectangle_cm_per_pixel
 

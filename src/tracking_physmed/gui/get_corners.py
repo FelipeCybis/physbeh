@@ -3,16 +3,15 @@ Created on Tue Mar 16 18:12:19 2021
 
 @author: Felipe Cybis Pereira
 
-Instead of labelling every corner in every training images in deeplabcut, 
+Instead of labelling every corner in every training images in deeplabcut,
 I found easier just to create this class that receives a full video path
-and asks the user input via a little matplotlib GUI to get coordinates from 
+and asks the user input via a little matplotlib GUI to get coordinates from
 top_left, top_right, bottom_left and bottom_right corners.
 """
 
+import cv2
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
-import numpy as np
-import cv2
 
 
 class Corner_Coords:
@@ -40,7 +39,7 @@ class Corner_Coords:
         self.current_frame = 0
         self.cap = cv2.VideoCapture(str(videopath))
 
-        if self.cap.isOpened() == False:
+        if self.cap.isOpened() is False:
             print("Error opening video stream or file")
             return
 
@@ -55,9 +54,9 @@ class Corner_Coords:
         )
         self.cmove = self.fig.canvas.mpl_connect("motion_notify_event", self.onmove)
 
-        self.btn_next_frame.on_clicked(lambda l: self.next_frame())
-        self.btn_prev_frame.on_clicked(lambda l: self.prev_frame())
-        self.btn_done.on_clicked(lambda l: self.done(function_after_done))
+        self.btn_next_frame.on_clicked(lambda: self.next_frame())
+        self.btn_prev_frame.on_clicked(lambda: self.prev_frame())
+        self.btn_done.on_clicked(lambda: self.done(function_after_done))
 
         self.fig.subplots_adjust(left=0)
         plt.show()
@@ -84,8 +83,9 @@ class Corner_Coords:
             )
 
         self.ax.set(
-            title="Current frame: {frame_no}\nLeft click to select a corner, right click to remove it".format(
-                frame_no=self.current_frame
+            title=(
+                f"Current frame: {self.current_frame}\n"
+                "Left click to select a corner, right click to remove it"
             )
         )
         self.fig.canvas.draw()

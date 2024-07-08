@@ -9,7 +9,7 @@ from .animate_plot_fUS import Animate_plot_fUS
 
 
 def anim_decorator(plot_function):
-    """Decorator to animate tracking plots synched with the video file of corresponding tracking.
+    """Decorator to animate tracking plots synched with video of corresponding tracking.
 
     Parameters
     ----------
@@ -96,18 +96,25 @@ def anim_decorator(plot_function):
 #         position_timestamp=[0, 0, 0.5, 0.5],
 #         other_artists=[],
 #     ):
-#         """Animation of 2/3D+t scans. This obviously needs interactive backend to work.
-#         This class was not built to direct use. Please use `animate_scan(scan)` to animate 2D+t or 3D+t scans.
+#         """Animation of 2/3D+t scans. This obviously needs interactive backend to
+#         work.
+#         This class was not built to direct use. Please use `animate_scan(scan)` to
+#         animate 2D+t or 3D+t scans.
 #         If `interactive=True`, then this are the controls for the animation:
 #             `backspace` -> play/pause
-#             `up/down` -> adjusts the frame step of the animation (default and minimum value is 1 to grab the next frame, if set to 2, will skip 1 frame, and so on...
-#             `+/-` -> adjusts the interval between frames in ms (default is 200), it will multiply or divide by 2 if used + or -, respectively
+#             `up/down` -> adjusts the frame step of the animation (default and minimum
+#             value is 1 to grab the next frame, if set to 2, will skip 1 frame, and so
+#             on...
+#             `+/-` -> adjusts the interval between frames in ms (default is 200), it
+#             will multiply or divide by 2 if used + or -, respectively
 #         """
 #         ## Creating custom animation inheriting matplotlib Animation class
 #         self.is_playing = True
 
-#         # frame_step says if animation is going frame by frame (frame_step = 1), or if it is going to skip one frame (frame_step = 2), etc.
-#         # if sampling frequency of the animation data is high, sometimes skipping some frames is a good trade-off to have a smoother animation
+#         # frame_step says if animation is going frame by frame (frame_step = 1), or
+#         # if it is going to skip one frame (frame_step = 2), etc.
+#         # if sampling frequency of the animation data is high, sometimes skipping
+#         # some frames is a good trade-off to have a smoother animation
 #         self.frame_step = 1
 #         self.current_frame = 0
 
@@ -143,13 +150,16 @@ def anim_decorator(plot_function):
 #             self._drawn_artists.append(*other_artists)
 
 #         # interval limit is the minimum time delay between frames (in ms)
-#         # set anim_interval to 1 does not mean it is really going to update frames every 1 ms, but rather it will update as fast as possible
+#         # set anim_interval to 1 does not mean it is really going to update frames
+#         # every 1 ms, but rather it will update as fast as possible
 #         self.interval_limit = 1
 #         if not self._blit:
 #             self.interval_limit = 100
 #             self.anim_interval = 200
 #             warnings.warn(
-#                 "Matplotlib figure does not support blit. Animation will not be optimal. This happens because the backend used does not support matplotlib blitting."
+#                 "Matplotlib figure does not support blit. Animation will not be
+#                 optimal. This happens because the backend used does not support
+#                 matplotlib blitting."
 #             )
 
 #         if interactive is False:
@@ -188,7 +198,8 @@ def anim_decorator(plot_function):
 #             self.frame_seq = self.new_frame_seq()
 
 #     def _draw_frame(self, framedata):
-#         # handles the next frame, if outside of the time dimension, goes back to the beginning
+#         # handles the next frame, if outside of the time dimension, goes back to the
+#         # beginning
 #         for data, im in zip(self.datas, self.images):
 #             im.set_array(data[..., framedata])
 #         if self.show_timestamp:
@@ -223,7 +234,8 @@ def anim_decorator(plot_function):
 #         if self.is_playing:
 #             self.resume()
 #         self._fig.canvas.mpl_disconnect(self._resize_id)
-#         self._resize_id = self._fig.canvas.mpl_connect("resize_event", self._on_resize)
+#         self._resize_id = self._fig.canvas.mpl_connect("resize_event",
+#         self._on_resize)
 
 #     def onkeypress(self, event):
 #         # animation controls
@@ -240,7 +252,8 @@ def anim_decorator(plot_function):
 #                 self.anim_interval /= 2
 #         elif event.key == "up":
 #             self.frame_step += 1
-#             self._framedata = range(self.current_frame, self.n_frames, self.frame_step)
+#             self._framedata = range(self.current_frame, self.n_frames,
+#             self.frame_step)
 #             self.frame_seq = self.new_frame_seq()
 #         elif event.key == "down":
 #             if self.frame_step > 1:
@@ -285,9 +298,12 @@ class Animate_plot:
         self.interval_limit = 1
         if not self.useblit:
             self.interval_limit = 100
-            warnings.warn(
-                "Matplotlib figure does not support blit. Animation will not be optimal. This happens because the backend used does not support matplotlib blitting."
+            warn_msg = (
+                "Matplotlib figure does not support blit. Animation will not be"
+                "optimal. This happens because the backend used does not support"
+                " matplotlib blitting."
             )
+            warnings.warn(warn_msg)
 
         self.bm = BlitManager(self.fig.canvas)
 
@@ -325,9 +341,7 @@ class Animate_plot:
             self.ax_xlabel.yaxis.set_visible(False)
 
             self.time_stamp = self.ax_xlabel.annotate(
-                "current fr: {fr:05} | time: {sec:06.2f} s".format(
-                    fr=self.current_frame, sec=self.current_time
-                ),
+                self._get_timestamp(),
                 (0.5, 0.75),
                 xycoords="axes fraction",
                 ha="center",
@@ -420,11 +434,7 @@ class Animate_plot:
             if not self.is_playing:
                 self.grab_frame(self.current_frame)
                 self.play_bar.set_xdata([self.current_time, self.current_time])
-                self.time_stamp.set_text(
-                    "current fr: {fr:05} | time: {sec:06.2f} s".format(
-                        fr=self.current_frame, sec=self.current_time
-                    )
-                )
+                self.time_stamp.set_text(self._get_timestamp())
 
                 self.bm.update()
 
@@ -471,11 +481,7 @@ class Animate_plot:
         self.grab_frame(self.current_frame)
 
         self.play_bar.set_xdata([self.current_time, self.current_time])
-        self.time_stamp.set_text(
-            "current fr: {fr:05} | time: {sec:06.2f} s".format(
-                fr=self.current_frame, sec=self.current_time
-            )
-        )
+        self.time_stamp.set_text(self._get_timestamp())
 
     def play(self):
         if self.is_playing:
@@ -491,3 +497,9 @@ class Animate_plot:
 
             elif not self.is_starting:
                 self.custom_ani.start()
+
+    def _get_timestamp(self):
+        return (
+            f"current fr: {self.current_frame:05} | "
+            f"time: {self.current_time:06.2f} s"
+        )

@@ -36,7 +36,7 @@ def get_line_collection(x_array, y_array, index):
     array
 
     """
-    if type(x_array) is not list:
+    if not isinstance(x_array, list):
         x_array = [x_array]
         y_array = [y_array]
         index = [index]
@@ -54,15 +54,8 @@ def get_line_collection(x_array, y_array, index):
 
 
 def get_gaussian_value(x, u=0, sigma=10):
-    """Gets value of x in a gaussian curve centered in ``u`` with standard deviation ``sigma``"""
-    return (
-        1 / (sigma * np.sqrt(2 * np.pi)) * np.e ** (-((x - u) ** 2) / (2 * sigma ** 2))
-    )
-
-
-def get_rectangular_value(n, width):
-    """Gets value of n in a rectangular function centered in 0 with width = width"""
-    return np.where(abs(n) < width, 1, 0)
+    """Return the value of `x` in a gaussian curve with mean ``u`` and std ``sigma``."""
+    return 1 / (sigma * np.sqrt(2 * np.pi)) * np.e ** (-((x - u) ** 2) / (2 * sigma**2))
 
 
 def custom_sigmoid(x, a=0.2, b=70):
@@ -74,7 +67,6 @@ def custom_2d_sigmoid(x, y, ax=0.2, bx=70, ay=0.2, by=70):
 
 
 def _plot_color_wheel(ax, cmap):
-
     # Define colormap normalization for 0 to 2*pi
     norm_2 = colors.Normalize(0, 2 * np.pi)
 

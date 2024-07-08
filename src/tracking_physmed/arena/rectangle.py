@@ -1,4 +1,5 @@
 import numpy as np
+
 from tracking_physmed.arena.base import BaseArena
 
 
@@ -63,7 +64,7 @@ class RectangularArena(BaseArena):
         self._px_top_right = px_top_right
 
     def calculate_rectangle_per_pixel(self) -> float:
-        """Helper function to calculate the centimeter per pixel ratio in a rectangle."""
+        """Helper function to calculate the cm per pixel ratio in a rectangle."""
 
         def distance(p1, p2):
             return np.sqrt(np.sum((p1 - p2) ** 2))
