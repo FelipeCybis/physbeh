@@ -1,4 +1,4 @@
-"""Helper package to visualise and analyse DeepLabCut data"""
+"""Helper package to visualise and analyse DeepLabCut data."""
 
 from importlib import metadata
 

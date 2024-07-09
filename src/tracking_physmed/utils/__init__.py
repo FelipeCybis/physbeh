@@ -1,3 +1,5 @@
+"""Miscellaneous utility functions."""
+
 from .place_fields import (
     get_place_field_coords,
     get_value_from_hexagonal_grid,
@@ -8,13 +10,11 @@ from .utils import (
     _plot_color_wheel,
     custom_2d_sigmoid,
     custom_sigmoid,
-    get_cmap,
     get_gaussian_value,
     get_line_collection,
 )
 
 __all__ = [
-    "get_cmap",
     "get_line_collection",
     "get_gaussian_value",
     "custom_sigmoid",

@@ -1,7 +1,25 @@
+"""Functions to generate place-cells and grid-cells patterns."""
+
 import numpy as np
+import numpy.typing as npt
 
 
 def get_place_field_coords(random=False, size=30):
+    """Get random set of place field coordinates.
+
+    Parameters
+    ----------
+    random : bool, optional
+        Whether or not to use numpy random module to generate the grid. Default is
+        ``False``.
+    size : int, optional
+        Grid size. Default is ``30``.
+
+    Returns
+    -------
+    numpy.ndarray
+        The 2D grid.
+    """
     if random:
         y_mu_grid, x_mu_grid = (
             np.random.randint(5, 95, size=size),
@@ -15,7 +33,31 @@ def get_place_field_coords(random=False, size=30):
     return np.array([x_mu_grid.flatten(), y_mu_grid.flatten()]).T
 
 
-def get_value_from_hexagonal_grid(coord, xplus=0, a=1 / 10, angle=8 * np.pi / 18):
+def get_value_from_hexagonal_grid(
+    coord: npt.NDArray,
+    xplus: float = 0.0,
+    a: float = 1 / 10,
+    angle: float = 8 * np.pi / 18,
+):
+    """Get sets of values to generate hexagonal grids.
+
+    Parameters
+    ----------
+    coord : numpy.ndarray
+        The ``x, y`` coordinates numpy array.
+    xplus : float, optional
+        The hexagonal parameter `xplus`. Default is ``0``.
+    a : float, optional
+        The hexagonal grid `a` parameter. Default is ``1/10``.
+    angle : float, optional
+        The hexagonal grid `angle` parameter. Default is ``8*np.pi/18``.
+
+    Returns
+    -------
+    numpy.ndarray
+        The value for the given coordinates in the hexagonal grid defined by `xplus`,
+        `a` and `angle`.
+    """
     (X, Y) = coord.T
     X += xplus
 
@@ -31,7 +73,14 @@ def get_value_from_hexagonal_grid(coord, xplus=0, a=1 / 10, angle=8 * np.pi / 18
     return re
 
 
-def set_hexagonal_parameters():
+def set_hexagonal_parameters() -> list[tuple[float, float, float]]:
+    """Get hexagonal parameters to build theoretical grid fields.
+
+    Returns
+    -------
+    list of tuple of 3 float
+        List containing different sets of hexagonal parameters.
+    """
     x_params = np.array([[0, 9, 18], [0, 12, 24], [0, 18, 36], [0, 23, 46]])
     a_params = np.array([1 / 4, 1 / 6, 1 / 8, 1 / 10])
     angle_params = np.arange(start=0, stop=np.pi / 3, step=np.pi / 9)
@@ -40,5 +89,5 @@ def set_hexagonal_parameters():
     for a, x_param in zip(a_params, x_params):
         for x in x_param:
             for angle in angle_params:
-                hex_params.append([x, a, angle])
+                hex_params.append((x, a, angle))
     return hex_params

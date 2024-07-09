@@ -200,7 +200,7 @@ def anim_decorator(plot_function):
 #     def _draw_frame(self, framedata):
 #         # handles the next frame, if outside of the time dimension, goes back to the
 #         # beginning
-#         for data, im in zip(self.datas, self.images):
+#         for data, im in zip(self.data, self.images):
 #             im.set_array(data[..., framedata])
 #         if self.show_timestamp:
 #             self.time_stamp.set_text(

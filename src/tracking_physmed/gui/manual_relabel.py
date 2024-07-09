@@ -14,10 +14,10 @@ from matplotlib.widgets import Button
 
 class Manual_relabel:
     def __init__(self, Dataframe_filepath, metadata_filepath, video):
-        """GUI to manully relabel tracking frames.
+        """GUI to manually relabel tracking frames.
 
         This is based on HDF5 files created using DeepLabCut python package.
-        This GUI is ment to be used sporadically since the goal is that DeepLabCut gets
+        This GUI is meant to be used sporadically since the goal is that DeepLabCut gets
         to label correctly all frames.
 
         Parameters

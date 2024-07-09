@@ -1,4 +1,5 @@
 import warnings
+from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
@@ -68,6 +69,21 @@ def to_tracking_time(arr, time, new_time, offset=0):
 
 
 class Tracking:
+    """A class to manipulate multi-label tracking data.
+
+
+    Parameters
+    ----------
+    data : pandas.Dataframe
+        The dataframe containing the tracking data.
+    fps : float
+        The frame per second parameter of the video used in the tracking.
+    video_filename : str or pathlib.Path, optional
+        The filename of the video associated with the tracking data.
+    filename : str or pathlib.Path, optional
+        The filename of the tracking data itself.
+    """
+
     @property
     def video_filepath(self) -> Path | None:
         """Fullpath to labeled video of ``.h5`` file.
@@ -99,7 +115,7 @@ class Tracking:
 
     @property
     def fps(self) -> float:
-        """Frames per second from metadata of chosen analysis.
+        """The frames per second from metadata of chosen analysis.
 
         Returns
         -------
@@ -143,22 +159,34 @@ class Tracking:
 
     @property
     def time_units(self):
-        """Units of the timing index `.time`."""
+        """The units of the timing index ``.time``.
+
+        Returns
+        -------
+        str
+            The time units.
+        """
         return "seconds"
 
     @property
-    def time(self):
-        """Timing index calculated using the `fps` property."""
+    def time(self) -> npt.NDArray:
+        """Timing index calculated using the ``fps`` property.
+
+        Returns
+        -------
+        numpy.ndarray
+            The timing array.
+        """
         return np.arange(len(self.Dataframe)) / self.fps
 
     @property
-    def pcutout(self) -> float:
-        """p-value cutout to consider an acceptable labeled frame.
+    def pcutout(self) -> float:  # numpydoc ignore=PR02
+        """The p-value cutout to consider an acceptable labeled frame.
 
         Parameters
         ----------
         value : int or float
-            p-value cutout.
+            The p-value cutout.
 
         Returns
         -------
@@ -168,36 +196,61 @@ class Tracking:
         return self._pcutout
 
     @pcutout.setter
-    def pcutout(self, value: int | float):
+    def pcutout(self, value: int | float):  # numpydoc ignore=GL08
         self._pcutout = float(value)
 
     @property
-    def speed_smooth_window(self):
-        """Gaussian window for smoothing."""
+    def speed_smooth_window(self) -> npt.NDArray:  # numpydoc ignore=PR02
+        """The gaussian window used to apply smoothing.
+
+        Parameters
+        ----------
+        params : list or tuple of [float, float]
+            The mean and sigma parameters for smoothing the speed data.
+
+        Returns
+        -------
+        numpy.ndarray
+            The gaussian window used to apply smoothing.
+        """
         return self._speed_smooth_window
 
     @speed_smooth_window.setter
-    def speed_smooth_window(self, params):
+    def speed_smooth_window(
+        self, params: tuple[float, float]
+    ) -> None:  # numpydoc ignore=GL08
         assert (
             len(params) == 2
-        ), "To set the gaussian window, a tuple with (lenght, std) should be passed."
+        ), "To set the gaussian window, a tuple with (length, std) should be passed."
         m, sigma = params
         self._speed_smooth_window = signal.windows.gaussian(M=m, std=sigma)
         self._speed_smooth_window /= sum(self._speed_smooth_window)
 
     @property
     def scan(self):
-        """Related pythmed.scan.Scan object (optional)."""
+        """Related ``pythmed.scan.Scan`` object.
+
+        Returns
+        -------
+        pythmed.scan.Scan
+            The associated scan.
+        """
         return self._scan
 
     def attach_scan(self, Scan):
-        """Attach the corresponding Scan object to the Tracking."""
+        """Attach the corresponding Scan object to the Tracking.
+
+        Parameters
+        ----------
+        Scan : pythmed.scan.Scan
+            The associated scan.
+        """
         self._scan = Scan
 
     def __init__(
         self,
         data: pd.DataFrame,
-        fps: int | float,
+        fps: float,
         video_filename: Path | None = None,
         filename: Path | None = None,
     ):
@@ -245,15 +298,7 @@ class Tracking:
             "-----------------------------------------------------------"
         )
 
-    def manual_relabel(self):
-        """Manual relabeling function (TODO: docstring)"""
-        from ..gui import Manual_relabel
-
-        return Manual_relabel(
-            self.filename, self.metadata_filename, self.video_filepath
-        )
-
-    def set_ratio_coords(self, coord_list=[], type="rectangle"):
+    def set_ratio_coords(self, coord_list=[]):
         """Set the edge coordinates of a rectangle.
 
         If coord_list is not given, it calls Corner_Coords class GUI so the user can
@@ -304,11 +349,11 @@ class Tracking:
 
     def get_direction_array(
         self,
-        label0="neck",
-        label1="probe",
-        mode="deg",
-        smooth=False,
-        only_running_bouts=False,
+        label0: str = "neck",
+        label1: str = "probe",
+        mode: str = "degree",
+        smooth: bool = False,
+        only_running_bouts: bool = False,
     ):
         """Get direction vector ``'label0'->'label1'`` doing ``label1 - label0``.
 
@@ -321,12 +366,22 @@ class Tracking:
             Label where the vector will start. Default is ``'neck'``.
         label1 : str, optional
             Label where the vector will finish. Default is ``'probe'``.
+        mode : str, optional
+            Get direction data in ``"degrees"`` or ``"radians"``. Default is
+            ``"degree"``.
+        smooth : bool, optional
+            Whether or not to smooth the direction data. Default is ``False``.
+        only_running_bouts : bool, optional
+            Use only running bouts of the experiment. Default is ``False``.
 
         Returns
         -------
         direction array : numpy.ndarray
             In degrees, if mode asks for it, otherwise in radians.
-
+        time_array : numpy.ndarray
+            Time array in seconds.
+        index : numpy.ndarray
+            Index where ``p-value > pcutout`` is ``True``, index is ``False`` otherwise.
         """
 
         hd_x, hd_y = self._get_vector_from_two_labels(label0=label0, label1=label1)
@@ -363,7 +418,26 @@ class Tracking:
     def get_direction_angular_velocity(
         self, label0="neck", label1="probe", only_running_bouts=False
     ):
-        """(TODO: docstring)"""
+        """Get angular velocity using the vector between `label0` and `label1`.
+
+        Parameters
+        ----------
+        label0 : str, optional
+            Label where the vector will start. Default is ``'neck'``.
+        label1 : str, optional
+            Label where the vector will finish. Default is ``'probe'``.
+        only_running_bouts : bool, optional
+            Use only running bouts of the experiment. Default is ``False``.
+
+        Returns
+        -------
+        angular_velocity : numpy.ndarray
+            The angular velocity array.
+        time_array : numpy.ndarray
+            Time array in seconds.
+        index : numpy.ndarray
+            Index where ``p-value > pcutout`` is ``True``, index is ``False`` otherwise.
+        """
 
         hd_x, hd_y = self._get_vector_from_two_labels(label0=label0, label1=label1)
         index = self.get_index(label=label1)
@@ -392,7 +466,7 @@ class Tracking:
         return angular_velocity, self.time, index
 
     def get_degree_interval_hd(self, deg, only_running_bouts=False):
-        """Get head direction array modulated by a guassian function centered in `deg`.
+        """Get head direction array modulated by a gaussian function centered in `deg`.
 
         Parameters
         ----------
@@ -403,8 +477,12 @@ class Tracking:
 
         Returns
         -------
-        [type]
-            [description]
+        hd_array : numpy.ndarray
+            The "activation" array for given `deg` head direction.
+        time_array : numpy.ndarray
+            Time array in seconds.
+        index : numpy.ndarray
+            Index where p-value > pcutout is True, index is False otherwise.
         """
         hd_deg, _, index = self.get_direction_array(
             label0="neck", label1="probe", mode="deg"
@@ -429,13 +507,32 @@ class Tracking:
 
         return hd_array, self.time, index
 
-    def get_direction_histogram(self, degrees=4):
-        """(TODO: docstring)"""
+    def get_direction_histogram(
+        self, bin_size: float = 4.0, label0: str = "neck", label1: str = "probe"
+    ) -> tuple[npt.NDArray, npt.NDArray]:
+        """Get the direction histogram between `label0` and `label1`.
 
-        bins = 360 // degrees
+        Parameters
+        ----------
+        bin_size : float, optional
+            The size of the bins of the histogram, in degrees. Default is ``4.0``.
+        label0 : str, optional
+            Label where the vector will start. Default is ``"neck"``.
+        label1 : str, optional
+            Label where the vector will finish. Default is ``"probe"``.
+
+        Returns
+        -------
+        hist : numpy.ndarray
+            The values of the histogram.
+        bin_edges : numpy.ndarray
+            Return the bin edges ``(length(hist)+1)``.
+        """
+
+        bins = int(360 // bin_size)
 
         hd_deg, _, index = self.get_direction_array(
-            label0="neck", label1="probe", mode="deg"
+            label0=label0, label1=label1, mode="deg"
         )
 
         return np.histogram(hd_deg[index], bins=bins, range=(0, 360))
@@ -450,13 +547,12 @@ class Tracking:
 
         Returns
         -------
-        tuple
-            coords : numpy.ndarray
-                Values in x and y multiplied by ``ratio_per_pixel`` for bodypart.
-            time_array : numpy.ndarray
-                Time array in seconds.
-            # index : numpy.ndarray
-                Index where p-value > pcutout is True, index is False otherwise.
+        coords : numpy.ndarray
+            Values in x and y multiplied by ``ratio_per_pixel`` for bodypart.
+        time_array : numpy.ndarray
+            Time array in seconds.
+        index : numpy.ndarray
+            Index where p-value > pcutout is True, index is False otherwise.
         """
 
         x, _, index = self.get_position_x(bodypart=bodypart, pcutout=self.pcutout)
@@ -466,26 +562,25 @@ class Tracking:
 
         return coords, self.time, index
 
-    def get_position_x(self, bodypart, pcutout=None, absolute=False):
-        """Simple function to get x values for bodypart.
+    def get_position_x(self, bodypart, pcutout=None):
+        """Simple function to get x values for `bodypart`.
 
         Parameters
         ----------
         bodypart : str
+            The bodypart.
         pcutout : float, optional
             Between 0 and 1. If ``None``, uses the ``self.pcutout`` property. Default is
             ``None``.
 
         Returns
         -------
-        tuple
-            x_bp : numpy.ndarray
-                Pixel values in x for bodypart.
-            time_array : numpy.ndarray
-                Time array in seconds.
-            # index : numpy.ndarray
-                Index where p-value > pcutout is True, index is False otherwise.
-
+        x_bp : numpy.ndarray
+            Pixel values in x for bodypart.
+        time_array : numpy.ndarray
+            Time array in seconds.
+        index : numpy.ndarray
+            Index where p-value > pcutout is True, index is False otherwise.
         """
         index = self.get_index(bodypart, pcutout)
         if hasattr(self.Dataframe, "pint"):
@@ -495,26 +590,25 @@ class Tracking:
 
         return x_bp, self.time, index
 
-    def get_position_y(self, bodypart, pcutout=None, absolute=False):
+    def get_position_y(self, bodypart, pcutout=None):
         """Simple function to get y values for bodypart.
 
         Parameters
         ----------
         bodypart : str
+            The bodypart.
         pcutout : float, optional
             Between 0 and 1. If `None`, uses the self.pcutout property. Default is
             ``None``.
 
         Returns
         -------
-        tuple
-            y_bp : numpy.ndarray
-                Pixel values in y for bodypart.
-            time_array : numpy.ndarray
-                Time array in seconds.
-            index : numpy.ndarray
-                Index where p-value > pcutout is True, index is False otherwise.
-
+        y_bp : numpy.ndarray
+            Pixel values in y for bodypart.
+        time_array : numpy.ndarray
+            Time array in seconds.
+        index : numpy.ndarray
+            Index where p-value > pcutout is True, index is False otherwise.
         """
 
         index = self.get_index(bodypart, pcutout)
@@ -588,7 +682,9 @@ class Tracking:
         return speed_array, self.time, index, "cm/s"
 
     def get_running_bouts(self, speed_array=None, time_array=None):
-        """Get running bouts given certain parameters, such as speed_threshold,
+        """Get running bouts given certain parameters.
+
+        Parameters used to determine running bouts are speed threshold,
         minimal duration of running bout and minimal duration of resting bout.
 
         Parameters
@@ -601,11 +697,10 @@ class Tracking:
 
         Returns
         -------
-        tuple
-            running_bouts : np.array
-                Boolean array with True when the animal is running and False otherwise.
-            time_array : np.array
-                Array mapping the index of the tracking data to time in seconds.
+        running_bouts : numpy.ndarray
+            Boolean array with True when the animal is running and False otherwise.
+        time_array : numpy.ndarray
+            Array mapping the index of the tracking data to time in seconds.
         """
         if speed_array is None or time_array is None:
             speed_array, time_array, _, _ = self.get_speed(bodypart="body", smooth=True)
@@ -656,9 +751,38 @@ class Tracking:
         return self.running_bouts, self.time_bouts
 
     def get_binned_position(
-        self, bodypart="body", bins=[10, 10], only_running_bouts=False
-    ):
-        """(TODO: docstring)"""
+        self,
+        bodypart: str = "body",
+        bins: int | Sequence[int] = [10, 10],
+        only_running_bouts: bool = False,
+    ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
+        """Get animal position in a 2D histogram.
+
+        Parameters
+        ----------
+        bodypart : str, optional
+            The specified bodypart. Default is ``"body"``.
+        bins : int or [int, int], optional
+            The bin specification:
+
+            * If ``int``, the number of bins for the two dimensions (``nx=ny=bins``).
+            * If ``[int, int]``, the number of bins in each dimension
+                (``nx, ny = bins``).
+
+        only_running_bouts : bool, optional
+            Whether or not to use only running bouts. Default is ``False``.
+
+        Returns
+        -------
+        H : numpy.ndarray, shape(nx, ny)
+            The bi-dimensional histogram of samples `x` and `y`. Values in `x`
+            are histogrammed along the first dimension and values in `y` are
+            histogrammed along the second dimension.
+        xedges : numpy.ndarray, shape(nx+1,)
+            The bin edges along the first dimension.
+        yedges : numpy.ndarray, shape(ny+1,)
+            The bin edges along the second dimension.
+        """
 
         x_pos, _, index = self.get_position_x(bodypart=bodypart)
         y_pos = self.get_position_y(bodypart=bodypart)[0]
@@ -676,8 +800,21 @@ class Tracking:
             range=[[0, 100], [0, 100]],
         )
 
-    def get_infos(self, bins=10, bin_only_running_bouts=False):
-        """(TODO: docstring)"""
+    def get_infos(self, bins: int = 10, bin_only_running_bouts: bool = False) -> dict:
+        """Get general information about the tracking and return it in a dictionary.
+
+        Parameters
+        ----------
+        bins : int, optional
+            Number of bins to use when calculating the occupancy. Default is ``10``.
+        bin_only_running_bouts : bool, optional
+            Whether or not to use only running bouts when binning. Default is ``False``.
+
+        Returns
+        -------
+        dict
+            The dictionary containing general tracking information.
+        """
         H = self.get_binned_position(
             "body", bins, only_running_bouts=bin_only_running_bouts
         )[0]
@@ -703,8 +840,14 @@ class Tracking:
         info_dict["mean_speed"] = speed.mean()
         return info_dict
 
-    def print_infos(self, bins=10):
-        """(TODO: docstring)"""
+    def print_infos(self, bins: int = 10):
+        """Print general informations of the tracking.
+
+        Parameters
+        ----------
+        bins : int, optional
+            Number of bins to use when calculating the occupancy. Default is ``10``.
+        """
         info_dict = self.get_infos(bins=bins)
         spatial_units = self.space_units[self.labels[0] + "_x"].units
         print(
@@ -731,8 +874,6 @@ class Tracking:
         wall="left",
         bodypart="probe",
         only_running_bouts=False,
-        sigmoid_a=None,
-        sigmoid_b=None,
     ):
         """Get a sigmoid activation for the label in relation to the specified wall.
 
@@ -749,7 +890,7 @@ class Tracking:
         Returns
         -------
         tuple
-            Tuple of ``wall_activation``, time and likelihood indices
+            Tuple of ``wall_activation``, time and likelihood indices.
 
         Raises
         ------
@@ -804,8 +945,7 @@ class Tracking:
         Returns
         -------
         tuple
-            Tuple of ``center_activation``, time and likelihood indices
-
+            Tuple of ``center_activation``, time and likelihood indices.
         """
         coords, _, index = self.get_xy_coords(bodypart=bodypart)
 
@@ -846,7 +986,7 @@ class Tracking:
         Returns
         -------
         tuple
-            Tuple of ``corner_activation``, time and likelihood indices
+            Tuple of ``corner_activation``, time and likelihood indices.
 
         Raises
         ------
@@ -911,7 +1051,7 @@ class Tracking:
             If `coords` is `None`, gets coordinates using the `random` parameter or not.
             Default is ``False``.
         only_running_bouts : bool, optional
-            not yet implemented. use only running bouts of the experiment. Default is
+            Not yet implemented. use only running bouts of the experiment. Default is
             ``False``.
         bodypart : str, optional
             Which bodypart label to use when getting coordinates. Default is ``"body"``.
@@ -941,10 +1081,32 @@ class Tracking:
         self.place_fields_array = np.array(self.place_fields_list)
         return self.place_fields_array, (self.time, coords)
 
-    def get_grid_field_array(self, params=None, bodypart="body"):
-        """(TODO: docstring)"""
+    def get_grid_field_array(
+        self,
+        params: list[tuple[float, float, float]] | None = None,
+        bodypart: str = "body",
+    ) -> tuple[npt.NDArray, npt.NDArray, list[tuple[float, float, float]]]:
+        """Get a grid activation array using the parameters `params`.
 
-        animal_coords, time_array, index = self.get_xy_coords(bodypart=bodypart)
+        Parameters
+        ----------
+        params : list of tuple of (float, float, float) or None, optional
+            List of hexagonal parameters to use when getting the grid activations.
+            Default is ``None``.
+        bodypart : str, optional
+            The specified bodypart. Default is ``"body"``.
+
+        Returns
+        -------
+        grid_fields_array : numpy.ndarray
+            Grid field activation array.
+        time : numpy.ndarray
+            Time array in seconds.
+        index : numpy.ndarray
+            Index where p-value > pcutout is True, index is False otherwise.
+        """
+
+        animal_coords = self.get_xy_coords(bodypart=bodypart)[0]
 
         if params is None:
             params = set_hexagonal_parameters()
@@ -1060,14 +1222,22 @@ def calculate_rectangle_cm_per_pixel(
         Rectangle width in centimeters.
     real_height_cm : int | float
         Rectangle height in centimeters.
+
+    Returns
+    -------
+    float
+        The averaged centimeter per pixel ratio.
     """
 
-    def distance(p1, p2):
+    def _distance(p1, p2):
         return np.sqrt(np.sum((p1 - p2) ** 2))
 
-    width_estimates = [distance(coords[0], coords[1]), distance(coords[2], coords[3])]
-    height_estimates = [distance(coords[0], coords[2]), distance(coords[1], coords[3])]
-    diag_estimates = [distance(coords[0], coords[3]), distance(coords[1], coords[2])]
+    width_estimates = [_distance(coords[0], coords[1]), _distance(coords[2], coords[3])]
+    height_estimates = [
+        _distance(coords[0], coords[2]),
+        _distance(coords[1], coords[3]),
+    ]
+    diag_estimates = [_distance(coords[0], coords[3]), _distance(coords[1], coords[2])]
 
     real_diag_cm = np.sqrt(real_width_cm**2 + real_height_cm**2)
     cm2px_ratio_width = real_width_cm / np.mean(width_estimates)

@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import colormaps as mpl_cm
 from matplotlib import colors
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import LineCollection
@@ -8,11 +9,11 @@ from tracking_physmed.plotting.animate2d_decorator import anim2d_decorator
 from tracking_physmed.plotting.animate_decorator import anim_decorator
 from tracking_physmed.plotting.animate_plot_fUS import Animate_video_fUS
 from tracking_physmed.tracking import Tracking
-from tracking_physmed.utils import _plot_color_wheel, get_cmap, get_line_collection
+from tracking_physmed.utils import _plot_color_wheel, get_line_collection
 
 
 def get_label_color(Trk: Tracking, bodypart: str, cmap_name: str = "plasma"):
-    cmap = plt.cm.get_cmap(name=cmap_name, lut=len(Trk.labels))
+    cmap = mpl_cm.get_cmap(cmap_name).resampled(len(Trk.labels))
     return cmap(Trk.labels.index(bodypart))
 
 
@@ -474,7 +475,7 @@ def plot_position_2d(
         if clim is None:
             clim = (color_collection_array.min(), color_collection_array.max())
 
-        cmap = get_cmap(name=colormap, n=200)
+        cmap = mpl_cm.get_cmap(colormap).resampled(200)
         norm = colors.BoundaryNorm(np.linspace(clim[0], clim[1], cmap.N), cmap.N)
 
         lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)
@@ -497,7 +498,7 @@ def plot_position_2d(
         if only_running_bouts:
             index = Trk_cls.running_bouts
 
-        cmap = get_cmap(name=colormap, n=360)
+        cmap = mpl_cm.get_cmap(colormap).resampled(360)
 
         head_direction_array, _, _ = Trk_cls.get_direction_array(
             label0=head_direction_vector_labels[0],
@@ -845,14 +846,14 @@ def plot_head_direction(
         if clim is None:
             clim = (color_collection_array.min(), color_collection_array.max())
 
-        cmap = get_cmap(name=colormap, n=200)
+        cmap = mpl_cm.get_cmap(colormap).resampled(200)
         norm = colors.BoundaryNorm(
             np.arange(clim[0], clim[1], (clim[1] - clim[0]) / 100), cmap.N
         )
 
         line_collection_array = color_collection_array[index]
     else:
-        cmap = get_cmap(name=colormap, n=360)
+        cmap = mpl_cm.get_cmap(colormap).resampled(360)
         norm_dict = {
             "deg": np.arange(0, 361),
             "rad": np.arange(0, 2 * np.pi * (1 + 1 / 360), 2 * np.pi / 360),

@@ -1,3 +1,5 @@
+"""``Tracking`` class to work with DeepLabCut tracking data."""
+
 from .tracking import (
     SIGMOID_PARAMETERS,
     Tracking,

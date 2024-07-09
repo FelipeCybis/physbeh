@@ -24,15 +24,15 @@ repos:
   #   hooks:
   #     - id: mypy
 
-  # - repo: https://github.com/codespell-project/codespell
-  #   rev: v2.3.0
-  #   hooks:
-  #   - id: codespell
-  #     additional_dependencies:
-  #     - tomli
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+    - id: codespell
+      additional_dependencies:
+      - tomli
 
-  # - repo: https://github.com/numpy/numpydoc
-  #   rev: v1.7.0
-  #   hooks:
-  #   - id: numpydoc-validation
-  #     files: ^src/(?!.*tests).+$
+  - repo: https://github.com/numpy/numpydoc
+    rev: v1.7.0
+    hooks:
+    - id: numpydoc-validation
+      files: ^src/(?!.*tests).+$
