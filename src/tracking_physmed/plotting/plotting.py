@@ -414,7 +414,6 @@ def plot_running_bouts(
 def plot_position_2d(
     Trk_cls: Tracking,
     bodypart="body",
-    absolute=False,
     color_collection_array=None,
     clim=None,
     head_direction=True,
@@ -468,8 +467,8 @@ def plot_position_2d(
     tuple (matplotlib.Figure, LineCollection)
     """
 
-    x_bp, _, index = Trk_cls.get_position_x(bodypart=bodypart, absolute=absolute)
-    y_bp = Trk_cls.get_position_y(bodypart=bodypart, absolute=absolute)[0]
+    x_bp, _, index = Trk_cls.get_position_x(bodypart=bodypart)
+    y_bp = Trk_cls.get_position_y(bodypart=bodypart)[0]
 
     if only_running_bouts:
         Trk_cls.get_running_bouts()
