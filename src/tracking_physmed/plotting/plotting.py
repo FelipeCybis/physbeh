@@ -981,7 +981,11 @@ def plot_head_direction_interval(
     if ax is None:
         if fig is None:
             fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111)
+        ax = fig.add_axes(rect=[0.1, 0.12, 0.8, 0.8])
+    else:
+        if fig is None:
+            fig = ax.figure
+        assert fig == ax.figure, "Axes and figure must be from the same instance"
 
     ax.add_collection(lc)
 
