@@ -2,6 +2,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 from matplotlib import colormaps as mpl_cm
 from matplotlib import colors
 from matplotlib.cm import ScalarMappable
@@ -413,16 +414,16 @@ def plot_running_bouts(
 @anim2d_decorator
 def plot_position_2d(
     Trk_cls: Tracking,
-    bodypart="body",
-    color_collection_array=None,
-    clim=None,
-    head_direction=True,
-    head_direction_vector_labels=["neck", "probe"],
-    only_running_bouts=False,
-    figsize=(8, 6),
+    bodypart: str = "body",
+    color_collection_array: npt.ArrayLike | None = None,
+    clim: tuple[float, float] | None = None,
+    head_direction: bool = True,
+    head_direction_vector_labels: tuple[str, str] | list[str] = ["neck", "probe"],
+    only_running_bouts: bool = False,
+    figsize: tuple[int | float, int | float] = (8, 6),
     colormap="hsv",
-    colorbar=True,
-    colorbar_label=None,
+    colorbar: bool = True,
+    colorbar_label: str | None = None,
     colorwheel=True,
     color="gray",
     ax=None,
@@ -438,19 +439,22 @@ def plot_position_2d(
     bodypart : str, optional
         Bodypart label, by default "body"
     color_collection_array : [type], optional
-        [description], by default None
-    clim : [type], optional
-        [description], by default None
+        The array of values to be used for color mapping the line collection. Default is
+        ``None``.
+    clim : (float, float), optional
+        The color limits for the color mapping. Default is ``None``.
     head_direction : bool, optional
-        [description], by default True
-    head_direction_vector_labels : list, optional
-        [description], by default ["neck", "probe"]
+        Whether or not to color the lines based on the head direction. Default is
+        ``True``.
+    head_direction_vector_labels : tuple or list of str, optional
+        The labels of the vectors to be used for the head direction. Default is
+        ``["neck", "probe"]``.
     only_running_bouts : bool, optional
         If should plot only the running periods using
         :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
     figsize : tuple, optional
-        [description], by default (8, 6)
+        The matplotlib figure size. Default is ``(8,6)``.
     colormap : str, optional
         [description], by default "hsv"
     ax : [type], optional
@@ -464,7 +468,13 @@ def plot_position_2d(
 
     Returns
     -------
-    tuple (matplotlib.Figure, LineCollection)
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : matplotlib.axes.Axes
+        The matplotlib axes object.
+    lines : matplotlib.collections.LineCollection
+        The matplotlib collection of lines representing the segments of animal position
+        from on epoch to another.
     """
 
     x_bp, _, index = Trk_cls.get_position_x(bodypart=bodypart)
