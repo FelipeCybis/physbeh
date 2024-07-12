@@ -38,6 +38,7 @@ def get_line_collection(
     segments = []
     segment_index = []
     for x, y, idx in zip(listified_x_array, listified_y_array, listified_index):
+        x, y = np.squeeze(x), np.squeeze(y)
         points = np.array([x, y]).T.reshape(-1, 1, 2)
         segments.append(np.concatenate([points[:-1], points[1:]], axis=1))
         segment_index.append(np.logical_and(idx[1:], idx[:-1]))

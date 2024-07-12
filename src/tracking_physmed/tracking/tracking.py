@@ -413,7 +413,7 @@ class Tracking:
             index_bouts = self._split_in_running_bouts(index)
 
             return resp_bouts, self.time_bouts, index_bouts
-        return resp, self.time, index
+        return np.squeeze(resp), self.time, index
 
     def get_direction_angular_velocity(
         self, label0="neck", label1="probe", only_running_bouts=False
@@ -465,7 +465,7 @@ class Tracking:
 
         return angular_velocity, self.time, index
 
-    def get_degree_interval_hd(self, deg, only_running_bouts=False):
+    def get_degree_interval_hd(self, deg, only_running_bouts=False, sigma=10.0):
         """Get head direction array modulated by a gaussian function centered in `deg`.
 
         Parameters
@@ -474,6 +474,8 @@ class Tracking:
             Head direction in degrees, between 0 and 360.
         only_running_bouts : bool, optional
             Use only running bouts of the experiment. Default is ``False``.
+        sigma : float, optional
+            The sigma value of the gaussian function. Default is ``10.0``.
 
         Returns
         -------
@@ -487,8 +489,6 @@ class Tracking:
         hd_deg, _, index = self.get_direction_array(
             label0="neck", label1="probe", mode="deg"
         )
-
-        sigma = 10
 
         if deg < 60:
             hd_deg = np.where(hd_deg > 300, hd_deg - 360, hd_deg)
@@ -841,7 +841,7 @@ class Tracking:
         return info_dict
 
     def print_infos(self, bins: int = 10):
-        """Print general informations of the tracking.
+        """Print general information of the tracking.
 
         Parameters
         ----------

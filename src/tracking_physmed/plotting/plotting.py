@@ -1,3 +1,5 @@
+"""Useful plotting functions for Tracking objects."""
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colormaps as mpl_cm
@@ -12,7 +14,25 @@ from tracking_physmed.tracking import Tracking
 from tracking_physmed.utils import _plot_color_wheel, get_line_collection
 
 
-def get_label_color(Trk: Tracking, bodypart: str, cmap_name: str = "plasma"):
+def get_label_color(
+    Trk: Tracking, bodypart: str, cmap_name: str = "plasma"
+) -> tuple[float, float, float, float]:
+    """Helper function to get the color of a bodypart label.
+
+    Parameters
+    ----------
+    Trk : Tracking
+        The tracking object.
+    bodypart : str
+        The desired bodypart.
+    cmap_name : str, optional
+        The matplotlib colormap name. Default is ``"plasma"``.
+
+    Returns
+    -------
+    tuple of RGBA values
+        Matplotlib color tuple corresponding to the given bodypart.
+    """
     cmap = mpl_cm.get_cmap(cmap_name).resampled(len(Trk.labels))
     return cmap(Trk.labels.index(bodypart))
 
@@ -871,6 +891,10 @@ def plot_head_direction(
         if fig is None:
             fig = plt.figure(figsize=figsize)
         ax = fig.add_axes(rect=[0.1, 0.12, 0.8, 0.8])
+    else:
+        if fig is None:
+            fig = ax.figure
+        assert fig == ax.figure, "Axes and figure must be from the same instance"
     ax.add_collection(lc)
 
     if colorbar:
@@ -896,6 +920,7 @@ def plot_head_direction(
 def plot_head_direction_interval(
     Trk: Tracking,
     deg=180,
+    sigma=10.0,
     only_running_bouts=False,
     figsize=(12, 6),
     fig=None,
@@ -904,8 +929,46 @@ def plot_head_direction_interval(
     animate_fus=False,
     **ax_kwargs,
 ):
+    """Plot the head direction interval for a given degree.
+
+    The head direction interval can be seen as an activation signal for a given head
+    direction.
+
+    Parameters
+    ----------
+    Trk : Tracking
+        The tracking object containing the data.
+    deg : int, optional
+        The degree to plot the head direction interval for. Default is ``180``.
+    sigma : float, optional
+        The sigma value of the gaussian function. Default is ``10.0``.
+    only_running_bouts : bool, optional
+        Whether to plot only the head direction intervals during running bouts. Default
+        is ``False``.
+    figsize : tuple, optional
+        The size of the figure. Default is ``(12, 6)``.
+    fig : matplotlig.figure.Figure, optional
+        The figure to plot on. If ``None``, a new figure will be created. Default is
+        ``None``.
+    ax : matplotlib.axes.Axes, optional
+        The axes to plot on. If ``None``, a new axes will be created. Default is
+        ``None``.
+    animate_video : bool, optional
+        Whether to animate the plot with the video recording. Default is ``False``.
+    animate_fus : bool, optional
+        Whether to animate the plot with the functional Ultrasound video. Default is
+        ``False``.
+    **ax_kwargs
+        Additional keyword arguments to pass to the axes.
+
+    Returns
+    -------
+    Figure, Axes
+        The figure and axes objects.
+    """
+
     hd_interval_array, time_array, index = Trk.get_degree_interval_hd(
-        deg, only_running_bouts=only_running_bouts
+        deg, only_running_bouts=only_running_bouts, sigma=sigma
     )
 
     lines = get_line_collection(time_array, hd_interval_array, index)
