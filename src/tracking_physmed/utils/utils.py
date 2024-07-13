@@ -1,5 +1,6 @@
 """Miscellaneous helper functions for tracking_physmed."""
 
+from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
@@ -10,8 +11,8 @@ from matplotlib import colors
 def get_line_collection(
     x_array: npt.NDArray | list[float],
     y_array: npt.NDArray | list[float],
-    index: list[bool] | np.ndarray[Any, bool],
-) -> npt.NDArray:
+    index: list[bool] | np.ndarray[Any, np.dtype[bool]],
+) -> Sequence[npt.NDArray]:
     """Get collection of arrays for each segment of `x_array` and `y_array`.
 
     Returns this collection where index == True.
@@ -30,14 +31,13 @@ def get_line_collection(
     numpy.ndarray
         The array representing the line collection.
     """
-    if not isinstance(x_array, list):
-        listified_x_array = [x_array]
-        listified_y_array = [y_array]
-        listified_index = [index]
+    listified_x_array = [x_array] if not isinstance(x_array, list) else x_array
+    listified_y_array = [y_array] if not isinstance(y_array, list) else y_array
+    listified_index = [index] if not isinstance(index, list) else index
 
     segments = []
     segment_index = []
-    for x, y, idx in zip(listified_x_array, listified_y_array, listified_index):
+    for x, y, idx in zip(listified_x_array, listified_y_array, listified_index):  # type: ignore[call-overload]
         x, y = np.squeeze(x), np.squeeze(y)
         points = np.array([x, y]).T.reshape(-1, 1, 2)
         segments.append(np.concatenate([points[:-1], points[1:]], axis=1))

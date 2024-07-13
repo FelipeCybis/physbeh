@@ -1,5 +1,6 @@
 """Miscellaneous utility functions."""
 
+from .parallel import ProgressParallel
 from .place_fields import (
     get_place_field_coords,
     get_value_from_hexagonal_grid,
@@ -21,6 +22,7 @@ __all__ = [
     "custom_2d_sigmoid",
     "_plot_color_wheel",
     "BlitManager",
+    "ProgressParallel",
     "get_value_from_hexagonal_grid",
     "set_hexagonal_parameters",
     "get_place_field_coords",

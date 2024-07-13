@@ -1,7 +1,6 @@
 """Functions to generate place-cells and grid-cells patterns."""
 
 import numpy as np
-import numpy.typing as npt
 
 
 def get_place_field_coords(random=False, size=30):
@@ -34,7 +33,8 @@ def get_place_field_coords(random=False, size=30):
 
 
 def get_value_from_hexagonal_grid(
-    coord: npt.NDArray,
+    x,
+    y,
     xplus: float = 0.0,
     a: float = 1 / 10,
     angle: float = 8 * np.pi / 18,
@@ -58,17 +58,15 @@ def get_value_from_hexagonal_grid(
         The value for the given coordinates in the hexagonal grid defined by `xplus`,
         `a` and `angle`.
     """
-    (X, Y) = coord.T
-    X += xplus
-
     R1 = np.array([a * np.sin(angle + np.pi / 3), a * np.cos(angle + np.pi / 3)])
     R2 = np.array([a * np.sin(angle), a * np.cos(angle)])
     R3 = np.array([a * np.sin(angle - np.pi / 3), a * np.cos(angle - np.pi / 3)])
 
+    x += xplus
     re = (
-        np.cos(X * R1[0] + Y * R1[1])
-        + np.cos(X * R2[0] + Y * R2[1])
-        + np.cos(X * R3[0] + Y * R3[1])
+        np.cos(x * R1[0] + y * R1[1])
+        + np.cos(x * R2[0] + y * R2[1])
+        + np.cos(x * R3[0] + y * R3[1])
     )
     return re
 

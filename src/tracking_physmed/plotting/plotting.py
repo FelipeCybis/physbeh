@@ -1,5 +1,7 @@
 """Useful plotting functions for Tracking objects."""
 
+from typing import Any
+
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
@@ -97,44 +99,37 @@ def plot_speed(
         only_running_bouts=only_running_bouts,
     )
 
-    lines = get_line_collection(time_array, speed_array, index)
-
-    lc = LineCollection(
-        lines,
+    ax_kwargs.setdefault("ylabel", f"animal speed ({speed_units})")
+    ax_kwargs.setdefault("xlabel", "time (s)")
+    fig, ax = plot_array(
+        speed_array,
+        time_array=time_array,
+        index=index,
+        only_running_bouts=only_running_bouts,
         label=bodypart,
-        linewidths=2,
+        color=get_label_color(Trk_cls, bodypart),
+        ax=ax,
+        fig=fig,
+        figsize=figsize,
         alpha=alpha,
-        colors=get_label_color(Trk_cls, bodypart),
+        **ax_kwargs,
     )
 
-    if ax is None:
-        if fig is None:
-            fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111)
-
-    ax.add_collection(lc)
-
     if only_running_bouts:
-        time_array = np.concatenate(time_array)
-        speed_array = np.concatenate(speed_array)
-        index = np.concatenate(index)
         plot_running_bouts(Trk_cls, ax=ax)
 
-    ax.plot(time_array[index], speed_array[index], ".", markersize=0)
-    ax.set(ylabel=speed_units, xlabel="time (s)")
     ax.legend(loc="upper right")
     ax.grid(linestyle="--")
-    ax.set(**ax_kwargs)
-
     return fig, ax
 
 
 @anim_decorator
 def plot_wall_proximity(
-    Trk: Tracking,
+    trk: Tracking,
     wall,
     bodypart="neck",
     only_running_bouts=False,
+    alpha=1.0,
     ax=None,
     fig=None,
     figsize=(14, 7),
@@ -147,7 +142,8 @@ def plot_wall_proximity(
 
     Parameters
     ----------
-    Trk : :class:`tracking_physmed.tracking.Tracking` instance
+    trk : tracking_physmed.tracking.Tracking
+        The tracking object.
     wall : str or list of str or tuple of str
         Wall to use for computations. Can be one of ("left", "right", "top", "bottom").
         Default is "left".
@@ -172,46 +168,40 @@ def plot_wall_proximity(
         matplotlib Figure, matplotlib Axis
     """
 
-    wall_proximity, time_array, index = Trk.get_proximity_from_wall(
+    wall_proximity, time_array, index = trk.get_proximity_from_wall(
         wall=wall, bodypart=bodypart, only_running_bouts=only_running_bouts
     )
 
-    lines = get_line_collection(time_array, wall_proximity, index)
-
-    lc = LineCollection(
-        lines,
+    ax_kwargs.setdefault("ylabel", f"Proximity from {wall} wall (a.u)")
+    ax_kwargs.setdefault("xlabel", "time (s)")
+    fig, ax = plot_array(
+        wall_proximity,
+        time_array=time_array,
+        index=index,
+        only_running_bouts=only_running_bouts,
         label=bodypart,
-        linewidths=2,
-        colors=get_label_color(Trk, bodypart),
+        color=get_label_color(trk, bodypart),
+        ax=ax,
+        fig=fig,
+        figsize=figsize,
+        alpha=alpha,
+        **ax_kwargs,
     )
 
-    if ax is None:
-        if fig is None:
-            fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111)
-
-    ax.add_collection(lc)
-
     if only_running_bouts:
-        time_array = np.concatenate(time_array)
-        wall_proximity = np.concatenate(wall_proximity)
-        index = np.concatenate(index)
-        plot_running_bouts(Trk, ax=ax)
+        plot_running_bouts(trk, ax=ax)
 
-    ax.plot(time_array[index], wall_proximity[index], ".", markersize=0)
-    ax.set(ylabel=f"Proximity from {wall} wall (a.u)", xlabel="time (s)")
     ax.legend(loc="upper right")
     ax.grid(linestyle="--")
-    ax.set(**ax_kwargs)
-
     return fig, ax
 
 
 @anim_decorator
 def plot_center_proximity(
-    Trk: Tracking,
+    trk: Tracking,
     bodypart="probe",
     only_running_bouts=False,
+    alpha=1.0,
     ax=None,
     fig=None,
     figsize=(14, 7),
@@ -224,7 +214,8 @@ def plot_center_proximity(
 
     Parameters
     ----------
-    Trk : :class:`tracking_physmed.tracking.Tracking` instance
+    trk : tracking_physmed.tracking.Tracking
+        The tracking object.
     bodypart : str, optional
         Bodypart to use for computations. Default "probe".
     only_running_bouts : bool, optional
@@ -499,6 +490,10 @@ def plot_position_2d(
         )
         ax_1.set_aspect("equal", "box")
         ax_1.invert_yaxis()
+    else:
+        if fig is None:
+            fig = ax_1.figure
+        assert fig == ax_1.figure, "Axes and figure must be from the same object."
 
     if color_collection_array is not None:
         if clim is None:

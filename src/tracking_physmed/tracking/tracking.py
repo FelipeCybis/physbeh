@@ -717,7 +717,7 @@ class Tracking:
         # either in the beginning or between running bouts and sets them to True
         # (running)
         for i in range(len(bout_lengths)):
-            if bout_lengths[i] < 750 and self.running_bouts[change_idx[i]] is False:
+            if bout_lengths[i] < 750 and not self.running_bouts[change_idx[i]]:
                 if i == 0:
                     self.running_bouts[: change_idx[i] + 1] = True
                 else:
@@ -732,10 +732,7 @@ class Tracking:
         # either in the beginning or between no running bouts and sets them to False (no
         # running)
         for i in range(len(temp_bout_lengths)):
-            if (
-                temp_bout_lengths[i] < 750
-                and self.running_bouts[temp_change_idx[i]] is True
-            ):
+            if temp_bout_lengths[i] < 750 and self.running_bouts[temp_change_idx[i]]:
                 if i == 0:
                     self.running_bouts[: temp_change_idx[i] + 1] = False
                 else:
@@ -1085,6 +1082,7 @@ class Tracking:
         self,
         params: list[tuple[float, float, float]] | None = None,
         bodypart: str = "body",
+        only_running_bouts: bool = False,
     ) -> tuple[npt.NDArray, npt.NDArray, list[tuple[float, float, float]]]:
         """Get a grid activation array using the parameters `params`.
 
@@ -1106,7 +1104,7 @@ class Tracking:
             Index where p-value > pcutout is True, index is False otherwise.
         """
 
-        animal_coords = self.get_xy_coords(bodypart=bodypart)[0]
+        animal_coords, _, index = self.get_xy_coords(bodypart=bodypart)
 
         if params is None:
             params = set_hexagonal_parameters()
@@ -1116,13 +1114,18 @@ class Tracking:
             [xplus, a, angle] = param
             # for pos in animal_coords:
             z = get_value_from_hexagonal_grid(
-                animal_coords, xplus=xplus, a=a, angle=angle
+                animal_coords[:, 0], animal_coords[:, 1], xplus=xplus, a=a, angle=angle
             )
             self.grid_fields_list.append(z)
 
         self.grid_fields_array = np.array(self.grid_fields_list)
 
-        return self.grid_fields_array, self.time, params
+        if only_running_bouts:
+            grid_activation = self._split_in_running_bouts(self.grid_fields_array)
+            index = self._split_in_running_bouts(index)
+            return grid_activation, self.time_bouts, index, params
+
+        return self.grid_fields_array, self.time, index, params
 
     def _split_in_running_bouts(self, array):
         if not hasattr(self, "running_bouts"):
