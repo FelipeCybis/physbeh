@@ -5,10 +5,12 @@ from pathlib import Path
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+from joblib import delayed
 from scipy import signal
 from scipy.stats import multivariate_normal
 
 from tracking_physmed.arena import BaseArena
+from tracking_physmed.utils import ProgressParallel
 
 from ..utils import (
     custom_2d_sigmoid,
@@ -346,6 +348,21 @@ class Tracking:
             pcutout = self.pcutout
 
         return np.array(self.Dataframe[label + "_likelihood"] >= pcutout)
+
+    def get_likelihood(self, bodypart: str) -> npt.NDArray:
+        """Get likelihood values for `label`.
+
+        Parameters
+        ----------
+        bodypart : str
+            The labels to extract the likelihood from.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of likelihood values.
+        """
+        return np.array(self.Dataframe[bodypart + "_likelihood"])
 
     def get_direction_array(
         self,
@@ -1248,3 +1265,80 @@ def calculate_rectangle_cm_per_pixel(
     cm2px_ratio_diag = real_diag_cm / np.mean(diag_estimates)
 
     return np.mean((cm2px_ratio_diag, cm2px_ratio_height, cm2px_ratio_width))
+
+
+def get_occupancy_like_histogram(
+    tracks: Tracking | list[Tracking],
+    arr: npt.NDArray | str,
+    arr_kwargs: dict = {},
+    bins: int | Sequence[int] = 10,
+    n_jobs: int = -1,
+) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
+    """Calculate the occupancy-like histogram of a given array.
+
+    If list of `Tracking` is given, the position will be concatenated and `arr` must
+    match the length of the concatenated position.
+
+    Parameters
+    ----------
+    tracks : Tracking | list[Tracking]
+        The tracking object(s).
+    arr : numpy.ndarray | str
+        The array to be used in the histogram. If passed as a string, it MUST match the
+        name of a method in the `Tracking` class. Arguments for the method can be passed
+        in `arr_kwargs`.
+    arr_kwargs : dict, optional
+        Keyword arguments to be passed to the method in `arr`, if this is passed as a
+        string. Default is ``{}``.
+    bins : int | Sequence[int], optional
+        The number of bins to use in the histogram. Default is ``10``.
+    n_jobs : int, optional
+        Number of jobs to use in parallel. Default is ``-1`` for the most possible.
+
+    Returns
+    -------
+    H : numpy.ndarray, shape(nx, ny)
+        The bi-dimensional histogram of samples `x` and `y`. Values in `x`
+        are histogrammed along the first dimension and values in `y` are
+        histogrammed along the second dimension.
+    xedges : numpy.ndarray, shape(nx+1,)
+        The bin edges along the first dimension.
+    yedges : numpy.ndarray, shape(ny+1,)
+        The bin edges along the second dimension.
+    """
+    if not isinstance(tracks, list):
+        tracks = [tracks]
+
+    for track in tracks[:1]:
+        hist_track = track.get_binned_position(bins=bins)
+        x_range = range(len(hist_track[1]) - 1)
+        y_range = range(len(hist_track[2]) - 1)
+
+    if isinstance(arr, str):
+        arr = np.concatenate([getattr(track, arr)(**arr_kwargs)[0] for track in tracks])
+
+    x_position = np.concatenate([track.get_position_x("body")[0] for track in tracks])
+    y_position = np.concatenate([track.get_position_y("body")[0] for track in tracks])
+
+    def process_bin(ix, iy, arr, x_position, y_position, hist_track):
+        arr_masked = arr[
+            (x_position >= hist_track[1][ix])
+            & (x_position < hist_track[1][ix + 1])
+            & (y_position >= hist_track[2][iy])
+            & (y_position < hist_track[2][iy + 1])
+        ]
+        if len(arr_masked) == 0 or np.all(np.isnan(arr_masked)):
+            return (ix, iy, np.nan)
+        else:
+            return (ix, iy, np.nanmean(arr_masked))
+
+    ranges = [(ix, iy) for ix in x_range for iy in y_range]
+    results = ProgressParallel(use_tqdm=True, n_jobs=n_jobs)(
+        delayed(process_bin)(*range_indices, arr, x_position, y_position, hist_track)
+        for range_indices in ranges
+    )
+
+    for ix, iy, value in results:
+        hist_track[0][ix, iy] = value
+
+    return hist_track

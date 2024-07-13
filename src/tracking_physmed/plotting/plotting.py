@@ -1,7 +1,5 @@
 """Useful plotting functions for Tracking objects."""
 
-from typing import Any
-
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
@@ -15,6 +13,27 @@ from tracking_physmed.plotting.animate_decorator import anim_decorator
 from tracking_physmed.plotting.animate_plot_fUS import Animate_video_fUS
 from tracking_physmed.tracking import Tracking
 from tracking_physmed.utils import _plot_color_wheel, get_line_collection
+
+
+def _check_ax_and_fig(ax, fig, figsize):
+    if ax is None:
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+    else:
+        if fig is None:
+            fig = ax.figure
+        assert fig == ax.figure, "Axes and figure must be from the same object."
+    return ax, fig
+
+
+def _listify_bodyparts(trk, bodyparts):
+    if isinstance(bodyparts, str):
+        if bodyparts == "all":
+            bodyparts = trk.labels
+        else:
+            bodyparts = [bodyparts]
+    return bodyparts
 
 
 def get_label_color(
@@ -41,14 +60,80 @@ def get_label_color(
 
 
 @anim_decorator
+def plot_array(
+    array: npt.NDArray,
+    time_array: npt.NDArray | None = None,
+    index: list[bool] | npt.NDArray | None = None,
+    trk: Tracking | None = None,
+    only_running_bouts: bool = False,
+    label: str = "",
+    alpha: float = 1.0,
+    color: tuple[float, float, float, float] = (0.5, 0.5, 0.5, 1.0),
+    ax=None,
+    fig=None,
+    figsize=(12, 6),
+    plot_invisible_array: bool = True,
+    **ax_kwargs,
+):
+    """Plot an array.
+
+    Parameters
+    ----------
+    array : npt.ArrayLike
+        The array to plot.
+    ax : matplotlib Axes, optional
+        If None, new axes is created in `fig`. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if `fig=None`. Default is ``(12,6)``.
+    fig : matplotlib Figure, optional
+        If ``None``, new figure is created. Default is ``None``.
+    **ax_kwargs
+        Keywords to pass to ``ax.set(**ax_kwargs)``.
+
+    Returns
+    -------
+    figure : matplotlib.figure.Figure
+    axes : matplotlib.axes.Axes
+    """
+    ax, fig = _check_ax_and_fig(ax, fig, figsize)
+
+    if time_array is None:
+        time_array = np.arange(len(array))
+    if index is None:
+        index = np.ones(len(array), dtype=bool)
+
+    lines = get_line_collection(time_array, array, index)
+
+    lc = LineCollection(
+        lines,
+        label=label,
+        linewidths=2,
+        alpha=alpha,
+        colors=color,
+    )
+    ax.add_collection(lc)
+    if only_running_bouts:
+        time_array = np.concatenate(time_array)
+        array = np.concatenate(array)
+        index = np.concatenate(index)
+
+    if plot_invisible_array:
+        ax.plot(time_array[index], array[index], ".", markersize=0)
+    ax.set(**ax_kwargs)
+
+    return fig, ax
+
+
+@anim_decorator
 def plot_speed(
-    Trk_cls: Tracking,
+    trk: Tracking,
     bodypart="body",
     speed_axis="xy",
     euclidean=False,
     smooth=True,
     speed_cutout=0,
     only_running_bouts=False,
+    plot_only_running_bouts: bool = True,
     alpha=1.0,
     ax=None,
     fig=None,
@@ -90,7 +175,7 @@ def plot_speed(
     tuple (matplotlib.Figure, matplotlib.Axes)
     """
 
-    speed_array, time_array, index, speed_units = Trk_cls.get_speed(
+    speed_array, time_array, index, speed_units = trk.get_speed(
         bodypart=bodypart,
         axis=speed_axis,
         euclidean_distance=euclidean,
@@ -107,7 +192,7 @@ def plot_speed(
         index=index,
         only_running_bouts=only_running_bouts,
         label=bodypart,
-        color=get_label_color(Trk_cls, bodypart),
+        color=get_label_color(trk, bodypart),
         ax=ax,
         fig=fig,
         figsize=figsize,
@@ -115,8 +200,8 @@ def plot_speed(
         **ax_kwargs,
     )
 
-    if only_running_bouts:
-        plot_running_bouts(Trk_cls, ax=ax)
+    if only_running_bouts and plot_only_running_bouts:
+        plot_running_bouts(trk, ax=ax)
 
     ax.legend(loc="upper right")
     ax.grid(linestyle="--")
@@ -126,9 +211,10 @@ def plot_speed(
 @anim_decorator
 def plot_wall_proximity(
     trk: Tracking,
-    wall,
+    wall: str = "all",
     bodypart="neck",
     only_running_bouts=False,
+    plot_only_running_bouts: bool = True,
     alpha=1.0,
     ax=None,
     fig=None,
@@ -188,7 +274,7 @@ def plot_wall_proximity(
         **ax_kwargs,
     )
 
-    if only_running_bouts:
+    if only_running_bouts and plot_only_running_bouts:
         plot_running_bouts(trk, ax=ax)
 
     ax.legend(loc="upper right")
@@ -201,6 +287,7 @@ def plot_center_proximity(
     trk: Tracking,
     bodypart="probe",
     only_running_bouts=False,
+    plot_only_running_bouts: bool = True,
     alpha=1.0,
     ax=None,
     fig=None,
@@ -237,47 +324,42 @@ def plot_center_proximity(
         matplotlib Figure, matplotlib Axis
     """
 
-    center_proximity, time_array, index = Trk.get_proximity_from_center(
+    center_proximity, time_array, index = trk.get_proximity_from_center(
         bodypart=bodypart, only_running_bouts=only_running_bouts
     )
 
-    lines = get_line_collection(time_array, center_proximity, index)
-
-    lc = LineCollection(
-        lines,
+    ax_kwargs.setdefault("ylabel", "Proximity from center of stage (a.u)")
+    ax_kwargs.setdefault("xlabel", "time (s)")
+    fig, ax = plot_array(
+        center_proximity,
+        time_array=time_array,
+        index=index,
+        only_running_bouts=only_running_bouts,
         label=bodypart,
-        linewidths=2,
-        colors=get_label_color(Trk, bodypart),
+        color=get_label_color(trk, bodypart),
+        ax=ax,
+        fig=fig,
+        figsize=figsize,
+        alpha=alpha,
+        **ax_kwargs,
     )
 
-    if ax is None:
-        if fig is None:
-            fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111)
+    if only_running_bouts and plot_only_running_bouts:
+        plot_running_bouts(trk, ax=ax)
 
-    ax.add_collection(lc)
-
-    if only_running_bouts:
-        time_array = np.concatenate(time_array)
-        center_proximity = np.concatenate(center_proximity)
-        index = np.concatenate(index)
-        plot_running_bouts(Trk, ax=ax)
-
-    ax.plot(time_array[index], center_proximity[index], ".", markersize=0)
-    ax.set(ylabel="Proximity from center of stage (a.u)", xlabel="time (s)")
     ax.legend(loc="upper right")
     ax.grid(linestyle="--")
-    ax.set(**ax_kwargs)
-
     return fig, ax
 
 
 @anim_decorator
 def plot_corner_proximity(
-    Trk: Tracking,
-    corner,
+    trk: Tracking,
+    corner: str = "top right",
     bodypart="probe",
     only_running_bouts=False,
+    plot_only_running_bouts: bool = True,
+    alpha=1.0,
     ax=None,
     fig=None,
     figsize=(14, 7),
@@ -290,7 +372,8 @@ def plot_corner_proximity(
 
     Parameters
     ----------
-    Trk : :class:`tracking_physmed.tracking.Tracking` instance
+    trk : Tracking
+        The tracking object.
     corner : str, optional
         Must be one of the four corners of a rectangle ("top right", "top left", "bottom
         right", "bottom left"). Default is ``"top right"``.
@@ -315,44 +398,37 @@ def plot_corner_proximity(
         matplotlib Figure, matplotlib Axis
     """
 
-    corner_proximity, time_array, index = Trk.get_proximity_from_corner(
+    corner_proximity, time_array, index = trk.get_proximity_from_corner(
         corner=corner, bodypart=bodypart, only_running_bouts=only_running_bouts
     )
 
-    lines = get_line_collection(time_array, corner_proximity, index)
-
-    lc = LineCollection(
-        lines,
+    ax_kwargs.setdefault("ylabel", f"Proximity from {corner} corner (a.u)")
+    ax_kwargs.setdefault("xlabel", "time (s)")
+    fig, ax = plot_array(
+        corner_proximity,
+        time_array=time_array,
+        index=index,
+        only_running_bouts=only_running_bouts,
         label=bodypart,
-        linewidths=2,
-        colors=get_label_color(Trk, bodypart),
+        color=get_label_color(trk, bodypart),
+        ax=ax,
+        fig=fig,
+        figsize=figsize,
+        alpha=alpha,
+        **ax_kwargs,
     )
 
-    if ax is None:
-        if fig is None:
-            fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111)
+    if only_running_bouts and plot_only_running_bouts:
+        plot_running_bouts(trk, ax=ax)
 
-    ax.add_collection(lc)
-
-    if only_running_bouts:
-        time_array = np.concatenate(time_array)
-        corner_proximity = np.concatenate(corner_proximity)
-        index = np.concatenate(index)
-        plot_running_bouts(Trk, ax=ax)
-
-    ax.plot(time_array[index], corner_proximity[index], ".", markersize=0)
-    ax.set(ylabel=f"Proximity from {corner} corner (a.u)", xlabel="time (s)")
     ax.legend(loc="upper right")
     ax.grid(linestyle="--")
-    ax.set(**ax_kwargs)
-
     return fig, ax
 
 
 @anim_decorator
 def plot_running_bouts(
-    Trk: Tracking,
+    trk: Tracking,
     ax=None,
     figsize=(12, 6),
     fig=None,
@@ -380,20 +456,16 @@ def plot_running_bouts(
     -------
     fig : matplotlib.Figure
     """
-    if not hasattr(Trk, "running_bouts"):
-        Trk.get_running_bouts()
+    if not hasattr(trk, "running_bouts"):
+        trk.get_running_bouts()
 
-    if ax is None:
-        if fig is None:
-            fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111)
-        ax.set(xlabel="time (s)")
+    ax, fig = _check_ax_and_fig(ax, fig, figsize)
 
     ax.fill_between(
-        Trk.time,
+        trk.time,
         0,
         1,
-        where=Trk.running_bouts,
+        where=trk.running_bouts,
         transform=ax.get_xaxis_transform(),
         color="orange",
         alpha=0.5,
@@ -562,7 +634,7 @@ def plot_position_2d(
 
 @anim_decorator
 def plot_likelihood(
-    Trk: Tracking,
+    trk: Tracking,
     bodyparts="all",
     ax=None,
     figsize=(12, 6),
@@ -575,7 +647,7 @@ def plot_likelihood(
 
     Parameters
     ----------
-    Trk : :class:`tracking_physmed.tracking.Tracking` instance
+    trk : :class:`tracking_physmed.tracking.Tracking` instance
     bodyparts : list or str, optional
         Labels to be plotted, it can be a string, a list of strings or `"all"` for all
         labels. Default is ``"all"``.
@@ -594,26 +666,19 @@ def plot_likelihood(
     fig     : matplotlib.Figure
     """
 
-    if isinstance(bodyparts, str):
-        if bodyparts == "all":
-            bodyparts = Trk.labels
-        else:
-            bodyparts = [bodyparts]
+    bodyparts = _listify_bodyparts(trk, bodyparts)
 
-    if ax is None:
-        if fig is None:
-            fig = plt.figure(figsize=figsize)
-        ax = fig.add_axes([0.1, 0.125, 0.75, 0.775])
+    ax, fig = _check_ax_and_fig(ax, fig, figsize)
 
     for bp in bodyparts:
-        lk = Trk.Dataframe[Trk.scorer][bp]["likelihood"].values
+        lk = trk.get_likelihood(bodypart=bp)
 
         ax.plot(
-            Trk.time,
+            trk.time,
             lk,
             ".",
             markersize=4,
-            color=get_label_color(Trk, bp),
+            color=get_label_color(trk, bp),
             label=bp,
             alpha=0.6,
         )
@@ -628,7 +693,7 @@ def plot_likelihood(
 
 @anim_decorator
 def plot_position_x(
-    Trk: Tracking,
+    trk: Tracking,
     bodyparts="all",
     ax=None,
     fig=None,
@@ -641,18 +706,18 @@ def plot_position_x(
 
     Parameters
     ----------
-    Trk : `Tracking` instance
+    trk : `Tracking` instance
     bodyparts : str or list of str, optional
         Bodypart labels, accepts string or list of strings or ``"all"`` for all labels.
         Default is ``"all"``.
     ax : matplotlib Axes, optional
         If None, new axes is created in `fig`. By default ``None``
     figsize : tuple, optional
-        Figure size, if `fig` is ``None``. By default (12,6)
+        Figure size, if `fig` is ``None``. Default is ``(12,6)``.
     fig : matplotlib Figure, optional
         If ``None``, new figure is created. By default ``None``
     animate : bool, optional
-        If set to `True`, plots an animation synched with the video of the Tracking
+        If set to ``True``, plots an animation synched with the video of the Tracking
         class.
 
     Returns
@@ -660,34 +725,27 @@ def plot_position_x(
     fig     : matplotlib.Figure
     """
 
-    if isinstance(bodyparts, str):
-        if bodyparts == "all":
-            bodyparts = Trk.labels
-        else:
-            bodyparts = [bodyparts]
+    bodyparts = _listify_bodyparts(trk, bodyparts)
 
-    if ax is None:
-        if fig is None:
-            fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111)
-    else:
-        fig = ax.figure
+    spatial_units = trk.space_units[bodyparts[0] + "_x"].units
+    ax_kwargs.setdefault("ylabel", f"X position ({spatial_units})")
+    ax_kwargs.setdefault("xlabel", "time (s)")
+    for i, bp in enumerate(bodyparts):
+        x_bp, time_array, index = trk.get_position_x(bodypart=bp)
 
-    for bp in bodyparts:
-        x_bp, time_array, index = Trk.get_position_x(bodypart=bp)
-
-        lines = get_line_collection(x_array=Trk.time, y_array=x_bp, index=index)
-
-        lc = LineCollection(
-            lines, label=bp, linewidths=2, colors=get_label_color(Trk, bp)
+        fig, ax = plot_array(
+            x_bp,
+            time_array,
+            index,
+            label=bp,
+            ax=ax,
+            fig=fig,
+            figsize=figsize,
+            color=get_label_color(trk, bp),
+            plot_invisible_array=False if i == 0 else True,
+            **ax_kwargs,
         )
-        ax.add_collection(lc)
 
-    ax.plot(Trk.time, x_bp, ".", markersize=0)
-
-    ax.set(ylabel="X pixel", xlabel="time (s)")
-    ax.set(**ax_kwargs)
-    # ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
     ax.legend(loc="upper right")
     ax.grid(linestyle="--")
 
@@ -696,7 +754,7 @@ def plot_position_x(
 
 @anim_decorator
 def plot_position_y(
-    Trk: Tracking,
+    trk: Tracking,
     bodyparts="all",
     ax=None,
     fig=None,
@@ -709,7 +767,8 @@ def plot_position_y(
 
     Parameters
     ----------
-    Trk : `Tracking` instance
+    trk : Tracking
+        The tracking object.
     bodyparts : str or list of str, optional
         Bodypart labels, accepts string or list of strings or ``"all"`` for all labels.
         Default is ``"all"``.
@@ -728,34 +787,27 @@ def plot_position_y(
     fig     : matplotlib.Figure
     """
 
-    if isinstance(bodyparts, str):
-        if bodyparts == "all":
-            bodyparts = Trk.labels
-        else:
-            bodyparts = [bodyparts]
+    bodyparts = _listify_bodyparts(trk, bodyparts)
 
-    if ax is None:
-        if fig is None:
-            fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111)
-    else:
-        fig = ax.figure
+    spatial_units = trk.space_units[bodyparts[0] + "_y"].units
+    ax_kwargs.setdefault("ylabel", f"Y position ({spatial_units})")
+    ax_kwargs.setdefault("xlabel", "time (s)")
+    for i, bp in enumerate(bodyparts):
+        y_bp, time_array, index = trk.get_position_y(bodypart=bp)
 
-    for bp in bodyparts:
-        y_bp, time_array, index = Trk.get_position_y(bodypart=bp)
-
-        lines = get_line_collection(x_array=Trk.time, y_array=y_bp, index=index)
-
-        lc = LineCollection(
-            lines, label=bp, linewidths=2, colors=get_label_color(Trk, bp)
+        fig, ax = plot_array(
+            y_bp,
+            time_array,
+            index,
+            label=bp,
+            ax=ax,
+            fig=fig,
+            figsize=figsize,
+            color=get_label_color(trk, bp),
+            plot_invisible_array=False if i == 0 else True,
+            **ax_kwargs,
         )
-        ax.add_collection(lc)
 
-    ax.plot(Trk.time, y_bp, ".", markersize=0)
-
-    ax.set(ylabel="Y pixel", xlabel="time (s)")
-    ax.set(**ax_kwargs)
-    # ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
     ax.legend(loc="upper right")
     ax.grid(linestyle="--")
 
@@ -783,9 +835,6 @@ def plot_position(Trk, bodyparts="all", figsize=(12, 6), fig=None, **ax_kwargs):
     matplotlib.Figure
     """
 
-    if bodyparts == "all":
-        bodyparts = Trk.labels
-
     if fig is None:
         fig = plt.figure(figsize=figsize)
 
@@ -795,7 +844,7 @@ def plot_position(Trk, bodyparts="all", figsize=(12, 6), fig=None, **ax_kwargs):
     plot_position_x(Trk, bodyparts=bodyparts, ax=ax_x, xlabel="", **ax_kwargs)
     plot_position_y(Trk, bodyparts=bodyparts, ax=ax_y, **ax_kwargs)
 
-    return fig
+    return fig, (ax_x, ax_y)
 
 
 @anim_decorator

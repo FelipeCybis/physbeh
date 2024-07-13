@@ -2,6 +2,7 @@
 
 from .plotting import (
     animation_behavior_fus,
+    plot_array,
     plot_center_proximity,
     plot_corner_proximity,
     plot_head_direction,
@@ -18,6 +19,7 @@ from .plotting import (
 )
 
 __all__ = [
+    "plot_array",
     "plot_speed",
     "plot_wall_proximity",
     "plot_center_proximity",

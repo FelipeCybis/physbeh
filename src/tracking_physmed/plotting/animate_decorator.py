@@ -311,6 +311,7 @@ class Animate_plot:
             self.ax.set_xlabel("")
             self.ax.set_position([0.4, 0.13, 0.55, 0.75])
             self.ax_vid = self.fig.add_axes([0.05, 0.13, 0.3, 0.75])
+            self.fig.set_size_inches(14, 5)
 
             self.current_frame = 0
             self.current_time = 0

@@ -1,35 +1,7 @@
 import numpy as np
-import pandas as pd
 import pytest
 
 from tracking_physmed.tracking import Tracking
-
-
-@pytest.fixture(scope="session")
-def rng():
-    return np.random.default_rng(42)
-
-
-@pytest.fixture(scope="session")
-def likelihood():
-    likelihood = np.ones(100)
-    likelihood[2:6] = 0
-    likelihood[40:44] = 0
-    return likelihood
-
-
-@pytest.fixture(scope="session")
-def tracking(rng, likelihood):
-    data = {
-        "body_x": rng.random(100),
-        "body_y": rng.random(100),
-        "body_likelihood": likelihood,
-        "head_x": rng.random(100),
-        "head_y": rng.random(100),
-        "head_likelihood": likelihood,
-    }
-    dataframe = pd.DataFrame(data)
-    return Tracking(data=dataframe, fps=50)
 
 
 def test_Tracking(tracking):
@@ -56,7 +28,7 @@ def test_time(tracking):
 
 
 def test_labels(tracking):
-    assert all([label in ["body", "head"] for label in tracking.labels])
+    assert all([label in ["body", "neck", "probe"] for label in tracking.labels])
 
 
 def test_get_index(tracking, likelihood):
