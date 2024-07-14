@@ -820,7 +820,7 @@ def plot_position_2d(
     if ax_kwargs is not None:
         axes.set(**ax_kwargs)
 
-    return figure, axes
+    return figure, axes, lines
 
 
 @anim_decorator
