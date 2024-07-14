@@ -7,8 +7,14 @@ REM Command file for Sphinx documentation
 if "%SPHINXBUILD%" == "" (
 	set SPHINXBUILD=sphinx-build
 )
-set SOURCEDIR=source
-set BUILDDIR=build
+if "%SOURCEDIR%" == "" (
+	set SOURCEDIR=.
+)
+if "%BUILDDIR%" == "" (
+	set BUILDDIR=../build
+)
+echo.Source directory: %SOURCEDIR%
+echo.Build directory: %BUILDDIR%
 
 %SPHINXBUILD% >NUL 2>NUL
 if errorlevel 9009 (
@@ -25,7 +31,17 @@ if errorlevel 9009 (
 
 if "%1" == "" goto help
 
-%SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
+if "%1" == "clean" (
+	for /d %%i in (%BUILDDIR%\*) do rmdir /q /s %%i
+	del /q /s %BUILDDIR%\*
+	for /d %%i in (%SOURCEDIR%\auto_examples\*) do rmdir /q /s %%i
+	del /q /s %SOURCEDIR%\auto_examples\*
+	for /d %%i in (%SOURCEDIR%\api\generated\*) do rmdir /q /s %%i
+	del /q /s %SOURCEDIR%\api\generated\*
+	goto end
+)
+
+%SPHINXBUILD% -b %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 goto end
 
 :help

@@ -91,11 +91,11 @@ def plot_array(
 
     Parameters
     ----------
-    array : npt.ArrayLike
+    array : numpy.ndarray
         The array to plot.
-    time_array : npt.ArrayLike, optional
+    time_array : numpy.ndarray, optional
         The time array. Default is ``None``.
-    index : npt.ArrayLike, optional
+    index : numpy.ndarray, optional
         The index array to mask what is going to be plotted or not in `array`. Default
         is ``None`` to plot everything.
     trk : Tracking, optional
@@ -107,9 +107,10 @@ def plot_array(
     label : str, optional
         The label of the line collection. This is what is going to appear in the figure
         legend. Default is ``""``.
-    color : tuple of RGBA values, optional
-        The color of the line collection. Mutually exclusive with `cmap`. `cmap` takes
-        precedence if not ``None``. Default is ``(0.5, 0.5, 0.5, 1.0)``.
+    color : tuple, optional
+        Tuple of RGB(A) values for color of the line collection, if not using
+        `head_direction` or any `color_collection_array`. Default is ``(0.5, 0.5, 0.5,
+        1.0)``.
     cmap : str, optional
         The colormap to use for the line collection. Mutually exclusive with `color`.
         Takes precedence over `color` if set to anything different than ``None``.
@@ -119,7 +120,7 @@ def plot_array(
     colorbar : bool, optional
         Whether to plot the colorbar. Only possible if `cmap` is not ``None``. Default
         is ``True``.
-    line_collection_array : npt.ArrayLike, optional
+    line_collection_array : numpy.ndarray, optional
         The array of values to be used for color mapping the line collection. Default is
         ``None``.
     alpha : float, optional
@@ -174,7 +175,7 @@ def plot_array(
         lc_kwargs["array"] = line_collection_array
 
     lc = LineCollection(
-        lines,
+        lines,  # type: ignore
         label=label,
         linewidths=2,
         alpha=alpha,
@@ -654,7 +655,7 @@ def plot_running_bouts(
 def plot_position_2d(
     trk: Tracking,
     bodypart: str = "body",
-    color_collection_array: npt.ArrayLike | None = None,
+    color_collection_array: npt.NDArray | None = None,
     clim: tuple[float, float] | None = None,
     head_direction: bool = True,
     head_direction_vector_labels: tuple[str, str] | list[str] = ["neck", "probe"],
@@ -704,9 +705,10 @@ def plot_position_2d(
         Whether to plot the colorbar. Default is ``True``.
     colorbar_label : str, optional
         The label of the colorbar. Default is ``None``.
-    color : tuple of RGBA values, optional
-        The color of the line collection, if not using `head_direction` or any
-        `color_collection_array`. Default is ``(0.5, 0.5, 0.5, 1.0)``.
+    color : tuple, optional
+        Tuple of RGB(A) values for color of the line collection, if not using
+        `head_direction` or any `color_collection_array`. Default is ``(0.5, 0.5, 0.5,
+        1.0)``.
     axes : matplotlib.axes.Axes, optional
         If ``None``, new axes is created in `figure`. Default is ``None``.
     figure : matplotlib.figure.Figure, optional
@@ -765,11 +767,9 @@ def plot_position_2d(
         cmap = mpl_cm.get_cmap(colormap).resampled(200)
         norm = colors.BoundaryNorm(np.linspace(clim[0], clim[1], cmap.N), cmap.N)
 
-        lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)
+        lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)  # type: ignore
         lc.set_alpha(0.7)
         lc.set_array(color_collection_array[index])
-        # ax_1.set_position([0.12, 0.12, 0.7, 0.8])
-        # ax_2 = fig.add_axes(rect=[0.85, 0.12, 0.03, 0.8])
         if colorbar:
             cbar = figure.colorbar(
                 ScalarMappable(norm=norm, cmap=cmap),
@@ -795,7 +795,7 @@ def plot_position_2d(
 
         norm = colors.BoundaryNorm(np.arange(0, 360), cmap.N)
 
-        lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)
+        lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)  # type: ignore
         lc.set_array(head_direction_array[index])
 
         if colorwheel:
@@ -811,7 +811,7 @@ def plot_position_2d(
             )
 
     else:
-        lc = LineCollection(lines, linewidths=3, color=color)
+        lc = LineCollection(lines, linewidths=3, color=color)  # type: ignore
         lc.set_alpha(0.3)
 
     axes.add_collection(lc)
@@ -1067,7 +1067,7 @@ def plot_position(
     bodyparts : str or list of str, optional
         Bodypart labels, accepts string or list of strings or ``"all"`` for all labels.
         Default is ``"all"``.
-    figure : matplotlib Figure, optional
+    figure : matplotlib.figure.Figure, optional
         If ``None``, new figure is created. Default is ``None``.
     figsize : tuple, optional
         Figure size, if `figure` is ``None``. Default is ``(12,6)``.
@@ -1138,9 +1138,9 @@ def plot_head_direction(
     cmap : str, optional
         The colormap to use for the plot, if ``None`` a gray line collection plot will
         be used. Default is ``"hsv"``.
-    axes : matplotlib.axes.axes, optional
+    axes : matplotlib.axes.Axes, optional
         If ``None``, new axes is created in `figure`. Default is ``None``.
-    figure : matplotlib.figure.figure, optional
+    figure : matplotlib.figure.Figure, optional
         If ``None``, new figure is created. Default is ``None``.
     figsize : tuple, optional
         Figure size, if ``figure=None``. Default is ``(12,6)``.
@@ -1235,13 +1235,15 @@ def plot_head_direction_interval(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
-    color : tuple of RGBA values, optional
-        The color of the line collection. Default is ``(0.5, 0.5, 0.5, 1.0)``.
+    color : tuple, optional
+        Tuple of RGB(A) values for color of the line collection, if not using
+        `head_direction` or any `color_collection_array`. Default is ``(0.5, 0.5, 0.5,
+        1.0)``.
     alpha : float, optional
         The alpha value of the line collection. Default is ``1.0``.
     axes : matplotlib.axes.Axes, optional
         If ``None``, new axes is created in `figure`. Default is ``None``.
-    figure : matplotlib.figure.figure, optional
+    figure : matplotlib.figure.Figure, optional
         If ``None``, new figure is created. Default is ``None``.
     figsize : tuple, optional
         Figure size, if ``figure=none``. Default is ``(12,6)``.
@@ -1309,7 +1311,7 @@ def plot_occupancy(
         Whether to plot only the occupancy during running bouts. Default is ``True``.
     axes : matplotlib.axes.Axes, optional
         If ``None``, new axes is created in `figure`. Default is ``None``.
-    figure : matplotlib.figure.figure, optional
+    figure : matplotlib.figure.Figure, optional
         If ``None``, new figure is created. Default is ``None``.
     figsize : tuple, optional
         Figure size, if ``figure=none``. Default is ``(12,6)``.

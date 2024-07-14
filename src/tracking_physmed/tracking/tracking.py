@@ -1080,7 +1080,7 @@ class Tracking:
         Parameters
         ----------
         coords : tuple, optional
-            (x, y) coordinates to create the place field. If `None`, gets coordinates
+            (x, y) coordinates to create the place field. If ``None``, gets coordinates
             from utils.place_fields.get_place_field_coordinates. Default is ``None``.
         random_coords : bool, optional
             If `coords` is `None`, gets coordinates using the `random` parameter or not.
@@ -1126,7 +1126,7 @@ class Tracking:
 
         Parameters
         ----------
-        params : list of tuple of (float, float, float) or None, optional
+        params : list of tuple[float, float, float] or None, optional
             List of hexagonal parameters to use when getting the grid activations.
             Default is ``None``.
         bodypart : str, optional

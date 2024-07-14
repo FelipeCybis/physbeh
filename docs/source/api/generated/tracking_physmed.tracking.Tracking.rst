@@ -67,6 +67,9 @@ tracking\_physmed.tracking.Tracking
                     Tracking.get_infos
                 
                 
+                    Tracking.get_likelihood
+                
+                
                     Tracking.get_place_field_array
                 
                 
