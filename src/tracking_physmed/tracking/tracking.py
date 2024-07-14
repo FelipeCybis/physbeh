@@ -1,6 +1,9 @@
+"""Tracking class to manipulate multi-label tracking data."""
+
 import warnings
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -29,26 +32,29 @@ SIGMOID_PARAMETERS = {
 }
 
 
-def to_tracking_time(arr, time, new_time, offset=0):
-    """Returns upsampled array to match `new_time` array.
+def to_tracking_time(
+    arr: npt.NDArray, time: npt.NDArray, new_time: npt.NDArray, offset: int = 0
+) -> npt.NDArray:
+    """Return upsampled array to `new_time` array.
 
     Simply duplicates data to fill new array indices.
 
     Parameters
     ----------
-    arr : _type_
-        _description_
-    time : _type_
-        _description_
-    new_time : _type_
-        _description_
+    arr : numpy.ndarray
+        The array to be upsampled.
+    time : numpy.ndarray
+        The time array of the original data.
+    new_time : numpy.ndarray
+        The time array of the upsampled data.
     offset : int, optional
-        _description_, by default 0
+        The offset to be used when indexing the original array, if needed. Default is
+        ``0``.
 
     Returns
     -------
-    _type_
-        _description_
+    numpy.ndarray
+        The array upsampled to `new_time`.
     """
     assert arr.shape[-1] == time.shape[-1], (
         "`arr` and `time` arguments must have the same length, but they are"
@@ -73,7 +79,6 @@ def to_tracking_time(arr, time, new_time, offset=0):
 class Tracking:
     """A class to manipulate multi-label tracking data.
 
-
     Parameters
     ----------
     data : pandas.Dataframe
@@ -87,7 +92,7 @@ class Tracking:
     """
 
     @property
-    def video_filepath(self) -> Path | None:
+    def video_filepath(self) -> Path | None:  # numpydoc ignore=PR02
         """Fullpath to labeled video of ``.h5`` file.
 
         Parameters
@@ -103,7 +108,7 @@ class Tracking:
         return self._video_filepath
 
     @video_filepath.setter
-    def video_filepath(self, str_path: str | Path):
+    def video_filepath(self, str_path: str | Path):  # numpydoc ignore=GL08
         accepted_extensions = (".mp4", ".avi", ".mpg")
         if Path(str(str_path)).suffix not in accepted_extensions:
             self._video_filepath = None
@@ -127,12 +132,18 @@ class Tracking:
         return self._fps
 
     @property
-    def space_units(self):
-        """Units of coordinates in the dataframe."""
+    def space_units(self) -> pd.Series:
+        """The units of each column in the dataframe.
+
+        Returns
+        -------
+        pandas.Series
+            The units of each column in the dataframe.
+        """
         return self.Dataframe.dtypes
 
     @property
-    def space_units_per_pixel(self) -> float:
+    def space_units_per_pixel(self) -> float:  # numpydoc ignore=PR02
         """Per pixel ratio of the space units in the dataframe.
 
         Parameters
@@ -148,15 +159,25 @@ class Tracking:
         return self._space_units_per_pixel
 
     @space_units_per_pixel.setter
-    def space_units_per_pixel(self, value: float):
+    def space_units_per_pixel(self, value: float):  # numpydoc ignore=GL08
         self._space_units_per_pixel = value
 
     @property
     def arena(self) -> BaseArena:
+        """The arena object associated with the tracking data.
+
+        This property provides important information on pixel to spatial units
+        transformation and the physical limits of the arena.
+
+        Returns
+        -------
+        BaseArena
+            The arena object.
+        """
         return self._arena
 
     @arena.setter
-    def arena(self, arena: BaseArena):
+    def arena(self, arena: BaseArena):  # numpydoc ignore=GL08
         self._arena = arena
 
     @property
@@ -421,16 +442,16 @@ class Tracking:
             resp_in_rad = np.arctan2(np.sin(resp_in_rad), np.cos(resp_in_rad))
 
         resp_in_rad[resp_in_rad < 0] += 2 * np.pi
-        resp = resp_in_rad
+        resp = np.squeeze(resp_in_rad)
         if mode in ("deg", "degree"):
-            resp = np.degrees(resp_in_rad)
+            resp = np.degrees(resp)
 
         if only_running_bouts:
             resp_bouts = self._split_in_running_bouts(resp)
             index_bouts = self._split_in_running_bouts(index)
 
             return resp_bouts, self.time_bouts, index_bouts
-        return np.squeeze(resp), self.time, index
+        return resp, self.time, index
 
     def get_direction_angular_velocity(
         self, label0="neck", label1="probe", only_running_bouts=False
@@ -637,12 +658,12 @@ class Tracking:
 
     def get_speed(
         self,
-        bodypart="body",
-        axis="xy",
-        euclidean_distance=False,
-        smooth=True,
+        bodypart: str = "body",
+        axis: Literal["x", "y", "xy"] = "xy",
+        euclidean_distance: bool = False,
+        smooth: bool = True,
         speed_cutout=0,
-        only_running_bouts=False,
+        only_running_bouts: bool = False,
     ):
         """Get speed for given ``bodypart``.
 
@@ -653,9 +674,9 @@ class Tracking:
         ----------
         bodypart : str, optional
             Name of the label to get the speed from, by default 'body'.
-        axis : str, optional
+        axis : {"x", "y", "xy"}, optional
             To compute Vx, Vy or V, axis is ``'x'``, ``'y'`` or ``'xy'``, respectively.
-            Default is ``'xy'``.
+            Default is ``"xy"``.
         euclidean_distance : bool, optional
             If ``axis`` is only one dimension, the distance can be the euclidean
             (absolute) or real. Default is ``False``.
@@ -1110,6 +1131,8 @@ class Tracking:
             Default is ``None``.
         bodypart : str, optional
             The specified bodypart. Default is ``"body"``.
+        only_running_bouts : bool, optional
+            Use only running bouts of the experiment. Default is ``False``.
 
         Returns
         -------
@@ -1118,7 +1141,7 @@ class Tracking:
         time : numpy.ndarray
             Time array in seconds.
         index : numpy.ndarray
-            Index where p-value > pcutout is True, index is False otherwise.
+            Index where ``p-value > pcutout`` is ``True``, index is ``False`` otherwise.
         """
 
         animal_coords, _, index = self.get_xy_coords(bodypart=bodypart)
@@ -1320,7 +1343,7 @@ def get_occupancy_like_histogram(
     x_position = np.concatenate([track.get_position_x("body")[0] for track in tracks])
     y_position = np.concatenate([track.get_position_y("body")[0] for track in tracks])
 
-    def process_bin(ix, iy, arr, x_position, y_position, hist_track):
+    def _process_bin(ix, iy, arr, x_position, y_position, hist_track):
         arr_masked = arr[
             (x_position >= hist_track[1][ix])
             & (x_position < hist_track[1][ix + 1])
@@ -1334,7 +1357,7 @@ def get_occupancy_like_histogram(
 
     ranges = [(ix, iy) for ix in x_range for iy in y_range]
     results = ProgressParallel(use_tqdm=True, n_jobs=n_jobs)(
-        delayed(process_bin)(*range_indices, arr, x_position, y_position, hist_track)
+        delayed(_process_bin)(*range_indices, arr, x_position, y_position, hist_track)
         for range_indices in ranges
     )
 

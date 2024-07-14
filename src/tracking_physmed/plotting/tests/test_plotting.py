@@ -4,6 +4,7 @@ import pytest
 from tracking_physmed.plotting import (
     plot_center_proximity,
     plot_corner_proximity,
+    plot_head_direction,
     plot_likelihood,
     plot_position,
     plot_position_x,
@@ -24,6 +25,7 @@ from tracking_physmed.plotting import (
         plot_position,
         plot_position_x,
         plot_position_y,
+        plot_head_direction,
     ],
 )
 def test_default_plottings(tracking, plot_func):

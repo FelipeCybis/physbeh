@@ -1,6 +1,5 @@
 """Miscellaneous helper functions for tracking_physmed."""
 
-from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
@@ -12,7 +11,7 @@ def get_line_collection(
     x_array: npt.NDArray | list[float],
     y_array: npt.NDArray | list[float],
     index: list[bool] | np.ndarray[Any, np.dtype[bool]],
-) -> Sequence[npt.NDArray]:
+) -> npt.NDArray:
     """Get collection of arrays for each segment of `x_array` and `y_array`.
 
     Returns this collection where index == True.
@@ -38,10 +37,25 @@ def get_line_collection(
     segments = []
     segment_index = []
     for x, y, idx in zip(listified_x_array, listified_y_array, listified_index):  # type: ignore[call-overload]
+        # Compute the midpoints of the line segments. Include the first and last points
+        # twice so we don't need any special syntax later to handle them.
         x, y = np.squeeze(x), np.squeeze(y)
-        points = np.array([x, y]).T.reshape(-1, 1, 2)
-        segments.append(np.concatenate([points[:-1], points[1:]], axis=1))
-        segment_index.append(np.logical_and(idx[1:], idx[:-1]))
+
+        # Determine the start, middle, and end coordinate pair of each line segment.
+        # Use the reshape to add an extra dimension so each pair of points is in its
+        # own list. Then concatenate them to create:
+        # [
+        #   [(x1_start, y1_start), (x1_mid, y1_mid), (x1_end, y1_end)],
+        #   [(x2_start, y2_start), (x2_mid, y2_mid), (x2_end, y2_end)],
+        #   ...
+        # ]
+        coord_start = np.column_stack((x[:-1], y[:-1]))[:, np.newaxis, :]
+        coord_stop = np.column_stack((x[1:], y[1:]))[:, np.newaxis, :]
+        segments.append(np.concatenate([coord_start, coord_stop], axis=1))
+        # x, y = np.squeeze(x), np.squeeze(y)
+        # points = np.array([x, y]).T.reshape(-1, 1, 2)
+        # segments.append(np.concatenate([points[:-1], points[1:]], axis=1))
+        segment_index.append(idx[:-1])
 
     segments_array = np.concatenate(segments, axis=0)
     segment_index = np.concatenate(segment_index, axis=0)

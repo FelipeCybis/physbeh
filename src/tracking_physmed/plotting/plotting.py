@@ -1,5 +1,11 @@
 """Useful plotting functions for Tracking objects."""
 
+import warnings
+from typing import Any
+
+import matplotlib
+import matplotlib.axes
+import matplotlib.figure
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
@@ -15,7 +21,9 @@ from tracking_physmed.tracking import Tracking
 from tracking_physmed.utils import _plot_color_wheel, get_line_collection
 
 
-def _check_ax_and_fig(ax, fig, figsize):
+def _check_ax_and_fig(
+    ax, fig, figsize
+) -> tuple[matplotlib.axes.Axes, matplotlib.figure.Figure]:
     if ax is None:
         if fig is None:
             fig = plt.figure(figsize=figsize)
@@ -37,13 +45,13 @@ def _listify_bodyparts(trk, bodyparts):
 
 
 def get_label_color(
-    Trk: Tracking, bodypart: str, cmap_name: str = "plasma"
+    trk: Tracking, bodypart: str, cmap_name: str = "plasma"
 ) -> tuple[float, float, float, float]:
     """Helper function to get the color of a bodypart label.
 
     Parameters
     ----------
-    Trk : Tracking
+    trk : Tracking
         The tracking object.
     bodypart : str
         The desired bodypart.
@@ -55,8 +63,8 @@ def get_label_color(
     tuple of RGBA values
         Matplotlib color tuple corresponding to the given bodypart.
     """
-    cmap = mpl_cm.get_cmap(cmap_name).resampled(len(Trk.labels))
-    return cmap(Trk.labels.index(bodypart))
+    cmap = mpl_cm.get_cmap(cmap_name).resampled(len(trk.labels))
+    return cmap(trk.labels.index(bodypart))
 
 
 @anim_decorator
@@ -67,35 +75,74 @@ def plot_array(
     trk: Tracking | None = None,
     only_running_bouts: bool = False,
     label: str = "",
-    alpha: float = 1.0,
     color: tuple[float, float, float, float] = (0.5, 0.5, 0.5, 1.0),
-    ax=None,
-    fig=None,
-    figsize=(12, 6),
-    plot_invisible_array: bool = True,
+    cmap: str | None = None,
+    norm: colors.Normalize = colors.Normalize(),
+    colorbar: bool = True,
+    line_collection_array: npt.NDArray | None = None,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (12, 6),
+    set_axes: bool = True,
     **ax_kwargs,
-):
-    """Plot an array.
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+    """Plot an array by transforming it into line collections.
 
     Parameters
     ----------
     array : npt.ArrayLike
         The array to plot.
-    ax : matplotlib Axes, optional
-        If None, new axes is created in `fig`. Default is ``None``.
-    figsize : tuple, optional
-        Figure size, if `fig=None`. Default is ``(12,6)``.
-    fig : matplotlib Figure, optional
+    time_array : npt.ArrayLike, optional
+        The time array. Default is ``None``.
+    index : npt.ArrayLike, optional
+        The index array to mask what is going to be plotted or not in `array`. Default
+        is ``None`` to plot everything.
+    trk : Tracking, optional
+        A tracking object. This argument is here only for compatibility with the
+        animation decorator in case an animation using the tracking video wants to be
+        produced using a custom array. Default is ``None``.
+    only_running_bouts : bool, optional
+        Whether to plot only the running bouts. Default is ``False``.
+    label : str, optional
+        The label of the line collection. This is what is going to appear in the figure
+        legend. Default is ``""``.
+    color : tuple of RGBA values, optional
+        The color of the line collection. Mutually exclusive with `cmap`. `cmap` takes
+        precedence if not ``None``. Default is ``(0.5, 0.5, 0.5, 1.0)``.
+    cmap : str, optional
+        The colormap to use for the line collection. Mutually exclusive with `color`.
+        Takes precedence over `color` if set to anything different than ``None``.
+        Default is ``None``.
+    norm : matplotlib.colors.Normalize, optional
+        The normalization of the colormap. Default is ``colors.Normalize()``.
+    colorbar : bool, optional
+        Whether to plot the colorbar. Only possible if `cmap` is not ``None``. Default
+        is ``True``.
+    line_collection_array : npt.ArrayLike, optional
+        The array of values to be used for color mapping the line collection. Default is
+        ``None``.
+    alpha : float, optional
+        The alpha value of the line collection. Default is ``1.0``.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.Figure, optional
         If ``None``, new figure is created. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if ``figure=None``. Default is ``(12,6)``.
+    set_axes : bool, optional
+        Whether to set the axes properties. Default is ``True``.
     **ax_kwargs
         Keywords to pass to ``ax.set(**ax_kwargs)``.
 
     Returns
     -------
     figure : matplotlib.figure.Figure
+        The matplotlib figure object.
     axes : matplotlib.axes.Axes
+        The matplotlib axes object.
     """
-    ax, fig = _check_ax_and_fig(ax, fig, figsize)
+    axes, figure = _check_ax_and_fig(axes, figure, figsize)
 
     if time_array is None:
         time_array = np.arange(len(array))
@@ -103,76 +150,138 @@ def plot_array(
         index = np.ones(len(array), dtype=bool)
 
     lines = get_line_collection(time_array, array, index)
+    lc_kwargs: dict[str, Any] = {}
+    if cmap is not None:
+        lc_kwargs["cmap"] = cmap
+        lc_kwargs["norm"] = norm
+    else:
+        lc_kwargs["color"] = color
+
+    lc_kwargs["array"] = lines[:, 0, 1]
+    if line_collection_array is not None:
+        if line_collection_array.shape[0] != lines.shape[0]:
+            warnings.warn(
+                "\n`line_collection_array` have different length than the line\n"
+                "collections of arrays. This will very likely give a wrong colormap\n"
+                "mapping.\nA possible solution could be using\n"
+                "`line_collection_array[index]` with the same index array used for the"
+                "\nline collection being plotted or, if `only_running_bouts` is set\n"
+                "to ``True``, using the utility function `get_line_collection` to get\n"
+                "the correct array with:\n\n"
+                ">> lines = get_line_collection(time, array, index)\n"
+                ">> plot_array(..., line_collection_array=lines[:, 0, 1])."
+            )
+        lc_kwargs["array"] = line_collection_array
 
     lc = LineCollection(
         lines,
         label=label,
         linewidths=2,
         alpha=alpha,
-        colors=color,
+        **lc_kwargs,
     )
-    ax.add_collection(lc)
+    axes.add_collection(lc)
     if only_running_bouts:
         time_array = np.concatenate(time_array)
         array = np.concatenate(array)
         index = np.concatenate(index)
 
-    if plot_invisible_array:
-        ax.plot(time_array[index], array[index], ".", markersize=0)
-    ax.set(**ax_kwargs)
+    clim = lc.get_clim()
+    axes.autoscale()
+    lc.set_clim(clim)
 
-    return fig, ax
+    if colorbar and cmap is not None:
+        plt.colorbar(lc, ax=axes)
+
+    if set_axes:
+        keys = list(ax_kwargs.keys())
+        legend_kwargs = {
+            key.replace("legend__", ""): ax_kwargs.pop(key)
+            for key in keys
+            if key.startswith("legend__")
+        }
+        grid_kwargs = {
+            key.replace("grid__", ""): ax_kwargs.pop(key)
+            for key in keys
+            if key.startswith("grid__")
+        }
+        axes.set(**ax_kwargs)
+        axes.legend(**legend_kwargs)
+        axes.grid(**grid_kwargs)
+
+    return figure, axes
 
 
 @anim_decorator
 def plot_speed(
     trk: Tracking,
-    bodypart="body",
+    bodypart: str = "body",
     speed_axis="xy",
     euclidean=False,
     smooth=True,
     speed_cutout=0,
-    only_running_bouts=False,
+    only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
-    alpha=1.0,
-    ax=None,
-    fig=None,
-    figsize=(12, 6),
-    animate_video=False,
-    animate_fus=False,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (12, 6),
+    animate: bool = False,
+    animate_video: bool = False,
+    animate_fus: bool = False,
     **ax_kwargs,
 ):
     """Plot speed of given label.
 
     Parameters
     ----------
-    Trk_cls : :class:`tracking_physmed.tracking.Tracking` instance
+    trk : Tracking
+        The tracking object.
     bodypart : str, optional
-        Bodypart label. Default is "body"
+        Bodypart label. Default is ``"body"``.
+    speed_axis : str, optional
+        To compute Vx, Vy or V, axis is 'x', 'y' or 'xy', respectively. Default is
+        ``"xy"``.
+    euclidean : bool, optional
+        If `speed_axis` is only one dimension, the distance can be the euclidean
+        (absolute) or real. Default is ``False``.
     smooth : bool, optional
         If speed array is to be smoothed using a gaussian kernel. Default is ``True``.
     speed_cutout : int, optional
-        If speed is to be thresholded by some value. Default is 0
+        If speed is to be thresholded by some value. Default is ``0``.
     only_running_bouts : bool, optional
         If should plot only the running periods using
         :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
-    ax : matplotlib Axes, optional
-        If None, new axes is created in `fig`. Default is ``None``.
-    figsize : tuple, optional
-        Figure size, if `fig=None`. Default is ``(12,6)``.
-    fig : matplotlib Figure, optional
+    plot_only_running_bouts : bool, optional
+        Whether or not to plot a background color on periods of running bouts (and not
+        only not plot non running bouts). This only takes effect if `only_running_bouts`
+        is set to ``True``. Default is ``True``.
+    alpha : float, optional
+        The alpha value of the line collection. Default is ``1.0``.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.Figure, optional
         If ``None``, new figure is created. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if ``figure=None``. Default is ``(12,6)``.
+    animate : bool, optional
+        If set to ``True``, plots an animation with the video of the Tracking class.
+        Default is ``False``.
     animate_video : bool, optional
-        If set to ``True``, plots an animation synched with the video of the Tracking
-        class.
+        Whether to animate the plot with the video recording. Default is ``False``.
     animate_fus : bool, optional
-        If set to ``True``, plots an animation synched with the associated scan (should
-        be attached to Tracking).
+        Whether to animate the plot with the functional Ultrasound video. Default is
+        ``False``.
+    **ax_kwargs
+        Keywords to pass to ``ax.set(**ax_kwargs)``.
 
     Returns
     -------
-    tuple (matplotlib.Figure, matplotlib.Axes)
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : matplotlib.axes.Axes
+        The matplotlib axes object.
     """
 
     speed_array, time_array, index, speed_units = trk.get_speed(
@@ -186,26 +295,26 @@ def plot_speed(
 
     ax_kwargs.setdefault("ylabel", f"animal speed ({speed_units})")
     ax_kwargs.setdefault("xlabel", "time (s)")
-    fig, ax = plot_array(
+    ax_kwargs.setdefault("legend__loc", "upper right")
+    ax_kwargs.setdefault("grid__linestyle", "--")
+    figure, axes = plot_array(
         speed_array,
         time_array=time_array,
         index=index,
         only_running_bouts=only_running_bouts,
         label=bodypart,
         color=get_label_color(trk, bodypart),
-        ax=ax,
-        fig=fig,
+        axes=axes,
+        figure=figure,
         figsize=figsize,
         alpha=alpha,
         **ax_kwargs,
     )
 
     if only_running_bouts and plot_only_running_bouts:
-        plot_running_bouts(trk, ax=ax)
+        plot_running_bouts(trk, axes=axes)
 
-    ax.legend(loc="upper right")
-    ax.grid(linestyle="--")
-    return fig, ax
+    return figure, axes
 
 
 @anim_decorator
@@ -215,10 +324,13 @@ def plot_wall_proximity(
     bodypart="neck",
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
-    alpha=1.0,
-    ax=None,
-    fig=None,
-    figsize=(14, 7),
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (14, 7),
+    animate: bool = False,
+    animate_video: bool = False,
+    animate_fus: bool = False,
     **ax_kwargs,
 ):
     """Plot proximity to specified wall.
@@ -232,26 +344,42 @@ def plot_wall_proximity(
         The tracking object.
     wall : str or list of str or tuple of str
         Wall to use for computations. Can be one of ("left", "right", "top", "bottom").
-        Default is "left".
+      . Default is "left".
     bodypart : str, optional
         Bodypart to use for computations. Default "probe".
     only_running_bouts : bool, optional
         If should plot only the running periods using
         :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
-    ax : matplotlib Axes, optional
-        If None, new axes is created in `fig`. Default is ``None``.
-    figsize : tuple, optional
-        Figure size, if `fig=None`. Default is ``(12,6)``.
-    fig : matplotlib Figure, optional
+    plot_only_running_bouts : bool, optional
+        Whether or not to plot a background color on periods of running bouts (and not
+        only not plot non running bouts). This only takes effect if `only_running_bouts`
+        is set to ``True``. Default is ``True``.
+    alpha : float, optional
+        The alpha value of the line collection. Default is ``1.0``.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.Figure, optional
         If ``None``, new figure is created. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if ``figure=None``. Default is ``(12,6)``.
+    animate : bool, optional
+        If set to ``True``, plots an animation with the video of the Tracking class.
+        Default is ``False``.
+    animate_video : bool, optional
+        Whether to animate the plot with the video recording. Default is ``False``.
+    animate_fus : bool, optional
+        Whether to animate the plot with the functional Ultrasound video. Default is
+        ``False``.
     **ax_kwargs
         Keywords to pass to ``ax.set(**ax_kwargs)``.
 
     Returns
     -------
-    tuple
-        matplotlib Figure, matplotlib Axis
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : matplotlib.axes.Axes
+        The matplotlib axes object.
     """
 
     wall_proximity, time_array, index = trk.get_proximity_from_wall(
@@ -260,26 +388,26 @@ def plot_wall_proximity(
 
     ax_kwargs.setdefault("ylabel", f"Proximity from {wall} wall (a.u)")
     ax_kwargs.setdefault("xlabel", "time (s)")
-    fig, ax = plot_array(
+    ax_kwargs.setdefault("legend__loc", "upper right")
+    ax_kwargs.setdefault("grid__linestyle", "--")
+    figure, axes = plot_array(
         wall_proximity,
         time_array=time_array,
         index=index,
         only_running_bouts=only_running_bouts,
         label=bodypart,
         color=get_label_color(trk, bodypart),
-        ax=ax,
-        fig=fig,
+        axes=axes,
+        figure=figure,
         figsize=figsize,
         alpha=alpha,
         **ax_kwargs,
     )
 
     if only_running_bouts and plot_only_running_bouts:
-        plot_running_bouts(trk, ax=ax)
+        plot_running_bouts(trk, axes=axes)
 
-    ax.legend(loc="upper right")
-    ax.grid(linestyle="--")
-    return fig, ax
+    return figure, axes
 
 
 @anim_decorator
@@ -288,10 +416,13 @@ def plot_center_proximity(
     bodypart="probe",
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
-    alpha=1.0,
-    ax=None,
-    fig=None,
-    figsize=(14, 7),
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (14, 7),
+    animate: bool = False,
+    animate_video: bool = False,
+    animate_fus: bool = False,
     **ax_kwargs,
 ):
     """Plot proximity to the center of the environment.
@@ -309,19 +440,35 @@ def plot_center_proximity(
         If should plot only the running periods using
         :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
-    ax : matplotlib Axes, optional
-        If None, new axes is created in `fig`. Default is ``None``.
-    figsize : tuple, optional
-        Figure size, if `fig=None`. Default is ``(12,6)``.
-    fig : matplotlib Figure, optional
+    plot_only_running_bouts : bool, optional
+        Whether or not to plot a background color on periods of running bouts (and not
+        only not plot non running bouts). This only takes effect if `only_running_bouts`
+        is set to ``True``. Default is ``True``.
+    alpha : float, optional
+        The alpha value of the line collection. Default is ``1.0``.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.Figure, optional
         If ``None``, new figure is created. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if ``figure=None``. Default is ``(12,6)``.
+    animate : bool, optional
+        If set to ``True``, plots an animation with the video of the Tracking class.
+        Default is ``False``.
+    animate_video : bool, optional
+        Whether to animate the plot with the video recording. Default is ``False``.
+    animate_fus : bool, optional
+        Whether to animate the plot with the functional Ultrasound video. Default is
+        ``False``.
     **ax_kwargs
         Keywords to pass to ``ax.set(**ax_kwargs)``.
 
     Returns
     -------
-    tuple
-        matplotlib Figure, matplotlib Axis
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : matplotlib.axes.Axes
+        The matplotlib axes object.
     """
 
     center_proximity, time_array, index = trk.get_proximity_from_center(
@@ -330,26 +477,26 @@ def plot_center_proximity(
 
     ax_kwargs.setdefault("ylabel", "Proximity from center of stage (a.u)")
     ax_kwargs.setdefault("xlabel", "time (s)")
-    fig, ax = plot_array(
+    ax_kwargs.setdefault("legend__loc", "upper right")
+    ax_kwargs.setdefault("grid__linestyle", "--")
+    figure, axes = plot_array(
         center_proximity,
         time_array=time_array,
         index=index,
         only_running_bouts=only_running_bouts,
         label=bodypart,
         color=get_label_color(trk, bodypart),
-        ax=ax,
-        fig=fig,
+        axes=axes,
+        figure=figure,
         figsize=figsize,
         alpha=alpha,
         **ax_kwargs,
     )
 
     if only_running_bouts and plot_only_running_bouts:
-        plot_running_bouts(trk, ax=ax)
+        plot_running_bouts(trk, axes=axes)
 
-    ax.legend(loc="upper right")
-    ax.grid(linestyle="--")
-    return fig, ax
+    return figure, axes
 
 
 @anim_decorator
@@ -360,9 +507,12 @@ def plot_corner_proximity(
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
     alpha=1.0,
-    ax=None,
-    fig=None,
-    figsize=(14, 7),
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (14, 7),
+    animate: bool = False,
+    animate_video: bool = False,
+    animate_fus: bool = False,
     **ax_kwargs,
 ):
     """Plot proximity to specified corner.
@@ -383,19 +533,35 @@ def plot_corner_proximity(
         If should plot only the running periods using
         :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
-    ax : matplotlib Axes, optional
-        If None, new axes is created in `fig`. Default is ``None``.
-    figsize : tuple, optional
-        Figure size, if `fig=None`. Default is ``(12,6)``.
-    fig : matplotlib Figure, optional
+    plot_only_running_bouts : bool, optional
+        Whether or not to plot a background color on periods of running bouts (and not
+        only not plot non running bouts). This only takes effect if `only_running_bouts`
+        is set to ``True``. Default is ``True``.
+    alpha : float, optional
+        The alpha value of the line collection. Default is ``1.0``.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.Figure, optional
         If ``None``, new figure is created. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if ``figure=None``. Default is ``(12,6)``.
+    animate : bool, optional
+        If set to ``True``, plots an animation with the video of the Tracking class.
+        Default is ``False``.
+    animate_video : bool, optional
+        Whether to animate the plot with the video recording. Default is ``False``.
+    animate_fus : bool, optional
+        Whether to animate the plot with the functional Ultrasound video. Default is
+        ``False``.
     **ax_kwargs
         Keywords to pass to ``ax.set(**ax_kwargs)``.
 
     Returns
     -------
-    tuple
-        matplotlib Figure, matplotlib Axis
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : matplotlib.axes.Axes
+        The matplotlib axes object.
     """
 
     corner_proximity, time_array, index = trk.get_proximity_from_corner(
@@ -404,34 +570,35 @@ def plot_corner_proximity(
 
     ax_kwargs.setdefault("ylabel", f"Proximity from {corner} corner (a.u)")
     ax_kwargs.setdefault("xlabel", "time (s)")
-    fig, ax = plot_array(
+    ax_kwargs.setdefault("legend__loc", "upper right")
+    ax_kwargs.setdefault("grid__linestyle", "--")
+    figure, axes = plot_array(
         corner_proximity,
         time_array=time_array,
         index=index,
         only_running_bouts=only_running_bouts,
         label=bodypart,
         color=get_label_color(trk, bodypart),
-        ax=ax,
-        fig=fig,
+        axes=axes,
+        figure=figure,
         figsize=figsize,
         alpha=alpha,
         **ax_kwargs,
     )
 
     if only_running_bouts and plot_only_running_bouts:
-        plot_running_bouts(trk, ax=ax)
+        plot_running_bouts(trk, axes=axes)
 
-    ax.legend(loc="upper right")
-    ax.grid(linestyle="--")
-    return fig, ax
+    return figure, axes
 
 
 @anim_decorator
 def plot_running_bouts(
     trk: Tracking,
-    ax=None,
+    axes=None,
     figsize=(12, 6),
-    fig=None,
+    figure=None,
+    animate=False,
     animate_video=False,
     animate_fus=False,
 ):
@@ -441,67 +608,79 @@ def plot_running_bouts(
 
     Parameters
     ----------
-    Trk : :class:`tracking_physmed.tracking.Tracking` instance
-    ax : matplotlib Axes, optional
-        If None, new axes is created in `fig`. By default ``None``
+    trk : Tracking
+        The tracking object.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
     figsize : tuple, optional
-        Figure size, if `fig` is ``None``. By default `(12,6)`
-    fig : matplotlib Figure, optional
-        If ``None``, new figure is created. By default ``None``
+        Figure size, if ``figure=None``. Default is ``(12,6)``.
+    figure : matplotlib.figure.Figure, optional
+        If ``None``, new figure is created. Default is ``None``.
     animate : bool, optional
-        If set to ``True``, plots an animation alongside the video of the Tracking
-        class.
+        If set to ``True``, plots an animation with the video of the Tracking class.
+        Default is ``False``.
+    animate_video : bool, optional
+        Whether to animate the plot with the video recording. Default is ``False``.
+    animate_fus : bool, optional
+        Whether to animate the plot with the functional Ultrasound video. Default is
+        ``False``.
 
     Returns
     -------
-    fig : matplotlib.Figure
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : matplotlib.axes.Axes
+        The matplotlib axes object.
     """
     if not hasattr(trk, "running_bouts"):
         trk.get_running_bouts()
 
-    ax, fig = _check_ax_and_fig(ax, fig, figsize)
+    axes, figure = _check_ax_and_fig(axes, figure, figsize)
 
-    ax.fill_between(
+    axes.fill_between(
         trk.time,
         0,
         1,
         where=trk.running_bouts,
-        transform=ax.get_xaxis_transform(),
+        transform=axes.get_xaxis_transform(),
         color="orange",
         alpha=0.5,
     )
 
-    return fig, ax
+    return figure, axes
 
 
 @anim2d_decorator
 def plot_position_2d(
-    Trk_cls: Tracking,
+    trk: Tracking,
     bodypart: str = "body",
     color_collection_array: npt.ArrayLike | None = None,
     clim: tuple[float, float] | None = None,
     head_direction: bool = True,
     head_direction_vector_labels: tuple[str, str] | list[str] = ["neck", "probe"],
     only_running_bouts: bool = False,
-    figsize: tuple[int | float, int | float] = (8, 6),
     colormap="hsv",
+    colorwheel=True,
     colorbar: bool = True,
     colorbar_label: str | None = None,
-    colorwheel=True,
     color="gray",
-    ax=None,
-    ax_kwargs=None,
-    fig=None,
-    animate=False,
+    axes=None,
+    figure=None,
+    figsize: tuple[float, float] = (8, 6),
+    animate: bool = False,
+    animate_video: bool = False,
+    animate_fus: bool = False,
+    **ax_kwargs,
 ):
-    """Plots position of the animal in 2D coordinates.
+    """Plot position of the animal in 2D coordinates.
 
     Parameters
     ----------
-    Trk_cls : :class:`tracking_physmed.tracking.Tracking` instance
+    trk : Tracking
+        The tracking object.
     bodypart : str, optional
-        Bodypart label, by default "body"
-    color_collection_array : [type], optional
+        Bodypart label. Default is ``"body"``.
+    color_collection_array : numpy.ndarray, optional
         The array of values to be used for color mapping the line collection. Default is
         ``None``.
     clim : (float, float), optional
@@ -516,18 +695,34 @@ def plot_position_2d(
         If should plot only the running periods using
         :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
-    figsize : tuple, optional
-        The matplotlib figure size. Default is ``(8,6)``.
     colormap : str, optional
-        [description], by default "hsv"
-    ax : [type], optional
-        [description], by default None
-    ax_kwargs : [type], optional
-        [description], by default None
-    fig : matplotlib Figure, optional
-        If ``None``, new figure is created. By default ``None``
+        The colormap to use for the plot. Default is ``"hsv"``.
+    colorwheel : bool, optional
+        Whether to plot the color wheel. Takes precedence over `colorbar`. Default is
+        ``True``.
+    colorbar : bool, optional
+        Whether to plot the colorbar. Default is ``True``.
+    colorbar_label : str, optional
+        The label of the colorbar. Default is ``None``.
+    color : tuple of RGBA values, optional
+        The color of the line collection, if not using `head_direction` or any
+        `color_collection_array`. Default is ``(0.5, 0.5, 0.5, 1.0)``.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.Figure, optional
+        If ``None``, new figure is created. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if ``figure=None``. Default is ``(8,6)``.
     animate : bool, optional
-        If set to `True`, plots an animation of the animal position in 2D.
+        If set to ``True``, plots an animation with the video of the Tracking class.
+        Default is ``False``.
+    animate_video : bool, optional
+        Whether to animate the plot with the video recording. Default is ``False``.
+    animate_fus : bool, optional
+        Whether to animate the plot with the functional Ultrasound video. Default is
+        ``False``.
+    **ax_kwargs
+        Additional keyword arguments to pass to the axes.
 
     Returns
     -------
@@ -535,37 +730,33 @@ def plot_position_2d(
         The matplotlib figure object.
     axes : matplotlib.axes.Axes
         The matplotlib axes object.
-    lines : matplotlib.collections.LineCollection
-        The matplotlib collection of lines representing the segments of animal position
-        from on epoch to another.
     """
 
-    x_bp, _, index = Trk_cls.get_position_x(bodypart=bodypart)
-    y_bp = Trk_cls.get_position_y(bodypart=bodypart)[0]
+    x_bp, _, index = trk.get_position_x(bodypart=bodypart)
+    y_bp = trk.get_position_y(bodypart=bodypart)[0]
 
     if only_running_bouts:
-        Trk_cls.get_running_bouts()
-        index = Trk_cls.running_bouts
+        trk.get_running_bouts()
+        index = trk.running_bouts
 
     lines = get_line_collection(x_array=x_bp, y_array=y_bp, index=index)
 
-    ax_1 = ax
-    if ax_1 is None:
-        if fig is None:
-            fig = plt.figure(figsize=figsize)
+    if axes is None:
+        if figure is None:
+            figure = plt.figure(figsize=figsize)
 
-        ax_1 = fig.add_axes(rect=[0.125, 0.125, 0.775, 0.775])
-        ax_1.set(
+        axes = figure.add_axes(rect=[0.125, 0.125, 0.775, 0.775])
+        axes.set(
             xlabel="X pixel",
             ylabel="Y pixel",
             title="Animal position in the arena [bodypart: " + bodypart + "]",
         )
-        ax_1.set_aspect("equal", "box")
-        ax_1.invert_yaxis()
+        axes.set_aspect("equal", "box")
+        axes.invert_yaxis()
     else:
-        if fig is None:
-            fig = ax_1.figure
-        assert fig == ax_1.figure, "Axes and figure must be from the same object."
+        if figure is None:
+            figure = axes.figure
+        assert figure == axes.figure, "Axes and figure must be from the same object."
 
     if color_collection_array is not None:
         if clim is None:
@@ -580,9 +771,9 @@ def plot_position_2d(
         # ax_1.set_position([0.12, 0.12, 0.7, 0.8])
         # ax_2 = fig.add_axes(rect=[0.85, 0.12, 0.03, 0.8])
         if colorbar:
-            cbar = fig.colorbar(
+            cbar = figure.colorbar(
                 ScalarMappable(norm=norm, cmap=cmap),
-                ax=ax_1,
+                ax=axes,
                 label=colorbar_label,
             )
             # cbar.ax.locator_params(nbins=4)
@@ -590,13 +781,13 @@ def plot_position_2d(
             cbar.minorticks_off()
 
     elif head_direction:
-        index = Trk_cls.get_index(head_direction_vector_labels[0], Trk_cls.pcutout)
+        index = trk.get_index(head_direction_vector_labels[0], trk.pcutout)
         if only_running_bouts:
-            index = Trk_cls.running_bouts
+            index = trk.running_bouts
 
         cmap = mpl_cm.get_cmap(colormap).resampled(360)
 
-        head_direction_array, _, _ = Trk_cls.get_direction_array(
+        head_direction_array, _, _ = trk.get_direction_array(
             label0=head_direction_vector_labels[0],
             label1=head_direction_vector_labels[1],
             mode="deg",
@@ -608,14 +799,14 @@ def plot_position_2d(
         lc.set_array(head_direction_array[index])
 
         if colorwheel:
-            fig.set_size_inches(14, 7.5)
-            ax_1.set_position([0.12, 0.12, 0.5, 0.75])
-            ax_2 = fig.add_axes(rect=[0.65, 0.26, 0.3, 0.48], projection="polar")
-            _plot_color_wheel(ax=ax_2, cmap=cmap)
+            figure.set_size_inches(14, 7.5)
+            axes.set_position([0.12, 0.12, 0.5, 0.75])
+            ax_cw = figure.add_axes(rect=[0.65, 0.26, 0.3, 0.48], projection="polar")
+            _plot_color_wheel(ax=ax_cw, cmap=cmap)
         elif colorbar:
-            fig.colorbar(
+            figure.colorbar(
                 ScalarMappable(norm=norm, cmap=cmap),
-                ax=ax_1,
+                ax=axes,
                 label="Head direction (deg)",
             )
 
@@ -623,147 +814,103 @@ def plot_position_2d(
         lc = LineCollection(lines, linewidths=3, color=color)
         lc.set_alpha(0.3)
 
-    ax_1.add_collection(lc)
-    ax_1.scatter(x_bp[index], y_bp[index], s=0)
+    axes.add_collection(lc)
+    axes.scatter(x_bp[index], y_bp[index], s=0)
 
     if ax_kwargs is not None:
-        ax_1.set(**ax_kwargs)
+        axes.set(**ax_kwargs)
 
-    return fig, ax_1, lines
+    return figure, axes
 
 
 @anim_decorator
 def plot_likelihood(
     trk: Tracking,
     bodyparts="all",
-    ax=None,
-    figsize=(12, 6),
-    fig=None,
-    animate_video=False,
-    animate_fus=False,
+    alpha: float = 0.7,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (14, 7),
+    animate: bool = False,
+    animate_video: bool = False,
+    animate_fus: bool = False,
     **ax_kwargs,
 ):
-    """Plot likelihood for labels in each frame
+    """Plot likelihood for `bodyparts` in each frame.
 
     Parameters
     ----------
-    trk : :class:`tracking_physmed.tracking.Tracking` instance
+    trk : Tracking
+        The tracking object.
     bodyparts : list or str, optional
         Labels to be plotted, it can be a string, a list of strings or `"all"` for all
         labels. Default is ``"all"``.
-    ax : matplotlib Axes, optional
-        If None, new axes is created in `fig`. By default ``None``
+    alpha : float, optional
+        The alpha value of the line collection. Default is ``0.7``.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.Figure, optional
+        If ``None``, new figure is created. Default is ``None``.
     figsize : tuple, optional
-        Figure size, if `fig` is ``None``. By default (12,6)
-    fig : matplotlib Figure, optional
-        If ``None``, new figure is created. By default ``None``
+        Figure size, if ``figure=None``. Default is ``(12,6)``.
     animate : bool, optional
-        If set to `True`, plots an animation synched with the video of the Tracking
-        class.
+        If set to ``True``, plots an animation with the video of the Tracking class.
+        Default is ``False``.
+    animate_video : bool, optional
+        Whether to animate the plot with the video recording. Default is ``False``.
+    animate_fus : bool, optional
+        Whether to animate the plot with the functional Ultrasound video. Default is
+        ``False``.
+    **ax_kwargs
+        Additional keyword arguments to pass to the axes.
 
     Returns
     -------
-    fig     : matplotlib.Figure
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : matplotlib.axes.Axes
+        The matplotlib axes object.
     """
 
     bodyparts = _listify_bodyparts(trk, bodyparts)
 
-    ax, fig = _check_ax_and_fig(ax, fig, figsize)
+    axes, figure = _check_ax_and_fig(axes, figure, figsize)
 
     for bp in bodyparts:
         lk = trk.get_likelihood(bodypart=bp)
 
-        ax.plot(
+        axes.plot(
             trk.time,
             lk,
             ".",
             markersize=4,
             color=get_label_color(trk, bp),
             label=bp,
-            alpha=0.6,
+            alpha=alpha,
         )
 
-    ax.set(ylabel="likelihood", xlabel="frames", ylim=(-0.05, 1.05))
-    ax.set(**ax_kwargs)
-    ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
-    ax.grid(linestyle="--")
+    axes.set(ylabel="likelihood", xlabel="frames", ylim=(-0.05, 1.05))
+    axes.set(**ax_kwargs)
+    axes.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
+    axes.grid(linestyle="--")
 
-    return fig, ax
+    return figure, axes
 
 
 @anim_decorator
 def plot_position_x(
     trk: Tracking,
-    bodyparts="all",
-    ax=None,
-    fig=None,
-    figsize=(12, 6),
-    animate_video=False,
-    animate_fus=False,
+    bodyparts: str = "all",
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (14, 7),
+    animate: bool = False,
+    animate_video: bool = False,
+    animate_fus: bool = False,
     **ax_kwargs,
 ):
-    """Plots X coordinates of requested `bodyparts`
-
-    Parameters
-    ----------
-    trk : `Tracking` instance
-    bodyparts : str or list of str, optional
-        Bodypart labels, accepts string or list of strings or ``"all"`` for all labels.
-        Default is ``"all"``.
-    ax : matplotlib Axes, optional
-        If None, new axes is created in `fig`. By default ``None``
-    figsize : tuple, optional
-        Figure size, if `fig` is ``None``. Default is ``(12,6)``.
-    fig : matplotlib Figure, optional
-        If ``None``, new figure is created. By default ``None``
-    animate : bool, optional
-        If set to ``True``, plots an animation synched with the video of the Tracking
-        class.
-
-    Returns
-    -------
-    fig     : matplotlib.Figure
-    """
-
-    bodyparts = _listify_bodyparts(trk, bodyparts)
-
-    spatial_units = trk.space_units[bodyparts[0] + "_x"].units
-    ax_kwargs.setdefault("ylabel", f"X position ({spatial_units})")
-    ax_kwargs.setdefault("xlabel", "time (s)")
-    for i, bp in enumerate(bodyparts):
-        x_bp, time_array, index = trk.get_position_x(bodypart=bp)
-
-        fig, ax = plot_array(
-            x_bp,
-            time_array,
-            index,
-            label=bp,
-            ax=ax,
-            fig=fig,
-            figsize=figsize,
-            color=get_label_color(trk, bp),
-            plot_invisible_array=False if i == 0 else True,
-            **ax_kwargs,
-        )
-
-    ax.legend(loc="upper right")
-    ax.grid(linestyle="--")
-
-    return fig, ax
-
-
-@anim_decorator
-def plot_position_y(
-    trk: Tracking,
-    bodyparts="all",
-    ax=None,
-    fig=None,
-    figsize=(12, 6),
-    animate_video=False,
-    animate_fus=False,
-    **ax_kwargs,
-):
-    """Plot Y coordinates of `bodyparts`.
+    """Plot the ``x`` coordinates of requested `bodyparts`.
 
     Parameters
     ----------
@@ -772,19 +919,107 @@ def plot_position_y(
     bodyparts : str or list of str, optional
         Bodypart labels, accepts string or list of strings or ``"all"`` for all labels.
         Default is ``"all"``.
-    ax : matplotlib Axes, optional
-        If None, new axes is created in `fig`. By default ``None``
+    alpha : float, optional
+        The alpha value of the line collection. Default is ``1.0``.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.Figure, optional
+        If ``None``, new figure is created. Default is ``None``.
     figsize : tuple, optional
-        Figure size, if `fig` is ``None``. By default (12,6)
-    fig : matplotlib Figure, optional
-        If ``None``, new figure is created. By default ``None``
+        Figure size, if ``figure=None``. Default is ``(12,6)``.
     animate : bool, optional
-        If set to `True`, plots an animation synched with the video of the Tracking
-        class.
+        If set to ``True``, plots an animation with the video of the Tracking class.
+        Default is ``False``.
+    animate_video : bool, optional
+        Whether to animate the plot with the video recording. Default is ``False``.
+    animate_fus : bool, optional
+        Whether to animate the plot with the functional Ultrasound video. Default is
+        ``False``.
+    **ax_kwargs
+        Additional keyword arguments to pass to the axes.
 
     Returns
     -------
-    fig     : matplotlib.Figure
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : matplotlib.axes.Axes
+        The matplotlib axes object.
+    """
+
+    bodyparts = _listify_bodyparts(trk, bodyparts)
+
+    spatial_units = trk.space_units[bodyparts[0] + "_x"].units
+    ax_kwargs.setdefault("ylabel", f"X position ({spatial_units})")
+    ax_kwargs.setdefault("xlabel", "time (s)")
+    ax_kwargs.setdefault("legend__loc", "upper right")
+    ax_kwargs.setdefault("grid__linestyle", "--")
+    for i, bp in enumerate(bodyparts):
+        x_bp, time_array, index = trk.get_position_x(bodypart=bp)
+
+        figure, axes = plot_array(
+            x_bp,
+            time_array,
+            index,
+            label=bp,
+            alpha=alpha,
+            axes=axes,
+            figure=figure,
+            figsize=figsize,
+            color=get_label_color(trk, bp),
+            set_axes=False if i == 0 else True,
+            **ax_kwargs,
+        )
+
+    return figure, axes
+
+
+@anim_decorator
+def plot_position_y(
+    trk: Tracking,
+    bodyparts: str = "all",
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (14, 7),
+    animate: bool = False,
+    animate_video: bool = False,
+    animate_fus: bool = False,
+    **ax_kwargs,
+):
+    """Plot the ``y`` coordinates of `bodyparts`.
+
+    Parameters
+    ----------
+    trk : Tracking
+        The tracking object.
+    bodyparts : str or list of str, optional
+        Bodypart labels, accepts string or list of strings or ``"all"`` for all labels.
+        Default is ``"all"``.
+    alpha : float, optional
+        The alpha value of the line collection. Default is ``1.0``.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.Figure, optional
+        If ``None``, new figure is created. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if ``figure=None``. Default is ``(12,6)``.
+    animate : bool, optional
+        If set to ``True``, plots an animation with the video of the Tracking class.
+        Default is ``False``.
+    animate_video : bool, optional
+        Whether to animate the plot with the video recording. Default is ``False``.
+    animate_fus : bool, optional
+        Whether to animate the plot with the functional Ultrasound video. Default is
+        ``False``.
+    **ax_kwargs
+        Additional keyword arguments to pass to the axes.
+
+    Returns
+    -------
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : matplotlib.axes.Axes
+        The matplotlib axes object.
     """
 
     bodyparts = _listify_bodyparts(trk, bodyparts)
@@ -792,76 +1027,89 @@ def plot_position_y(
     spatial_units = trk.space_units[bodyparts[0] + "_y"].units
     ax_kwargs.setdefault("ylabel", f"Y position ({spatial_units})")
     ax_kwargs.setdefault("xlabel", "time (s)")
+    ax_kwargs.setdefault("legend__loc", "upper right")
+    ax_kwargs.setdefault("grid__linestyle", "--")
     for i, bp in enumerate(bodyparts):
         y_bp, time_array, index = trk.get_position_y(bodypart=bp)
 
-        fig, ax = plot_array(
+        figure, axes = plot_array(
             y_bp,
             time_array,
             index,
             label=bp,
-            ax=ax,
-            fig=fig,
+            alpha=alpha,
+            axes=axes,
+            figure=figure,
             figsize=figsize,
             color=get_label_color(trk, bp),
-            plot_invisible_array=False if i == 0 else True,
+            set_axes=False if i == 0 else True,
             **ax_kwargs,
         )
 
-    ax.legend(loc="upper right")
-    ax.grid(linestyle="--")
-
-    return fig, ax
+    return figure, axes
 
 
-def plot_position(Trk, bodyparts="all", figsize=(12, 6), fig=None, **ax_kwargs):
+def plot_position(
+    trk: Tracking,
+    bodyparts: str = "all",
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (12, 6),
+    **ax_kwargs,
+):
     """Plot X and Y coordinates of requested `bodyparts` in two subplots.
 
     The top one is for X coordinates and bottom one is for Y coordinates
 
     Parameters
     ----------
-    Trk : `Tracking` instance
+    trk : Tracking
+        The tracking object.
     bodyparts : str or list of str, optional
         Bodypart labels, accepts string or list of strings or ``"all"`` for all labels.
         Default is ``"all"``.
-    figsize : tuple, optional
-        Figure size, if `fig` is ``None``. Default is ``(12,6)``.
-    fig : matplotlib Figure, optional
+    figure : matplotlib Figure, optional
         If ``None``, new figure is created. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if `figure` is ``None``. Default is ``(12,6)``.
+    **ax_kwargs
+        Additional keyword arguments to be passed to the axes. These arguments are
+        passed to both x and y position plotting functions.
 
     Returns
     -------
-    matplotlib.Figure
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : tuple[matplotlib.axes.Axes, matplotlib.axes.Axes]
+        The matplotlib axes object.
     """
 
-    if fig is None:
-        fig = plt.figure(figsize=figsize)
+    if figure is None:
+        figure = plt.figure(figsize=figsize)
 
-    ax_x = fig.add_subplot(211)
-    ax_y = fig.add_subplot(212)
+    ax_x = figure.add_subplot(211)
+    ax_y = figure.add_subplot(212)
 
-    plot_position_x(Trk, bodyparts=bodyparts, ax=ax_x, xlabel="", **ax_kwargs)
-    plot_position_y(Trk, bodyparts=bodyparts, ax=ax_y, **ax_kwargs)
+    plot_position_x(
+        trk, bodyparts=bodyparts, axes=ax_x, figure=figure, xlabel="", **ax_kwargs
+    )
+    plot_position_y(trk, bodyparts=bodyparts, axes=ax_y, figure=figure, **ax_kwargs)
 
-    return fig, (ax_x, ax_y)
+    return figure, (ax_x, ax_y)
 
 
 @anim_decorator
 def plot_head_direction(
-    Trk: Tracking,
+    trk: Tracking,
     head_direction_vector_labels=["neck", "probe"],
     ang="deg",
     smooth=False,
     only_running_bouts=False,
-    color_collection_array=None,
-    clim=None,
-    colormap="hsv",
-    colorbar=True,
-    colorbar_label=None,
+    plot_only_running_bouts: bool = True,
+    cmap="hsv",
+    axes=None,
+    figure=None,
     figsize=(12, 6),
-    ax=None,
-    fig=None,
+    animate=False,
     animate_video=False,
     animate_fus=False,
     **ax_kwargs,
@@ -870,114 +1118,99 @@ def plot_head_direction(
 
     Parameters
     ----------
-    Trk : `Tracking` instance
+    trk : Tracking
+        The tracking object.
     head_direction_vector_labels : list
-        Pair of bodyparts from where to get the head direction from. By default
+        Pair of bodyparts from where to get the head direction from. Default is
         ``["neck", "probe"]``.
     ang : str, optional
-        If plotting in "deg" for degrees or in "rad" for radians. By default "deg"
+        Whether to plot in "deg" for degrees or in "rad" for radians. Default is "deg".
+    smooth : bool, optional
+        Whether or not to smooth the direction data. Default is ``False``.
+    only_running_bouts : bool, optional
+        If should plot only the running periods using
+        :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
+        is ``False``.
+    plot_only_running_bouts : bool, optional
+        Whether or not to plot a background color on periods of running bouts (and not
+        only not plot non running bouts). This only takes effect if `only_running_bouts`
+        is set to ``True``. Default is ``True``.
+    cmap : str, optional
+        The colormap to use for the plot, if ``None`` a gray line collection plot will
+        be used. Default is ``"hsv"``.
+    axes : matplotlib.axes.axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.figure, optional
+        If ``None``, new figure is created. Default is ``None``.
     figsize : tuple, optional
-        Figure size, if `fig` is ``None``. By default (12,6)
-    ax : matplotlib Axes, optional
-        If None, new axes is created in `fig`. By default ``None``
-    fig : matplotlib Figure, optional
-        If ``None``, new figure is created. By default ``None``
+        Figure size, if ``figure=None``. Default is ``(12,6)``.
     animate : bool, optional
-        If set to `True`, plots an animation synched with the video of the Tracking
-        class. Default is ``False``.
+        If set to `True`, plots an animation with the video of the Tracking class.
+        Default is ``False``.
+    animate_video : bool, optional
+        Whether to animate the plot with the video recording. Default is ``False``.
+    animate_fus : bool, optional
+        Whether to animate the plot with the functional Ultrasound video. Default is
+        ``False``.
+    **ax_kwargs
+        Additional keyword arguments to pass to the axes.
 
     Returns
     -------
-    fig     : matplotlib.Figure
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : tuple[matplotlib.axes.Axes, matplotlib.axes.Axes]
+        The matplotlib axes object.
     """
-
-    index = Trk.get_index(head_direction_vector_labels[1], Trk.pcutout)
-    if only_running_bouts:
-        if not hasattr(Trk, "running_bouts"):
-            Trk.get_running_bouts()
-        index = Trk.running_bouts
-
-    head_direction_array, _, _ = Trk.get_direction_array(
+    head_direction_array, time_array, index = trk.get_direction_array(
         label0=head_direction_vector_labels[0],
         label1=head_direction_vector_labels[1],
         mode=ang,
         smooth=smooth,
+        only_running_bouts=only_running_bouts,
     )
 
-    index_wrapped_dict = {"deg": 320, "rad": 320 / 360 * 2 * np.pi}
+    index_wrapped_dict = {"deg": 270, "rad": 270 / 360 * 2 * np.pi}
     index_wrapped_angles = np.where(
-        np.insert(np.abs(np.diff(head_direction_array)), 0, 0)
-        >= index_wrapped_dict[ang]
+        np.append(np.abs(np.diff(head_direction_array)), 0) >= index_wrapped_dict[ang]
     )[0]
     index[index_wrapped_angles] = False
 
-    lines = get_line_collection(
-        x_array=Trk.time, y_array=head_direction_array, index=index
-    )
-
-    if color_collection_array is not None:
-        if clim is None:
-            clim = (color_collection_array.min(), color_collection_array.max())
-
-        cmap = mpl_cm.get_cmap(colormap).resampled(200)
-        norm = colors.BoundaryNorm(
-            np.arange(clim[0], clim[1], (clim[1] - clim[0]) / 100), cmap.N
-        )
-
-        line_collection_array = color_collection_array[index]
-    else:
-        cmap = mpl_cm.get_cmap(colormap).resampled(360)
-        norm_dict = {
-            "deg": np.arange(0, 361),
-            "rad": np.arange(0, 2 * np.pi * (1 + 1 / 360), 2 * np.pi / 360),
-        }
-        norm = colors.BoundaryNorm(norm_dict[ang], cmap.N)
-
-        line_collection_array = head_direction_array[index]
-
-    lc = LineCollection(lines, linewidths=2, cmap=cmap, norm=norm)
-    if colormap is None:
-        lc = LineCollection(lines, linewidths=2, colors="#1f77b4")
-    lc.set_array(line_collection_array)
-
-    if ax is None:
-        if fig is None:
-            fig = plt.figure(figsize=figsize)
-        ax = fig.add_axes(rect=[0.1, 0.12, 0.8, 0.8])
-    else:
-        if fig is None:
-            fig = ax.figure
-        assert fig == ax.figure, "Axes and figure must be from the same instance"
-    ax.add_collection(lc)
-
-    if colorbar:
-        cax = fig.add_axes(rect=[0.92, 0.12, 0.025, 0.8])
-        fig.colorbar(
-            ScalarMappable(norm=norm, cmap=cmap), cax=cax, label=colorbar_label
-        )
-
-    ax.plot(Trk.time, head_direction_array, ".", markersize=0)
-    ax.grid(linestyle="--")
     ylabel_dict = {"deg": "Degree", "rad": "Radians"}
-    ax.set(
-        xlabel="time (s)",
-        ylabel=ylabel_dict[ang],
-        title="Head direction",
+    ax_kwargs.setdefault("ylabel", ylabel_dict[ang])
+    ax_kwargs.setdefault("xlabel", "time (s)")
+    ax_kwargs.setdefault("legend__loc", "upper right")
+    ax_kwargs.setdefault("grid__linestyle", "--")
+    figure, axes = plot_array(
+        head_direction_array,
+        time_array=time_array,
+        index=index,
+        label="head direction",
+        cmap=cmap,
+        only_running_bouts=only_running_bouts,
+        axes=axes,
+        figure=figure,
+        figsize=figsize,
+        **ax_kwargs,
     )
-    ax.set(**ax_kwargs)
 
-    return fig, ax
+    if only_running_bouts and plot_only_running_bouts:
+        plot_running_bouts(trk, axes=axes)
+    return figure, axes
 
 
 @anim_decorator
 def plot_head_direction_interval(
-    Trk: Tracking,
+    trk: Tracking,
     deg=180,
     sigma=10.0,
     only_running_bouts=False,
-    figsize=(12, 6),
-    fig=None,
-    ax=None,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] = (0.5, 0.5, 0.5, 1.0),
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (14, 7),
     animate_video=False,
     animate_fus=False,
     **ax_kwargs,
@@ -989,7 +1222,7 @@ def plot_head_direction_interval(
 
     Parameters
     ----------
-    Trk : Tracking
+    trk : Tracking
         The tracking object containing the data.
     deg : int, optional
         The degree to plot the head direction interval for. Default is ``180``.
@@ -998,14 +1231,20 @@ def plot_head_direction_interval(
     only_running_bouts : bool, optional
         Whether to plot only the head direction intervals during running bouts. Default
         is ``False``.
+    plot_only_running_bouts : bool, optional
+        Whether or not to plot a background color on periods of running bouts (and not
+        only not plot non running bouts). This only takes effect if `only_running_bouts`
+        is set to ``True``. Default is ``True``.
+    color : tuple of RGBA values, optional
+        The color of the line collection. Default is ``(0.5, 0.5, 0.5, 1.0)``.
+    alpha : float, optional
+        The alpha value of the line collection. Default is ``1.0``.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.figure, optional
+        If ``None``, new figure is created. Default is ``None``.
     figsize : tuple, optional
-        The size of the figure. Default is ``(12, 6)``.
-    fig : matplotlig.figure.Figure, optional
-        The figure to plot on. If ``None``, a new figure will be created. Default is
-        ``None``.
-    ax : matplotlib.axes.Axes, optional
-        The axes to plot on. If ``None``, a new axes will be created. Default is
-        ``None``.
+        Figure size, if ``figure=none``. Default is ``(12,6)``.
     animate_video : bool, optional
         Whether to animate the plot with the video recording. Default is ``False``.
     animate_fus : bool, optional
@@ -1016,76 +1255,89 @@ def plot_head_direction_interval(
 
     Returns
     -------
-    Figure, Axes
-        The figure and axes objects.
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : tuple[matplotlib.axes.Axes, matplotlib.axes.Axes]
+        The matplotlib axes object.
     """
 
-    hd_interval_array, time_array, index = Trk.get_degree_interval_hd(
+    hd_interval_array, time_array, index = trk.get_degree_interval_hd(
         deg, only_running_bouts=only_running_bouts, sigma=sigma
     )
 
-    lines = get_line_collection(time_array, hd_interval_array, index)
-
-    lc = LineCollection(
-        lines,
-        linewidths=2,
-    )
-
-    if ax is None:
-        if fig is None:
-            fig = plt.figure(figsize=figsize)
-        ax = fig.add_axes(rect=[0.1, 0.12, 0.8, 0.8])
-    else:
-        if fig is None:
-            fig = ax.figure
-        assert fig == ax.figure, "Axes and figure must be from the same instance"
-
-    ax.add_collection(lc)
-
-    if only_running_bouts:
-        time_array = np.concatenate(time_array)
-        hd_interval_array = np.concatenate(hd_interval_array)
-        index = np.concatenate(index)
-        plot_running_bouts(Trk, ax=ax)
-
-    ax.plot(
-        time_array[index],
-        hd_interval_array[index],
-        ".",
-        markersize=0,
+    ax_kwargs.setdefault("ylabel", "a.u.")
+    ax_kwargs.setdefault("xlabel", "time (s)")
+    ax_kwargs.setdefault("legend__loc", "upper right")
+    ax_kwargs.setdefault("grid__linestyle", "--")
+    figure, axes = plot_array(
+        hd_interval_array,
+        time_array=time_array,
+        index=index,
+        only_running_bouts=only_running_bouts,
         label=f"{deg} degrees",
+        color=color,
+        axes=axes,
+        figure=figure,
+        figsize=figsize,
+        alpha=alpha,
+        **ax_kwargs,
     )
-    ax.set(ylabel="a.u", xlabel="time (s)")
-    ax.legend(loc="upper right")
-    ax.grid(linestyle="--")
-    ax.set(**ax_kwargs)
 
-    return fig, ax
+    if only_running_bouts and plot_only_running_bouts:
+        plot_running_bouts(trk, axes=axes)
+
+    return figure, axes
 
 
 def plot_occupancy(
-    Trk: Tracking, bins=40, only_running_bouts=True, figsize=(8, 7), fig=None, ax=None
+    trk: Tracking,
+    bins=40,
+    only_running_bouts=True,
+    axes=None,
+    figure=None,
+    figsize=(8, 7),
 ):
-    if ax is None:
-        if fig is None:
-            fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111)
+    """Plot the occupancy of the animal in the arena.
 
-    H = Trk.get_binned_position(bins=40, only_running_bouts=True)
+    Parameters
+    ----------
+    trk : Tracking
+        The tracking object.
+    bins : int, optional
+        The number of bins to use for the histogram. Default is ``40``.
+    only_running_bouts : bool, optional
+        Whether to plot only the occupancy during running bouts. Default is ``True``.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.figure, optional
+        If ``None``, new figure is created. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if ``figure=none``. Default is ``(12,6)``.
+
+    Returns
+    -------
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : tuple[matplotlib.axes.Axes, matplotlib.axes.Axes]
+        The matplotlib axes object.
+    """
+    axes, fig = _check_ax_and_fig(axes, figure, figsize)
+
+    H = trk.get_binned_position(bins=bins, only_running_bouts=only_running_bouts)
     H[0][H[0] == 0] = np.nan
 
-    i = ax.pcolormesh(H[1], H[2], H[0].T)
-    ax.invert_yaxis()
-    ax.set_aspect("equal", "box")
-    ax.set(xlabel="cm", ylabel="cm")
-    fig.colorbar(i, ax=ax, label="count")
+    i = axes.pcolormesh(H[1], H[2], H[0].T)
+    axes.invert_yaxis()
+    axes.set_aspect("equal", "box")
+    axes.set(xlabel="cm", ylabel="cm")
+    figure.colorbar(i, ax=axes, label="count")
 
-    return fig, ax
+    return figure, axes
 
 
-def animation_behavior_fus(Trk, fig=None):
+def animation_behavior_fus(Trk, figure=None):  # numpydoc ignore=GL08
     assert (
         Trk.scan is not None
     ), "Tracking class needs to have an attached scan for this animation"
 
-    return Animate_video_fUS(tracking=Trk, fig=fig)
+    return Animate_video_fUS(tracking=Trk, figure=figure)
