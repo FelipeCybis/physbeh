@@ -427,8 +427,8 @@ class Tracking:
         index1 = self.get_index(label=label1)
         index = index0 + index1
 
-        resp_in_rad = np.arctan2(
-            hd_y * (-1), hd_x
+        resp_in_rad = np.squeeze(
+            np.arctan2(hd_y * (-1), hd_x)
         )  # multiplication by -1 needed because of video x and y directions
 
         if smooth:
@@ -442,7 +442,7 @@ class Tracking:
             resp_in_rad = np.arctan2(np.sin(resp_in_rad), np.cos(resp_in_rad))
 
         resp_in_rad[resp_in_rad < 0] += 2 * np.pi
-        resp = np.squeeze(resp_in_rad)
+        resp = resp_in_rad
         if mode in ("deg", "degree"):
             resp = np.degrees(resp)
 

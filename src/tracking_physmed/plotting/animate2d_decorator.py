@@ -3,8 +3,8 @@ from functools import wraps
 
 from matplotlib.path import Path as mPath
 
-from ..tracking import Tracking
-from ..utils import BlitManager
+from tracking_physmed.tracking import Tracking
+from tracking_physmed.utils import BlitManager
 
 
 def anim2d_decorator(plot_function):

@@ -11,8 +11,8 @@ import numpy as np
 import numpy.typing as npt
 from matplotlib import colormaps as mpl_cm
 from matplotlib import colors
-from matplotlib.cm import ScalarMappable
 from matplotlib.collections import LineCollection
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from tracking_physmed.plotting.animate2d_decorator import anim2d_decorator
 from tracking_physmed.plotting.animate_decorator import anim_decorator
@@ -67,7 +67,6 @@ def get_label_color(
     return cmap(trk.labels.index(bodypart))
 
 
-@anim_decorator
 def plot_array(
     array: npt.NDArray,
     time_array: npt.NDArray | None = None,
@@ -78,7 +77,10 @@ def plot_array(
     color: tuple[float, float, float, float] = (0.5, 0.5, 0.5, 1.0),
     cmap: str | None = None,
     norm: colors.Normalize = colors.Normalize(),
+    vmin: float | None = None,
+    vmax: float | None = None,
     colorbar: bool = True,
+    cbar_label: str = "",
     line_collection_array: npt.NDArray | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
@@ -86,7 +88,7 @@ def plot_array(
     figsize: tuple[float, float] = (12, 6),
     set_axes: bool = True,
     **ax_kwargs,
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, npt.NDArray]:
     """Plot an array by transforming it into line collections.
 
     Parameters
@@ -117,9 +119,17 @@ def plot_array(
         Default is ``None``.
     norm : matplotlib.colors.Normalize, optional
         The normalization of the colormap. Default is ``colors.Normalize()``.
+    vmin, vmax : float or None, optional
+        When using no explicit `norm`, `vmin` and `vmax` define the data range that the
+        colormap covers. If ``None``, the colormap covers the complete value range of
+        the displayed slices. It is an error to use `vmin`/`vmax` when a `norm` instance
+        is given, but using a ``str`` `norm` name together with `vmin`/`vmax` is
+        accepted. Data range that the colormap covers. Default is ``None``.
     colorbar : bool, optional
         Whether to plot the colorbar. Only possible if `cmap` is not ``None``. Default
         is ``True``.
+    cbar_label : str, optional
+        Label of the colorbar. Default is ``""``.
     line_collection_array : numpy.ndarray, optional
         The array of values to be used for color mapping the line collection. Default is
         ``None``.
@@ -174,6 +184,12 @@ def plot_array(
             )
         lc_kwargs["array"] = line_collection_array
 
+    if vmin is None:
+        vmin = np.nanmin(lc_kwargs["array"])
+    if vmax is None:
+        vmax = np.nanmax(lc_kwargs["array"])
+    clim = (vmin, vmax)
+
     lc = LineCollection(
         lines,  # type: ignore
         label=label,
@@ -187,12 +203,14 @@ def plot_array(
         array = np.concatenate(array)
         index = np.concatenate(index)
 
-    clim = lc.get_clim()
     axes.autoscale()
     lc.set_clim(clim)
 
     if colorbar and cmap is not None:
-        plt.colorbar(lc, ax=axes)
+        divider = make_axes_locatable(axes)
+        cax = divider.append_axes("right", size="4%", pad=0.1)
+        cbar = plt.colorbar(lc, cax=cax)
+        cbar.set_label(cbar_label)
 
     if set_axes:
         keys = list(ax_kwargs.keys())
@@ -207,10 +225,11 @@ def plot_array(
             if key.startswith("grid__")
         }
         axes.set(**ax_kwargs)
-        axes.legend(**legend_kwargs)
+        if label:
+            axes.legend(**legend_kwargs)
         axes.grid(**grid_kwargs)
 
-    return figure, axes
+    return figure, axes, lines
 
 
 @anim_decorator
@@ -298,7 +317,7 @@ def plot_speed(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes = plot_array(
+    figure, axes, _ = plot_array(
         speed_array,
         time_array=time_array,
         index=index,
@@ -391,7 +410,7 @@ def plot_wall_proximity(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes = plot_array(
+    figure, axes, _ = plot_array(
         wall_proximity,
         time_array=time_array,
         index=index,
@@ -480,7 +499,7 @@ def plot_center_proximity(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes = plot_array(
+    figure, axes, _ = plot_array(
         center_proximity,
         time_array=time_array,
         index=index,
@@ -573,7 +592,7 @@ def plot_corner_proximity(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes = plot_array(
+    figure, axes, _ = plot_array(
         corner_proximity,
         time_array=time_array,
         index=index,
@@ -656,14 +675,15 @@ def plot_position_2d(
     trk: Tracking,
     bodypart: str = "body",
     color_collection_array: npt.NDArray | None = None,
-    clim: tuple[float, float] | None = None,
+    vmin: float | None = None,
+    vmax: float | None = None,
     head_direction: bool = True,
     head_direction_vector_labels: tuple[str, str] | list[str] = ["neck", "probe"],
     only_running_bouts: bool = False,
-    colormap="hsv",
+    cmap: str | None = None,
     colorwheel=True,
     colorbar: bool = True,
-    colorbar_label: str | None = None,
+    cbar_label: str = "",
     color="gray",
     axes=None,
     figure=None,
@@ -684,8 +704,12 @@ def plot_position_2d(
     color_collection_array : numpy.ndarray, optional
         The array of values to be used for color mapping the line collection. Default is
         ``None``.
-    clim : (float, float), optional
-        The color limits for the color mapping. Default is ``None``.
+    vmin, vmax : float or None, optional
+        When using no explicit `norm`, `vmin` and `vmax` define the data range that the
+        colormap covers. If ``None``, the colormap covers the complete value range of
+        the displayed slices. It is an error to use `vmin`/`vmax` when a `norm` instance
+        is given, but using a ``str`` `norm` name together with `vmin`/`vmax` is
+        accepted. Data range that the colormap covers. Default is ``None``.
     head_direction : bool, optional
         Whether or not to color the lines based on the head direction. Default is
         ``True``.
@@ -696,14 +720,14 @@ def plot_position_2d(
         If should plot only the running periods using
         :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
-    colormap : str, optional
+    cmap : str, optional
         The colormap to use for the plot. Default is ``"hsv"``.
     colorwheel : bool, optional
         Whether to plot the color wheel. Takes precedence over `colorbar`. Default is
         ``True``.
     colorbar : bool, optional
         Whether to plot the colorbar. Default is ``True``.
-    colorbar_label : str, optional
+    cbar_label : str, optional
         The label of the colorbar. Default is ``None``.
     color : tuple, optional
         Tuple of RGB(A) values for color of the line collection, if not using
@@ -741,86 +765,132 @@ def plot_position_2d(
         trk.get_running_bouts()
         index = trk.running_bouts
 
-    lines = get_line_collection(x_array=x_bp, y_array=y_bp, index=index)
-
-    if axes is None:
-        if figure is None:
-            figure = plt.figure(figsize=figsize)
-
-        axes = figure.add_axes(rect=[0.125, 0.125, 0.775, 0.775])
-        axes.set(
-            xlabel="X pixel",
-            ylabel="Y pixel",
-            title="Animal position in the arena [bodypart: " + bodypart + "]",
-        )
-        axes.set_aspect("equal", "box")
-        axes.invert_yaxis()
-    else:
-        if figure is None:
-            figure = axes.figure
-        assert figure == axes.figure, "Axes and figure must be from the same object."
-
-    if color_collection_array is not None:
-        if clim is None:
-            clim = (color_collection_array.min(), color_collection_array.max())
-
-        cmap = mpl_cm.get_cmap(colormap).resampled(200)
-        norm = colors.BoundaryNorm(np.linspace(clim[0], clim[1], cmap.N), cmap.N)
-
-        lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)  # type: ignore
-        lc.set_alpha(0.7)
-        lc.set_array(color_collection_array[index])
-        if colorbar:
-            cbar = figure.colorbar(
-                ScalarMappable(norm=norm, cmap=cmap),
-                ax=axes,
-                label=colorbar_label,
-            )
-            # cbar.ax.locator_params(nbins=4)
-            cbar.set_ticks(np.linspace(clim[0], clim[1], 4))
-            cbar.minorticks_off()
-
-    elif head_direction:
-        index = trk.get_index(head_direction_vector_labels[0], trk.pcutout)
-        if only_running_bouts:
-            index = trk.running_bouts
-
-        cmap = mpl_cm.get_cmap(colormap).resampled(360)
-
-        head_direction_array, _, _ = trk.get_direction_array(
+    if head_direction:
+        hd_array, _, index = trk.get_direction_array(
             label0=head_direction_vector_labels[0],
             label1=head_direction_vector_labels[1],
             mode="deg",
+            smooth=True,
+            only_running_bouts=only_running_bouts,
         )
+        lines = get_line_collection(x_bp, hd_array, index)
+        color_collection_array = lines[:, 0, 1]
+        cmap = "hsv"
+        colorbar = False if colorwheel else colorbar
 
-        norm = colors.BoundaryNorm(np.arange(0, 360), cmap.N)
+    # lines = get_line_collection(x_array=x_bp, y_array=y_bp, index=index)
+    spatial_units = trk.space_units[bodypart + "_x"].units
+    ax_kwargs.setdefault("ylabel", f"Y ({spatial_units})")
+    ax_kwargs.setdefault("xlabel", f"X ({spatial_units})")
+    ax_kwargs.setdefault(
+        "title", "Animal position in the arena [bodypart: " + bodypart + "]"
+    )
+    figure, axes, lines = plot_array(
+        y_bp,
+        x_bp,
+        index=index,
+        only_running_bouts=only_running_bouts,
+        line_collection_array=color_collection_array,
+        color=color,
+        cmap=cmap,
+        vmin=vmin,
+        vmax=vmax,
+        colorbar=colorbar,
+        cbar_label=cbar_label,
+        axes=axes,
+        figure=figure,
+        figsize=figsize,
+        **ax_kwargs,
+    )
+    axes.set_aspect("equal", "box")
+    if not axes.yaxis.get_inverted():
+        axes.invert_yaxis()
 
-        lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)  # type: ignore
-        lc.set_array(head_direction_array[index])
-
+    if head_direction:
         if colorwheel:
             figure.set_size_inches(14, 7.5)
             axes.set_position([0.12, 0.12, 0.5, 0.75])
             ax_cw = figure.add_axes(rect=[0.65, 0.26, 0.3, 0.48], projection="polar")
             _plot_color_wheel(ax=ax_cw, cmap=cmap)
-        elif colorbar:
-            figure.colorbar(
-                ScalarMappable(norm=norm, cmap=cmap),
-                ax=axes,
-                label="Head direction (deg)",
-            )
-
-    else:
-        lc = LineCollection(lines, linewidths=3, color=color)  # type: ignore
-        lc.set_alpha(0.3)
-
-    axes.add_collection(lc)
-    axes.scatter(x_bp[index], y_bp[index], s=0)
-
-    if ax_kwargs is not None:
-        axes.set(**ax_kwargs)
-
     return figure, axes, lines
+
+    # if axes is None:
+    #     if figure is None:
+    #         figure = plt.figure(figsize=figsize)
+
+    #     axes = figure.add_axes(rect=[0.125, 0.125, 0.775, 0.775])
+    #     axes.set(
+    #         xlabel="X pixel",
+    #         ylabel="Y pixel",
+    #         title="Animal position in the arena [bodypart: " + bodypart + "]",
+    #     )
+    #     axes.set_aspect("equal", "box")
+    #     axes.invert_yaxis()
+    # else:
+    #     if figure is None:
+    #         figure = axes.figure
+    #     assert figure == axes.figure, "Axes and figure must be from the same object."
+
+    # if color_collection_array is not None:
+    #     if clim is None:
+    #         clim = (color_collection_array.min(), color_collection_array.max())
+
+    #     cmap = mpl_cm.get_cmap(colormap).resampled(200)
+    #     norm = colors.BoundaryNorm(np.linspace(clim[0], clim[1], cmap.N), cmap.N)
+
+    #     lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)  # type: ignore
+    #     lc.set_alpha(0.7)
+    #     lc.set_array(color_collection_array[index])
+    #     if colorbar:
+    #         cbar = figure.colorbar(
+    #             ScalarMappable(norm=norm, cmap=cmap),
+    #             ax=axes,
+    #             label=colorbar_label,
+    #         )
+    #         cbar.set_ticks(np.linspace(clim[0], clim[1], 4))
+    #         cbar.minorticks_off()
+
+    # elif head_direction:
+    #     index = trk.get_index(head_direction_vector_labels[0], trk.pcutout)
+    #     if only_running_bouts:
+    #         index = trk.running_bouts
+
+    #     cmap = mpl_cm.get_cmap(colormap).resampled(360)
+
+    #     head_direction_array, _, _ = trk.get_direction_array(
+    #         label0=head_direction_vector_labels[0],
+    #         label1=head_direction_vector_labels[1],
+    #         mode="deg",
+    #     )
+
+    #     norm = colors.BoundaryNorm(np.arange(0, 360), cmap.N)
+
+    #     lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)  # type: ignore
+    #     lc.set_array(head_direction_array[index])
+
+    #     if colorwheel:
+    #         figure.set_size_inches(14, 7.5)
+    #         axes.set_position([0.12, 0.12, 0.5, 0.75])
+    #         ax_cw = figure.add_axes(rect=[0.65, 0.26, 0.3, 0.48], projection="polar")
+    #         _plot_color_wheel(ax=ax_cw, cmap=cmap)
+    #     elif colorbar:
+    #         figure.colorbar(
+    #             ScalarMappable(norm=norm, cmap=cmap),
+    #             ax=axes,
+    #             label="Head direction (deg)",
+    #         )
+
+    # else:
+    #     lc = LineCollection(lines, linewidths=3, color=color)  # type: ignore
+    #     lc.set_alpha(0.3)
+
+    # axes.add_collection(lc)
+    # axes.scatter(x_bp[index], y_bp[index], s=0)
+
+    # if ax_kwargs is not None:
+    #     axes.set(**ax_kwargs)
+
+    # return figure, axes, lines
 
 
 @anim_decorator
@@ -956,7 +1026,7 @@ def plot_position_x(
     for i, bp in enumerate(bodyparts):
         x_bp, time_array, index = trk.get_position_x(bodypart=bp)
 
-        figure, axes = plot_array(
+        figure, axes, _ = plot_array(
             x_bp,
             time_array,
             index,
@@ -1032,7 +1102,7 @@ def plot_position_y(
     for i, bp in enumerate(bodyparts):
         y_bp, time_array, index = trk.get_position_y(bodypart=bp)
 
-        figure, axes = plot_array(
+        figure, axes, _ = plot_array(
             y_bp,
             time_array,
             index,
@@ -1181,7 +1251,7 @@ def plot_head_direction(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes = plot_array(
+    figure, axes, _ = plot_array(
         head_direction_array,
         time_array=time_array,
         index=index,
@@ -1271,7 +1341,7 @@ def plot_head_direction_interval(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes = plot_array(
+    figure, axes, _ = plot_array(
         hd_interval_array,
         time_array=time_array,
         index=index,
