@@ -22,11 +22,11 @@ from tracking_physmed.utils import _plot_color_wheel, get_line_collection
 
 
 def _check_ax_and_fig(
-    ax, fig, figsize
+    ax, fig, **fig_kwargs
 ) -> tuple[matplotlib.axes.Axes, matplotlib.figure.Figure]:
     if ax is None:
         if fig is None:
-            fig = plt.figure(figsize=figsize)
+            fig = plt.figure(**fig_kwargs)
         ax = fig.add_subplot(111)
     else:
         if fig is None:
@@ -86,6 +86,7 @@ def plot_array(
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
     figsize: tuple[float, float] = (12, 6),
+    dpi: float = 100,
     set_axes: bool = True,
     **ax_kwargs,
 ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, npt.NDArray]:
@@ -141,6 +142,8 @@ def plot_array(
         If ``None``, new figure is created. Default is ``None``.
     figsize : tuple, optional
         Figure size, if ``figure=None``. Default is ``(12,6)``.
+    dpi : float, optional
+        Dots per inch of the figure, if ``figure=None``. Default is ``100``.
     set_axes : bool, optional
         Whether to set the axes properties. Default is ``True``.
     **ax_kwargs
@@ -153,7 +156,7 @@ def plot_array(
     axes : matplotlib.axes.Axes
         The matplotlib axes object.
     """
-    axes, figure = _check_ax_and_fig(axes, figure, figsize)
+    axes, figure = _check_ax_and_fig(axes, figure, figsize=figsize, dpi=dpi)
 
     if time_array is None:
         time_array = np.arange(len(array))
