@@ -768,7 +768,9 @@ def plot_position_2d(
         trk.get_running_bouts()
         index = trk.running_bouts
 
-    if head_direction:
+    use_head_direction = False
+    if color_collection_array is None and head_direction:
+        use_head_direction = True
         hd_array, _, index = trk.get_direction_array(
             label0=head_direction_vector_labels[0],
             label1=head_direction_vector_labels[1],
@@ -809,7 +811,7 @@ def plot_position_2d(
     if not axes.yaxis.get_inverted():
         axes.invert_yaxis()
 
-    if head_direction:
+    if use_head_direction:
         if colorwheel:
             figure.set_size_inches(14, 7.5)
             axes.set_position([0.12, 0.12, 0.5, 0.75])
