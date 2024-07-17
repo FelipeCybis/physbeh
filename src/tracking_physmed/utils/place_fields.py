@@ -65,11 +65,10 @@ def get_value_from_hexagonal_grid(
     R2 = np.array([a * np.sin(angle), a * np.cos(angle)])
     R3 = np.array([a * np.sin(angle - np.pi / 3), a * np.cos(angle - np.pi / 3)])
 
-    x += xplus
     re = (
-        np.cos(x * R1[0] + y * R1[1])
-        + np.cos(x * R2[0] + y * R2[1])
-        + np.cos(x * R3[0] + y * R3[1])
+        np.cos((x + xplus) * R1[0] + y * R1[1])
+        + np.cos((x + xplus) * R2[0] + y * R2[1])
+        + np.cos((x + xplus) * R3[0] + y * R3[1])
     )
     return re
 
