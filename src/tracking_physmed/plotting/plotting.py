@@ -949,7 +949,7 @@ def plot_likelihood(
 
     bodyparts = _listify_bodyparts(trk, bodyparts)
 
-    axes, figure = _check_ax_and_fig(axes, figure, figsize)
+    axes, figure = _check_ax_and_fig(axes, figure, figsize=figsize)
 
     for bp in bodyparts:
         lk = trk.get_likelihood(bodypart=bp)
@@ -1028,6 +1028,7 @@ def plot_position_x(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
+    n_bodyparts = len(bodyparts)
     for i, bp in enumerate(bodyparts):
         x_bp, time_array, index = trk.get_position_x(bodypart=bp)
 
@@ -1041,7 +1042,7 @@ def plot_position_x(
             figure=figure,
             figsize=figsize,
             color=get_label_color(trk, bp),
-            set_axes=False if i == 0 else True,
+            set_axes=False if (i == 0 and n_bodyparts != 1) else True,
             **ax_kwargs,
         )
 
@@ -1104,6 +1105,7 @@ def plot_position_y(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
+    n_bodyparts = len(bodyparts)
     for i, bp in enumerate(bodyparts):
         y_bp, time_array, index = trk.get_position_y(bodypart=bp)
 
@@ -1117,7 +1119,7 @@ def plot_position_y(
             figure=figure,
             figsize=figsize,
             color=get_label_color(trk, bp),
-            set_axes=False if i == 0 else True,
+            set_axes=False if (i == 0 and n_bodyparts != 1) else True,
             **ax_kwargs,
         )
 
