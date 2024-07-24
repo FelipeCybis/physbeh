@@ -1180,6 +1180,7 @@ def plot_head_direction(
     smooth=False,
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
+    label="head direction",
     cmap="hsv",
     axes=None,
     figure=None,
@@ -1210,6 +1211,9 @@ def plot_head_direction(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
+    label : str, optional
+        The label of the plot to appear in the figure legend. ``""`` will show no legend
+        for this plot. Default is ``"head direction"``.
     cmap : str, optional
         The colormap to use for the plot, if ``None`` a gray line collection plot will
         be used. Default is ``"hsv"``.
@@ -1260,7 +1264,7 @@ def plot_head_direction(
         head_direction_array,
         time_array=time_array,
         index=index,
-        label="head direction",
+        label=label,
         cmap=cmap,
         only_running_bouts=only_running_bouts,
         axes=axes,
