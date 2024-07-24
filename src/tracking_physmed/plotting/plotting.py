@@ -73,6 +73,7 @@ def plot_array(
     index: list[bool] | npt.NDArray | None = None,
     trk: Tracking | None = None,
     only_running_bouts: bool = False,
+    linewidths: float = 2.0,
     label: str = "",
     color: tuple[float, float, float, float] = (0.5, 0.5, 0.5, 1.0),
     cmap: str | None = None,
@@ -107,6 +108,8 @@ def plot_array(
         produced using a custom array. Default is ``None``.
     only_running_bouts : bool, optional
         Whether to plot only the running bouts. Default is ``False``.
+    linewidths : float, optional
+        The linewidth of the line collection. Default is ``2.0``.
     label : str, optional
         The label of the line collection. This is what is going to appear in the figure
         legend. Default is ``""``.
@@ -196,7 +199,7 @@ def plot_array(
     lc = LineCollection(
         lines,  # type: ignore
         label=label,
-        linewidths=2,
+        linewidths=linewidths,
         alpha=alpha,
         **lc_kwargs,
     )
