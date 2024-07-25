@@ -1,3 +1,5 @@
+"""File I/O functions for tracking data."""
+
 import json
 import warnings
 from pathlib import Path

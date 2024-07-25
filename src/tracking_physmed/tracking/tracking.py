@@ -13,9 +13,8 @@ from scipy import signal
 from scipy.stats import multivariate_normal
 
 from tracking_physmed.arena import BaseArena
-from tracking_physmed.utils import ProgressParallel
-
-from ..utils import (
+from tracking_physmed.utils import (
+    ProgressParallel,
     custom_2d_sigmoid,
     custom_sigmoid,
     get_gaussian_value,
@@ -705,13 +704,12 @@ class Tracking:
 
         Returns
         -------
-        tuple
-            - speed_array : (numpy.ndarray)
-            - time_array : (numpy.ndarray)
-            - index : (numpy.ndarray)
-              Index where p-value > pcutout is True, index is False otherwise.
-            - speed_units : (str)
-              String telling the units of the speed_array
+        speed_array : numpy.ndarray
+            Speed array in cm/s.
+        time_array : numpy.ndarray
+            Time array in seconds.
+        index : numpy.ndarray
+            Index where ``p-value > pcutout`` is ``True``, index is ``False`` otherwise.
         """
         dist = self._get_distance_between_frames(
             bodypart=bodypart, axis=axis, euclidean=euclidean_distance
@@ -728,9 +726,9 @@ class Tracking:
         if only_running_bouts:
             speed_array = self._split_in_running_bouts(speed_array)
             index = self._split_in_running_bouts(index)
-            return speed_array, self.time_bouts, index, "cm/s"
+            return speed_array, self.time_bouts, index
 
-        return speed_array, self.time, index, "cm/s"
+        return speed_array, self.time, index
 
     def get_running_bouts(self, speed_array=None, time_array=None):
         """Get running bouts given certain parameters.
@@ -841,12 +839,13 @@ class Tracking:
 
             index = self.running_bouts
 
-        return np.histogram2d(
+        H, xedges, yedges = np.histogram2d(
             x_pos[index],
             y_pos[index],
             bins=bins,
             range=[[0, 100], [0, 100]],
         )
+        return H, xedges, yedges
 
     def get_infos(self, bins: int = 10, bin_only_running_bouts: bool = False) -> dict:
         """Get general information about the tracking and return it in a dictionary.
@@ -882,7 +881,7 @@ class Tracking:
         info_dict["running_ratio"] = (
             info_dict["total_running_time"] / info_dict["total_time"]
         )
-        info_dict["exploration_ratio"] = np.mean(H > 0)
+        info_dict["exploration_ratio"] = np.asanyarray(H > 0).mean()
         info_dict["exploration_std"] = np.std(H)
         info_dict["mean_running_speed"] = np.concatenate(speed_bouts).mean()
         info_dict["mean_speed"] = speed.mean()
@@ -1176,9 +1175,9 @@ class Tracking:
         if only_running_bouts:
             grid_activation = self._split_in_running_bouts(self.grid_fields_array)
             index = self._split_in_running_bouts(index)
-            return grid_activation, self.time_bouts, index, params
+            return grid_activation, self.time_bouts, index
 
-        return self.grid_fields_array, self.time, index, params
+        return self.grid_fields_array, self.time, index
 
     def _split_in_running_bouts(self, array):
         if not hasattr(self, "running_bouts"):
@@ -1264,19 +1263,21 @@ class Tracking:
 
 
 def calculate_rectangle_cm_per_pixel(
-    coords: npt.ArrayLike, real_width_cm: int | float, real_height_cm: int | float
+    coords: Sequence[npt.NDArray | list[float]],
+    real_width_cm: float,
+    real_height_cm: float,
 ):
     """Helper function to calculate the centimeter per pixel ratio in a rectangle.
 
     Parameters
     ----------
-    coords : npt.ArrayLike
+    coords : list of numpy.ndarray or list of list of float
         ``xy`` coordinates of the rectangle in the order [({top_left_x},
         {top_left_y}), ({top_right_x}, {top_right_y}), ({bottom_left_x},
         {bottom_left_y}), ({bottom_right_x}, {bottom_right_y})].
-    real_width_cm : int | float
+    real_width_cm : float
         Rectangle width in centimeters.
-    real_height_cm : int | float
+    real_height_cm : float
         Rectangle height in centimeters.
 
     Returns

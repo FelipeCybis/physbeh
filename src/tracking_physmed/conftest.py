@@ -1,3 +1,5 @@
+"""Fixtures for the tracking_physmed package."""
+
 import matplotlib
 import numpy as np
 import numpy.typing as npt
@@ -54,6 +56,8 @@ def tracking(rng: np.random.Generator, likelihood: npt.NDArray[np.float64]) -> T
     ----------
     rng : np.random.Generator
         The random number generator.
+    likelihood : np.ndarray
+        The likelihood array to be used in the fixture (that is a fixture itself).
 
     Returns
     -------

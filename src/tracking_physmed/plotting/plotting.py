@@ -677,7 +677,7 @@ def plot_running_bouts(
     if not hasattr(trk, "running_bouts"):
         trk.get_running_bouts()
 
-    axes, figure = _check_ax_and_fig(axes, figure, figsize)
+    axes, figure = _check_ax_and_fig(axes, figure, figsize=figsize)
 
     axes.fill_between(
         trk.time,
