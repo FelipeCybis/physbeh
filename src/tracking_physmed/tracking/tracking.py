@@ -503,13 +503,26 @@ class Tracking:
 
         return angular_velocity, self.time, index
 
-    def get_degree_interval_hd(self, deg, only_running_bouts=False, sigma=10.0):
+    def get_degree_interval_hd(
+        self,
+        deg: float,
+        label0: str = "neck",
+        label1: str = "probe",
+        only_running_bouts: bool = False,
+        sigma: float = 10.0,
+    ):
         """Get head direction array modulated by a gaussian function centered in `deg`.
 
         Parameters
         ----------
-        deg : int or float
+        deg : float
             Head direction in degrees, between 0 and 360.
+        label0 : str, optional
+            Label where the vector will start when computing the head direction. Default
+            is ``'neck'``.
+        label1 : str, optional
+            Label where the vector will finish when computing the head direction.
+            Default is ``'probe'``.
         only_running_bouts : bool, optional
             Use only running bouts of the experiment. Default is ``False``.
         sigma : float, optional
@@ -525,7 +538,7 @@ class Tracking:
             Index where p-value > pcutout is True, index is False otherwise.
         """
         hd_deg, _, index = self.get_direction_array(
-            label0="neck", label1="probe", mode="deg"
+            label0=label0, label1=label1, mode="deg"
         )
 
         if deg < 60:

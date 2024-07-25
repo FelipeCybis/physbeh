@@ -248,6 +248,7 @@ def plot_speed(
     speed_cutout=0,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -283,6 +284,9 @@ def plot_speed(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
+    color : tuple, optional
+        Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
+        color defined by the label. Default is ``None``.
     alpha : float, optional
         The alpha value of the line collection. Default is ``1.0``.
     axes : matplotlib.axes.Axes, optional
@@ -329,7 +333,7 @@ def plot_speed(
         index=index,
         only_running_bouts=only_running_bouts,
         label=bodypart,
-        color=get_label_color(trk, bodypart),
+        color=get_label_color(trk, bodypart) if color is None else color,
         axes=axes,
         figure=figure,
         figsize=figsize,
@@ -350,6 +354,7 @@ def plot_wall_proximity(
     bodypart="neck",
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -381,6 +386,9 @@ def plot_wall_proximity(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
+    color : tuple, optional
+        Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
+        color defined by the label. Default is ``None``.
     alpha : float, optional
         The alpha value of the line collection. Default is ``1.0``.
     axes : matplotlib.axes.Axes, optional
@@ -422,7 +430,7 @@ def plot_wall_proximity(
         index=index,
         only_running_bouts=only_running_bouts,
         label=bodypart,
-        color=get_label_color(trk, bodypart),
+        color=get_label_color(trk, bodypart) if color is None else color,
         axes=axes,
         figure=figure,
         figsize=figsize,
@@ -442,6 +450,7 @@ def plot_center_proximity(
     bodypart="probe",
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -470,6 +479,9 @@ def plot_center_proximity(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
+    color : tuple, optional
+        Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
+        color defined by the label. Default is ``None``.
     alpha : float, optional
         The alpha value of the line collection. Default is ``1.0``.
     axes : matplotlib.axes.Axes, optional
@@ -511,7 +523,7 @@ def plot_center_proximity(
         index=index,
         only_running_bouts=only_running_bouts,
         label=bodypart,
-        color=get_label_color(trk, bodypart),
+        color=get_label_color(trk, bodypart) if color is None else color,
         axes=axes,
         figure=figure,
         figsize=figsize,
@@ -532,6 +544,7 @@ def plot_corner_proximity(
     bodypart="probe",
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
     alpha=1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -563,6 +576,9 @@ def plot_corner_proximity(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
+    color : tuple, optional
+        Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
+        color defined by the label. Default is ``None``.
     alpha : float, optional
         The alpha value of the line collection. Default is ``1.0``.
     axes : matplotlib.axes.Axes, optional
@@ -604,7 +620,7 @@ def plot_corner_proximity(
         index=index,
         only_running_bouts=only_running_bouts,
         label=bodypart,
-        color=get_label_color(trk, bodypart),
+        color=get_label_color(trk, bodypart) if color is None else color,
         axes=axes,
         figure=figure,
         figsize=figsize,
@@ -821,84 +837,6 @@ def plot_position_2d(
             ax_cw = figure.add_axes(rect=[0.65, 0.26, 0.3, 0.48], projection="polar")
             _plot_color_wheel(ax=ax_cw, cmap=cmap)
     return figure, axes, lines
-
-    # if axes is None:
-    #     if figure is None:
-    #         figure = plt.figure(figsize=figsize)
-
-    #     axes = figure.add_axes(rect=[0.125, 0.125, 0.775, 0.775])
-    #     axes.set(
-    #         xlabel="X pixel",
-    #         ylabel="Y pixel",
-    #         title="Animal position in the arena [bodypart: " + bodypart + "]",
-    #     )
-    #     axes.set_aspect("equal", "box")
-    #     axes.invert_yaxis()
-    # else:
-    #     if figure is None:
-    #         figure = axes.figure
-    #     assert figure == axes.figure, "Axes and figure must be from the same object."
-
-    # if color_collection_array is not None:
-    #     if clim is None:
-    #         clim = (color_collection_array.min(), color_collection_array.max())
-
-    #     cmap = mpl_cm.get_cmap(colormap).resampled(200)
-    #     norm = colors.BoundaryNorm(np.linspace(clim[0], clim[1], cmap.N), cmap.N)
-
-    #     lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)  # type: ignore
-    #     lc.set_alpha(0.7)
-    #     lc.set_array(color_collection_array[index])
-    #     if colorbar:
-    #         cbar = figure.colorbar(
-    #             ScalarMappable(norm=norm, cmap=cmap),
-    #             ax=axes,
-    #             label=colorbar_label,
-    #         )
-    #         cbar.set_ticks(np.linspace(clim[0], clim[1], 4))
-    #         cbar.minorticks_off()
-
-    # elif head_direction:
-    #     index = trk.get_index(head_direction_vector_labels[0], trk.pcutout)
-    #     if only_running_bouts:
-    #         index = trk.running_bouts
-
-    #     cmap = mpl_cm.get_cmap(colormap).resampled(360)
-
-    #     head_direction_array, _, _ = trk.get_direction_array(
-    #         label0=head_direction_vector_labels[0],
-    #         label1=head_direction_vector_labels[1],
-    #         mode="deg",
-    #     )
-
-    #     norm = colors.BoundaryNorm(np.arange(0, 360), cmap.N)
-
-    #     lc = LineCollection(lines, linewidths=3, cmap=cmap, norm=norm)  # type: ignore
-    #     lc.set_array(head_direction_array[index])
-
-    #     if colorwheel:
-    #         figure.set_size_inches(14, 7.5)
-    #         axes.set_position([0.12, 0.12, 0.5, 0.75])
-    #         ax_cw = figure.add_axes(rect=[0.65, 0.26, 0.3, 0.48], projection="polar")
-    #         _plot_color_wheel(ax=ax_cw, cmap=cmap)
-    #     elif colorbar:
-    #         figure.colorbar(
-    #             ScalarMappable(norm=norm, cmap=cmap),
-    #             ax=axes,
-    #             label="Head direction (deg)",
-    #         )
-
-    # else:
-    #     lc = LineCollection(lines, linewidths=3, color=color)  # type: ignore
-    #     lc.set_alpha(0.3)
-
-    # axes.add_collection(lc)
-    # axes.scatter(x_bp[index], y_bp[index], s=0)
-
-    # if ax_kwargs is not None:
-    #     axes.set(**ax_kwargs)
-
-    # return figure, axes, lines
 
 
 @anim_decorator
@@ -1185,6 +1123,8 @@ def plot_head_direction(
     smooth=False,
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
     label="head direction",
     cmap="hsv",
     axes=None,
@@ -1216,12 +1156,18 @@ def plot_head_direction(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
+    color : tuple, optional
+        `cmap` must be ``None`` for `color` to be used. Tuple of RGB(A) values for color
+        of the line collection, if ``None``, uses the color defined by the label.
+        Default is ``None``.
+    alpha : float, optional
+        The alpha value of the line collection. Default is ``1.0``.
     label : str, optional
         The label of the plot to appear in the figure legend. ``""`` will show no legend
         for this plot. Default is ``"head direction"``.
     cmap : str, optional
-        The colormap to use for the plot, if ``None`` a gray line collection plot will
-        be used. Default is ``"hsv"``.
+        The colormap to use for the plot, if ``None`` a `color` is going to be used as
+        color of the plot. Default is ``"hsv"``.
     axes : matplotlib.axes.Axes, optional
         If ``None``, new axes is created in `figure`. Default is ``None``.
     figure : matplotlib.figure.Figure, optional
@@ -1272,6 +1218,10 @@ def plot_head_direction(
         label=label,
         cmap=cmap,
         only_running_bouts=only_running_bouts,
+        color=get_label_color(trk, head_direction_vector_labels[0])
+        if color is None
+        else color,
+        alpha=alpha,
         axes=axes,
         figure=figure,
         figsize=figsize,
@@ -1288,9 +1238,10 @@ def plot_head_direction_interval(
     trk: Tracking,
     deg=180,
     sigma=10.0,
+    head_direction_vector_labels=["neck", "probe"],
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] = (0.5, 0.5, 0.5, 1.0),
+    color: tuple[float, float, float, float] | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -1312,6 +1263,9 @@ def plot_head_direction_interval(
         The degree to plot the head direction interval for. Default is ``180``.
     sigma : float, optional
         The sigma value of the gaussian function. Default is ``10.0``.
+    head_direction_vector_labels : list
+        Pair of bodyparts from where to get the head direction from. Default is
+        ``["neck", "probe"]``.
     only_running_bouts : bool, optional
         Whether to plot only the head direction intervals during running bouts. Default
         is ``False``.
@@ -1320,9 +1274,8 @@ def plot_head_direction_interval(
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
     color : tuple, optional
-        Tuple of RGB(A) values for color of the line collection, if not using
-        `head_direction` or any `color_collection_array`. Default is ``(0.5, 0.5, 0.5,
-        1.0)``.
+        Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
+        color defined by the label. Default is ``None``.
     alpha : float, optional
         The alpha value of the line collection. Default is ``1.0``.
     axes : matplotlib.axes.Axes, optional
@@ -1348,7 +1301,11 @@ def plot_head_direction_interval(
     """
 
     hd_interval_array, time_array, index = trk.get_degree_interval_hd(
-        deg, only_running_bouts=only_running_bouts, sigma=sigma
+        deg,
+        label0=head_direction_vector_labels[0],
+        label1=head_direction_vector_labels[1],
+        only_running_bouts=only_running_bouts,
+        sigma=sigma,
     )
 
     ax_kwargs.setdefault("ylabel", "a.u.")
@@ -1361,7 +1318,9 @@ def plot_head_direction_interval(
         index=index,
         only_running_bouts=only_running_bouts,
         label=f"{deg} degrees",
-        color=color,
+        color=get_label_color(trk, head_direction_vector_labels[0])
+        if color is None
+        else color,
         axes=axes,
         figure=figure,
         figsize=figsize,
@@ -1407,7 +1366,7 @@ def plot_occupancy(
     axes : tuple[matplotlib.axes.Axes, matplotlib.axes.Axes]
         The matplotlib axes object.
     """
-    axes, fig = _check_ax_and_fig(axes, figure, figsize)
+    axes, fig = _check_ax_and_fig(axes, figure, figsize=figsize)
 
     H = trk.get_binned_position(bins=bins, only_running_bouts=only_running_bouts)
     H[0][H[0] == 0] = np.nan
