@@ -1,7 +1,7 @@
 """Useful plotting functions for Tracking objects."""
 
 import warnings
-from typing import Any
+from typing import Any, Literal, overload
 
 import matplotlib
 import matplotlib.axes
@@ -15,7 +15,7 @@ from matplotlib.collections import LineCollection
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from tracking_physmed.plotting.animate2d_decorator import anim2d_decorator
-from tracking_physmed.plotting.animate_decorator import anim_decorator
+from tracking_physmed.plotting.animate_decorator import Animate_plot, anim_decorator
 from tracking_physmed.plotting.animate_plot_fUS import Animate_video_fUS
 from tracking_physmed.tracking import Tracking
 from tracking_physmed.utils import _plot_color_wheel, get_line_collection
@@ -238,6 +238,18 @@ def plot_array(
     return figure, axes, lines
 
 
+@overload
+def plot_speed(  # numpydoc ignore=GL08
+    animate: Literal[True],
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
+
+
+@overload
+def plot_speed(  # numpydoc ignore=GL08
+    animate: Literal[False],
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
+
+
 @anim_decorator
 def plot_speed(
     trk: Tracking,
@@ -257,6 +269,9 @@ def plot_speed(
     animate_video: bool = False,
     animate_fus: bool = False,
     **ax_kwargs,
+) -> (
+    tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]
+    | tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]
 ):
     """Plot speed of given label.
 
@@ -314,7 +329,7 @@ def plot_speed(
         The matplotlib axes object.
     """
 
-    speed_array, time_array, index, speed_units = trk.get_speed(
+    speed_array, time_array, index = trk.get_speed(
         bodypart=bodypart,
         axis=speed_axis,
         euclidean_distance=euclidean,
@@ -322,6 +337,8 @@ def plot_speed(
         speed_cutout=speed_cutout,
         only_running_bouts=only_running_bouts,
     )
+
+    speed_units = str(trk.space_units[bodypart + "_x"].units) + "/" + trk.time_units
 
     ax_kwargs.setdefault("ylabel", f"animal speed ({speed_units})")
     ax_kwargs.setdefault("xlabel", "time (s)")
@@ -345,6 +362,18 @@ def plot_speed(
         plot_running_bouts(trk, axes=axes)
 
     return figure, axes
+
+
+@overload
+def plot_wall_proximity(  # numpydoc ignore=GL08
+    animate: Literal[True],
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
+
+
+@overload
+def plot_wall_proximity(  # numpydoc ignore=GL08
+    animate: Literal[False],
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
 
 
 @anim_decorator
@@ -836,7 +865,10 @@ def plot_position_2d(
             axes.set_position([0.12, 0.12, 0.5, 0.75])
             ax_cw = figure.add_axes(rect=[0.65, 0.26, 0.3, 0.48], projection="polar")
             _plot_color_wheel(ax=ax_cw, cmap=cmap)
-    return figure, axes, lines
+
+    lines_index = np.where(index)[0]
+    dict_lines = {"lines": lines, "index": lines_index}
+    return figure, axes, dict_lines
 
 
 @anim_decorator

@@ -1,5 +1,7 @@
 """Tracking class to manipulate multi-label tracking data."""
 
+from __future__ import annotations
+
 import warnings
 from collections.abc import Sequence
 from pathlib import Path
@@ -319,6 +321,42 @@ class Tracking:
             f"Mean speed: {infos['mean_speed']:.2f} cm/s\n"
             "-----------------------------------------------------------"
         )
+
+    def __getitem__(self, slice_object: tuple) -> Tracking:
+        return self.__class__.from_trk(self, self.Dataframe[slice_object])
+
+    @classmethod
+    def from_trk(
+        cls,
+        trk: Tracking,
+        dataframe: pd.DataFrame | None = None,
+        fps: float | None = None,
+    ):
+        """Create a Tracking object from a `tracking_physmed.tracking.Tracking` object.
+
+        Parameters
+        ----------
+        trk : Tracking
+            The ``Tracking`` object to be converted.
+        dataframe : pandas.DataFrame, optional
+            The dataframe to be used in the new ``Tracking`` object. Default is
+            ``None``.
+        fps : float, optional
+            The frames per second of the video. Default is ``None``.
+
+        Returns
+        -------
+        Tracking
+            The new ``Tracking`` object.
+        """
+        if dataframe is None:
+            dataframe = trk.Dataframe
+        if fps is None:
+            fps = trk.fps
+        new_instance = cls(dataframe, fps, trk.video_filepath, trk.filename)
+        new_instance.arena = trk.arena
+        new_instance.space_units_per_pixel = trk.space_units_per_pixel
+        return new_instance
 
     def set_ratio_coords(self, coord_list=[]):
         """Set the edge coordinates of a rectangle.
@@ -752,7 +790,7 @@ class Tracking:
             Array mapping the index of the tracking data to time in seconds.
         """
         if speed_array is None or time_array is None:
-            speed_array, time_array, _, _ = self.get_speed(bodypart="body", smooth=True)
+            speed_array, time_array, _ = self.get_speed(bodypart="body", smooth=True)
 
         # getting True False array where speed is above 10 cm/s
         self.running_bouts = speed_array > 10
