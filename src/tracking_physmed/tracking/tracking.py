@@ -5,7 +5,7 @@ from __future__ import annotations
 import warnings
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal
+from typing import Literal, overload
 
 import numpy as np
 import numpy.typing as npt
@@ -306,7 +306,7 @@ class Tracking:
     def __repr__(self):
         infos = self.get_infos()
         return (
-            f"Filename: {self.filename.name}\n"
+            f"Filename: {self.filename.name if self.filename is not None else ''}\n"
             "-----------------------------------------------------------\n"
             f"Total time: {infos['total_time']:.2f} s\n"
             f"Time running: {infos['total_running_time']:.2f} s\n"
@@ -358,34 +358,6 @@ class Tracking:
         new_instance.space_units_per_pixel = trk.space_units_per_pixel
         return new_instance
 
-    def set_ratio_coords(self, coord_list=[]):
-        """Set the edge coordinates of a rectangle.
-
-        If coord_list is not given, it calls Corner_Coords class GUI so the user can
-        label the four corners and the Tracking class is able to calculate the ratio
-        px/cm. It rights the corner coordinates in the metadata pickle file.
-
-        Parameters
-        ----------
-        coord_list : list, optional
-            Should be a list of ``[x, y]`` coordinates for the top left, top right,
-            bottom left and bottom right corners such that ``coord_list = [[tl_x, tl_y],
-            [tr_x, tr_y], ...]``. Default is ``[]``.
-        """
-        if coord_list:
-            self._write_corner_coords(coord_list)
-        else:
-            from tracking_physmed.gui import Corner_Coords
-
-            x_crop = self.metadata["data"]["cropping_parameters"][:2]
-            y_crop = self.metadata["data"]["cropping_parameters"][2:]
-            self.corner_coords = Corner_Coords(
-                self.video_filepath,
-                function_after_done=self._write_corner_coords,
-                x_crop=x_crop,
-                y_crop=y_crop,
-            )
-
     def get_index(self, label: str, pcutout: float | None = None) -> npt.NDArray:
         """Get likelihood acceptability for `label` and threshold `pcutout`.
 
@@ -422,6 +394,26 @@ class Tracking:
         """
         return np.array(self.Dataframe[bodypart + "_likelihood"])
 
+    @overload
+    def get_direction_array(  # numpydoc ignore=GL08
+        self,
+        label0: str = "neck",
+        label1: str = "probe",
+        mode: str = "degree",
+        smooth: bool = False,
+        only_running_bouts: Literal[False] = False,
+    ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]: ...
+
+    @overload
+    def get_direction_array(  # numpydoc ignore=GL08
+        self,
+        label0: str = ...,
+        label1: str = ...,
+        mode: str = ...,
+        smooth: bool = ...,
+        only_running_bouts: Literal[True] = True,
+    ) -> tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]: ...
+
     def get_direction_array(
         self,
         label0: str = "neck",
@@ -429,6 +421,9 @@ class Tracking:
         mode: str = "degree",
         smooth: bool = False,
         only_running_bouts: bool = False,
+    ) -> (
+        tuple[npt.NDArray, npt.NDArray, npt.NDArray]
+        | tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]
     ):
         """Get direction vector ``'label0'->'label1'`` doing ``label1 - label0``.
 
@@ -625,7 +620,9 @@ class Tracking:
 
         return np.histogram(hd_deg[index], bins=bins, range=(0, 360))
 
-    def get_xy_coords(self, bodypart="body"):
+    def get_xy_coords(
+        self, bodypart: str = "body"
+    ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
         """Get array of ``x, y`` coordinates of the `bodypart`.
 
         Parameters
@@ -706,13 +703,35 @@ class Tracking:
             y_bp = self.Dataframe[bodypart + "_y"].to_numpy()
         return y_bp, self.time, index
 
+    @overload
+    def get_speed(  # numpydoc ignore=GL08
+        self,
+        bodypart: str = "body",
+        axis: Literal["x", "y", "xy"] = "xy",
+        euclidean_distance: bool = False,
+        smooth: bool = True,
+        speed_cutout: float = 0,
+        only_running_bouts: Literal[False] = False,
+    ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]: ...
+
+    @overload
+    def get_speed(  # numpydoc ignore=GL08
+        self,
+        bodypart: str = ...,
+        axis: Literal["x", "y", "xy"] = ...,
+        euclidean_distance: bool = ...,
+        smooth: bool = ...,
+        speed_cutout: float = ...,
+        only_running_bouts: Literal[True] = True,
+    ) -> tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]: ...
+
     def get_speed(
         self,
         bodypart: str = "body",
         axis: Literal["x", "y", "xy"] = "xy",
         euclidean_distance: bool = False,
         smooth: bool = True,
-        speed_cutout=0,
+        speed_cutout: float = 0,
         only_running_bouts: bool = False,
     ):
         """Get speed for given ``bodypart``.
@@ -956,9 +975,10 @@ class Tracking:
 
     def get_proximity_from_wall(
         self,
-        wall="left",
-        bodypart="probe",
-        only_running_bouts=False,
+        wall: Literal["left", "right", "top", "bottom", "all"]
+        | list[Literal["left", "right", "top", "bottom"]] = "left",
+        bodypart: str = "probe",
+        only_running_bouts: bool = False,
     ):
         """Get a sigmoid activation for the label in relation to the specified wall.
 
@@ -983,7 +1003,7 @@ class Tracking:
             If wall parameter is not on of the possibilities to choose from.
         """
         if wall == "all":
-            wall = ("left", "right", "top", "bottom")
+            wall = ["left", "right", "top", "bottom"]
 
         if not isinstance(wall, list | tuple):
             wall = [wall]
@@ -1001,7 +1021,7 @@ class Tracking:
             a, b = SIGMOID_PARAMETERS[w]
             if w in ("left", "right"):
                 pos = coords[:, 0]
-            elif w in ("top", "bottom"):
+            else:
                 pos = coords[:, 1]
 
             subset_wall_activation.append(custom_sigmoid(pos, a=a, b=b))
@@ -1015,7 +1035,22 @@ class Tracking:
 
         return wall_activation, self.time, index
 
-    def get_proximity_from_center(self, bodypart="probe", only_running_bouts=False):
+    @overload
+    def get_proximity_from_center(  # numpydoc ignore=GL08
+        self, bodypart: str = "probe", only_running_bouts: Literal[False] = False
+    ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]: ...
+
+    @overload
+    def get_proximity_from_center(  # numpydoc ignore=GL08
+        self, bodypart: str = ..., only_running_bouts: Literal[True] = True
+    ) -> tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]: ...
+
+    def get_proximity_from_center(
+        self, bodypart: str = "probe", only_running_bouts: bool = False
+    ) -> (
+        tuple[npt.NDArray, npt.NDArray, npt.NDArray]
+        | tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]
+    ):
         """Get a sigmoid activation for the label in relation to the center.
 
         This is the inverse of getting proximity from wall for all walls.
@@ -1039,7 +1074,7 @@ class Tracking:
             a, b = SIGMOID_PARAMETERS[w]
             if w in ("left", "right"):
                 pos = coords[:, 0]
-            elif w in ("top", "bottom"):
+            else:
                 pos = coords[:, 1]
 
             subset_wall_activation.append(custom_sigmoid(pos, a=-a, b=b))
@@ -1120,7 +1155,7 @@ class Tracking:
 
     def get_place_field_array(
         self,
-        coords: tuple | None = None,
+        coords: npt.NDArray | None = None,
         random_coords=False,
         only_running_bouts=False,
         bodypart="body",
@@ -1148,14 +1183,12 @@ class Tracking:
             coordinate.
         """
 
-        animal_coords, time_array, index = self.get_xy_coords(bodypart=bodypart)
+        animal_coords = self.get_xy_coords(bodypart=bodypart)[0]
         sigma = 300
 
         self.place_fields_list = list()
         if coords is None:
             coords = get_place_field_coords(random=random_coords)
-        else:
-            coords = [coords]
 
         for coord in coords:
             rv = multivariate_normal(

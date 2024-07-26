@@ -240,12 +240,16 @@ def plot_array(
 
 @overload
 def plot_speed(  # numpydoc ignore=GL08
+    trk: Tracking,
+    *,
     animate: Literal[True],
 ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
 
 
 @overload
 def plot_speed(  # numpydoc ignore=GL08
+    trk: Tracking,
+    *,
     animate: Literal[False],
 ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
 

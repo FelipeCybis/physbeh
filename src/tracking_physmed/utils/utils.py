@@ -62,7 +62,9 @@ def get_line_collection(
     return segments_array[segment_index]
 
 
-def get_gaussian_value(x, u=0, sigma=10) -> npt.NDArray:
+def get_gaussian_value(
+    x: float | npt.NDArray, u: float = 0, sigma: float = 10
+) -> npt.NDArray:
     r"""Return the value of `x` in a gaussian curve with mean ``u`` and std ``sigma``.
 
     The function is written as:
@@ -75,9 +77,9 @@ def get_gaussian_value(x, u=0, sigma=10) -> npt.NDArray:
     ----------
     x : float or numpy.ndarray
         The ``x`` coordinate.
-    u : int, optional
+    u : float, optional
         The mean value of the gaussian function. Default is ``0``.
-    sigma : int, optional
+    sigma : float, optional
         The sigma value of the gaussion function. Default ``10``.
 
     Returns
