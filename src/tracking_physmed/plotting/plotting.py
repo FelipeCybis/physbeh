@@ -71,6 +71,7 @@ def plot_array(
     array: npt.NDArray,
     time_array: npt.NDArray | None = None,
     index: list[bool] | npt.NDArray | None = None,
+    slice_lines: slice = slice(None, None, None),
     trk: Tracking | None = None,
     only_running_bouts: bool = False,
     linewidths: float = 2.0,
@@ -102,6 +103,10 @@ def plot_array(
     index : numpy.ndarray, optional
         The index array to mask what is going to be plotted or not in `array`. Default
         is ``None`` to plot everything.
+    slice_lines : slice, optional
+        A slice object that will define how the line collection will be plotted. Default
+        is ``slice(None, None, None)`` to plot everything. i.e., ``slice(0, -1, 10)``
+        will plot every 10th line.
     trk : Tracking, optional
         A tracking object. This argument is here only for compatibility with the
         animation decorator in case an animation using the tracking video wants to be
@@ -197,7 +202,7 @@ def plot_array(
     clim = (vmin, vmax)
 
     lc = LineCollection(
-        lines,  # type: ignore
+        lines[slice_lines],  # type: ignore
         label=label,
         linewidths=linewidths,
         alpha=alpha,
