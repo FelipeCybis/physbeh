@@ -1,6 +1,7 @@
 """Visualisation module for ``tracking_physmed``."""
 
 from .plotting import (
+    plot_angular_velocity,
     plot_array,
     plot_center_proximity,
     plot_corner_proximity,
@@ -32,4 +33,5 @@ __all__ = [
     "plot_head_direction",
     "plot_head_direction_interval",
     "plot_occupancy",
+    "plot_angular_velocity",
 ]

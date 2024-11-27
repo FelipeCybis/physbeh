@@ -1,7 +1,7 @@
 """Useful plotting functions for Tracking objects."""
 
 import warnings
-from typing import Any, Literal, overload
+from typing import Any, Literal, cast, overload
 
 import matplotlib
 import matplotlib.axes
@@ -67,9 +67,9 @@ def get_label_color(
 
 
 def plot_array(
-    array: npt.NDArray,
-    time_array: npt.NDArray | None = None,
-    index: list[bool] | npt.NDArray | None = None,
+    array: npt.NDArray | list[npt.NDArray],
+    time_array: npt.NDArray | list[npt.NDArray] | None = None,
+    index: list[bool] | npt.NDArray | list[npt.NDArray] | None = None,
     slice_lines: slice = slice(None, None, None),
     trk: Tracking | None = None,
     only_running_bouts: bool = False,
@@ -262,7 +262,7 @@ def plot_speed(  # numpydoc ignore=GL08
 def plot_speed(
     trk: Tracking,
     bodypart: str = "body",
-    speed_axis="xy",
+    speed_axis: Literal["x", "y", "xy"] = "xy",
     euclidean=False,
     smooth=True,
     speed_cutout=0,
@@ -289,7 +289,7 @@ def plot_speed(
         The tracking object.
     bodypart : str, optional
         Bodypart label. Default is ``"body"``.
-    speed_axis : str, optional
+    speed_axis : {"x", "y", "xy"}, optional
         To compute Vx, Vy or V, axis is 'x', 'y' or 'xy', respectively. Default is
         ``"xy"``.
     euclidean : bool, optional
@@ -336,7 +336,6 @@ def plot_speed(
     axes : matplotlib.axes.Axes
         The matplotlib axes object.
     """
-
     speed_array, time_array, index = trk.get_speed(
         bodypart=bodypart,
         axis=speed_axis,
@@ -387,7 +386,8 @@ def plot_wall_proximity(  # numpydoc ignore=GL08
 @anim_decorator
 def plot_wall_proximity(
     trk: Tracking,
-    wall: str = "all",
+    wall: Literal["left", "right", "top", "bottom", "all"]
+    | list[Literal["left", "right", "top", "bottom"]] = "left",
     bodypart="neck",
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
@@ -410,9 +410,9 @@ def plot_wall_proximity(
     ----------
     trk : tracking_physmed.tracking.Tracking
         The tracking object.
-    wall : str or list of str or tuple of str
-        Wall to use for computations. Can be one of ("left", "right", "top", "bottom").
-      . Default is "left".
+    wall : str or list of str or tuple of str, optional
+        Wall to use for computations. Can be one of ("left", "right", "top",
+        "bottom"). Default is ``"left"``.
     bodypart : str, optional
         Bodypart to use for computations. Default "probe".
     only_running_bouts : bool, optional
@@ -452,6 +452,12 @@ def plot_wall_proximity(
     axes : matplotlib.axes.Axes
         The matplotlib axes object.
     """
+    cast(
+        Literal[False],
+        only_running_bouts,
+    )
+    if only_running_bouts:
+        cast(Literal[True], only_running_bouts)
 
     wall_proximity, time_array, index = trk.get_proximity_from_wall(
         wall=wall, bodypart=bodypart, only_running_bouts=only_running_bouts
@@ -658,6 +664,121 @@ def plot_corner_proximity(
         only_running_bouts=only_running_bouts,
         label=bodypart,
         color=get_label_color(trk, bodypart) if color is None else color,
+        axes=axes,
+        figure=figure,
+        figsize=figsize,
+        alpha=alpha,
+        **ax_kwargs,
+    )
+
+    if only_running_bouts and plot_only_running_bouts:
+        plot_running_bouts(trk, axes=axes)
+
+    return figure, axes
+
+
+@overload
+def plot_angular_velocity(  # numpydoc ignore=GL08
+    animate: Literal[True],
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
+
+
+@overload
+def plot_angular_velocity(  # numpydoc ignore=GL08
+    animate: Literal[False],
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
+
+
+@anim_decorator
+def plot_angular_velocity(
+    trk: Tracking,
+    label0: str = "neck",
+    label1: str = "probe",
+    smooth: bool = True,
+    *,
+    only_running_bouts=False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (14, 7),
+    animate: bool = False,
+    animate_video: bool = False,
+    animate_fus: bool = False,
+    **ax_kwargs,
+):
+    """Plot angular velocity calculated from the vector 'label0' -> 'label1'.
+
+    See :class:`tracking_physmed.tracking.Tracking.get_direction_angular_velocity`, for
+    more information.
+
+    Parameters
+    ----------
+    trk : tracking_physmed.tracking.Tracking
+        The tracking object.
+    label0 : str, optional
+        Label where the vector will start. Default is ``'neck'``.
+    label1 : str, optional
+        Label where the vector will finish. Default is ``'probe'``.
+    smooth : bool, optional
+        Whether or not to smooth the direction data. Default is ``False``.
+    only_running_bouts : bool, optional
+        If should plot only the running periods using
+        :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
+        is ``False``.
+    plot_only_running_bouts : bool, optional
+        Whether or not to plot a background color on periods of running bouts (and not
+        only not plot non running bouts). This only takes effect if `only_running_bouts`
+        is set to ``True``. Default is ``True``.
+    color : tuple, optional
+        Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
+        color defined by the label. Default is ``None``.
+    alpha : float, optional
+        The alpha value of the line collection. Default is ``1.0``.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.Figure, optional
+        If ``None``, new figure is created. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if ``figure=None``. Default is ``(12,6)``.
+    animate : bool, optional
+        If set to ``True``, plots an animation with the video of the Tracking class.
+        Default is ``False``.
+    animate_video : bool, optional
+        Whether to animate the plot with the video recording. Default is ``False``.
+    animate_fus : bool, optional
+        Whether to animate the plot with the functional Ultrasound video. Default is
+        ``False``.
+    **ax_kwargs
+        Keywords to pass to ``ax.set(**ax_kwargs)``.
+
+    Returns
+    -------
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : matplotlib.axes.Axes
+        The matplotlib axes object.
+    """
+
+    ang_velocity, time_array, index = trk.get_direction_angular_velocity(
+        label0=label0,
+        label1=label1,
+        smooth=smooth,
+        only_running_bouts=only_running_bouts,
+    )
+
+    ax_kwargs.setdefault("ylabel", "Angular velocity (rad/s)")
+    ax_kwargs.setdefault("xlabel", "time (s)")
+    ax_kwargs.setdefault("legend__loc", "upper right")
+    ax_kwargs.setdefault("grid__linestyle", "--")
+    figure, axes, _ = plot_array(
+        ang_velocity,
+        time_array=time_array,
+        index=index,
+        only_running_bouts=only_running_bouts,
+        label=label0 + " -> " + label1,
+        color=get_label_color(trk, label1) if color is None else color,
         axes=axes,
         figure=figure,
         figsize=figsize,

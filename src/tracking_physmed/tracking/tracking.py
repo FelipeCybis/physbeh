@@ -732,32 +732,38 @@ class Tracking:
     def get_speed(  # numpydoc ignore=GL08
         self,
         bodypart: str = "body",
+        *,
         axis: Literal["x", "y", "xy"] = "xy",
         euclidean_distance: bool = False,
         smooth: bool = True,
         speed_cutout: float = 0,
-        only_running_bouts: Literal[False] = False,
+        only_running_bouts: Literal[False],
     ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]: ...
 
     @overload
     def get_speed(  # numpydoc ignore=GL08
         self,
-        bodypart: str = ...,
-        axis: Literal["x", "y", "xy"] = ...,
-        euclidean_distance: bool = ...,
-        smooth: bool = ...,
-        speed_cutout: float = ...,
+        bodypart: str = "body",
+        *,
+        axis: Literal["x", "y", "xy"] = "xy",
+        euclidean_distance: bool = False,
+        smooth: bool = True,
+        speed_cutout: float = 0,
         only_running_bouts: Literal[True] = True,
     ) -> tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]: ...
 
     def get_speed(
         self,
         bodypart: str = "body",
+        *,
         axis: Literal["x", "y", "xy"] = "xy",
         euclidean_distance: bool = False,
         smooth: bool = True,
         speed_cutout: float = 0,
         only_running_bouts: bool = False,
+    ) -> (
+        tuple[npt.NDArray, npt.NDArray, npt.NDArray]
+        | tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]
     ):
         """Get speed for given ``bodypart``.
 
