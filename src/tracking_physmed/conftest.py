@@ -39,7 +39,8 @@ def likelihood() -> npt.NDArray[np.float64]:
     numpy.ndarray
         A likelihood array.
     """
-    likelihood = np.ones(200)
+    n_frames = 500
+    likelihood = np.ones(n_frames)
     likelihood[2:6] = 0
     likelihood[40:44] = 0
     return likelihood
@@ -65,14 +66,14 @@ def tracking(rng: np.random.Generator, likelihood: npt.NDArray[np.float64]) -> T
         The tracking object.
     """
     data = {
-        "body_x": rng.random(200),
-        "body_y": rng.random(200),
+        "body_x": rng.random(likelihood.size),
+        "body_y": rng.random(likelihood.size),
         "body_likelihood": likelihood,
-        "neck_x": rng.random(200),
-        "neck_y": rng.random(200),
+        "neck_x": rng.random(likelihood.size),
+        "neck_y": rng.random(likelihood.size),
         "neck_likelihood": likelihood,
-        "probe_x": rng.random(200),
-        "probe_y": rng.random(200),
+        "probe_x": rng.random(likelihood.size),
+        "probe_y": rng.random(likelihood.size),
         "probe_likelihood": likelihood,
     }
     dataframe = pd.DataFrame(data)

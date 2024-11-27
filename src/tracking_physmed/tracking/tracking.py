@@ -485,8 +485,30 @@ class Tracking:
             return resp_bouts, self.time_bouts, index_bouts
         return resp, self.time, index
 
+    @overload
+    def get_direction_angular_velocity(  # numpydoc ignore=GL08
+        self,
+        label0: str = "neck",
+        label1: str = "probe",
+        smooth: bool = True,
+        only_running_bouts: Literal[False] = False,
+    ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]: ...
+
+    @overload
+    def get_direction_angular_velocity(  # numpydoc ignore=GL08
+        self,
+        label0: str = "neck",
+        label1: str = "probe",
+        smooth: bool = True,
+        only_running_bouts: Literal[True] = True,
+    ) -> tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]: ...
+
     def get_direction_angular_velocity(
-        self, label0="neck", label1="probe", only_running_bouts=False
+        self,
+        label0: str = "neck",
+        label1: str = "probe",
+        smooth: bool = True,
+        only_running_bouts: bool = False,
     ):
         """Get angular velocity using the vector between `label0` and `label1`.
 
@@ -496,6 +518,8 @@ class Tracking:
             Label where the vector will start. Default is ``'neck'``.
         label1 : str, optional
             Label where the vector will finish. Default is ``'probe'``.
+        smooth : bool, optional
+            Whether or not to smooth the direction data. Default is ``False``.
         only_running_bouts : bool, optional
             Use only running bouts of the experiment. Default is ``False``.
 
@@ -512,18 +536,19 @@ class Tracking:
         hd_x, hd_y = self._get_vector_from_two_labels(label0=label0, label1=label1)
         index = self.get_index(label=label1)
 
-        resp_in_rad = np.arctan2(
-            hd_y * (-1), hd_x
+        resp_in_rad = np.squeeze(
+            np.arctan2(hd_y * (-1), hd_x)
         )  # multiplication by -1 needed because of video x and y directions
 
         resp_in_rad = np.unwrap(
             resp_in_rad
         )  # unwrapping so smoothing and derivative can be done
 
-        smooth_window = signal.windows.gaussian(M=101, std=10)
-        smooth_window /= sum(smooth_window)
-        resp_in_rad[~index] = 0
-        resp_in_rad = np.convolve(smooth_window, resp_in_rad, "same")
+        if smooth:
+            smooth_window = signal.windows.gaussian(M=101, std=10)
+            smooth_window /= sum(smooth_window)
+            resp_in_rad[~index] = 0
+            resp_in_rad = np.convolve(smooth_window, resp_in_rad, "same")
 
         angular_velocity = np.gradient(resp_in_rad)
 
