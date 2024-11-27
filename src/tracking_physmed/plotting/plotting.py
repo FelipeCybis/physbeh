@@ -16,7 +16,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from tracking_physmed.plotting.animate2d_decorator import anim2d_decorator
 from tracking_physmed.plotting.animate_decorator import Animate_plot, anim_decorator
-from tracking_physmed.plotting.animate_plot_fUS import Animate_video_fUS
 from tracking_physmed.tracking import Tracking
 from tracking_physmed.utils import _plot_color_wheel, get_line_collection
 
@@ -1419,11 +1418,3 @@ def plot_occupancy(
     figure.colorbar(i, ax=axes, label="count")
 
     return figure, axes
-
-
-def animation_behavior_fus(Trk, figure=None):  # numpydoc ignore=GL08
-    assert (
-        Trk.scan is not None
-    ), "Tracking class needs to have an attached scan for this animation"
-
-    return Animate_video_fUS(tracking=Trk, figure=figure)

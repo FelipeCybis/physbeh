@@ -1,7 +1,6 @@
 """Visualisation module for ``tracking_physmed``."""
 
 from .plotting import (
-    animation_behavior_fus,
     plot_array,
     plot_center_proximity,
     plot_corner_proximity,
@@ -33,5 +32,4 @@ __all__ = [
     "plot_head_direction",
     "plot_head_direction_interval",
     "plot_occupancy",
-    "animation_behavior_fus",
 ]
