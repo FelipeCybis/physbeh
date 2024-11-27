@@ -1,4 +1,4 @@
-"""Visualisation module for ``tracking_physmed``"""
+"""Visualisation module for ``tracking_physmed``."""
 
 from .plotting import (
     animation_behavior_fus,

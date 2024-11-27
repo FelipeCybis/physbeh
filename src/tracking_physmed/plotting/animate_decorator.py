@@ -1,27 +1,58 @@
+"""Animation wrappers for the tracking plots."""
+
+import pathlib
 import warnings
+from collections.abc import Callable
 from functools import wraps
+from typing import Any
 
 import cv2
+import numpy.typing as npt
 from matplotlib.animation import Animation
+from matplotlib.axes import Axes as mpl_Axes
+from matplotlib.backend_bases import MouseEvent
+from matplotlib.figure import Figure as mpl_Figure
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from tracking_physmed.plotting.animate_plot_fUS import Animate_plot_fUS
+from tracking_physmed.arena import BaseArena
 from tracking_physmed.tracking import Tracking
 
 
-def anim_decorator(plot_function):
+def anim_decorator(plot_function: Callable) -> Callable:
     """Decorator to animate tracking plots synched with video of corresponding tracking.
 
     Parameters
     ----------
     plot_function : tracking_physmed plot function
         Usually, plot function with one axes that returns Figure and Axes.
+
+    Returns
+    -------
+    callable
+        The wrapped function, either animated or not.
     """
 
     @wraps(plot_function)
-    def plot_wrapper(*args, **kwargs):
+    def plot_wrapper(
+        *args: Any, **kwargs: dict[str, Any]
+    ) -> tuple[mpl_Figure, mpl_Axes] | tuple[mpl_Figure, mpl_Axes, TrackingAnimation]:
+        """Wrapper function to animate tracking plots.
+
+        Parameters
+        ----------
+        *args : Any
+            Arguments to be passed to the plot function.
+        **kwargs : dict[str, Any]
+            Keyword arguments to be passed to the plot function.
+
+        Returns
+        -------
+        tuple[mpl_Figure, mpl_Axes] | tuple[mpl_Figure, mpl_Axes, TrackingAnimation]
+            If able to animate, a tuple containing the matplotlib figure, the axes and
+            the animation class. Otherwise, a tuple containing just the matpotlib figure
+            and the axes.
+        """
         anim_video = kwargs.pop("animate_video", False)
-        anim_fus = kwargs.pop("animate_fus", False)
         do_anim = kwargs.pop("animate", False)
         fig, ax = plot_function(*args, **kwargs)
         if anim_video or do_anim:
@@ -34,14 +65,6 @@ def anim_decorator(plot_function):
             if Trk[0].video_filepath is None:
                 return fig, ax
 
-            if hasattr(Trk[0], "metadata"):
-                cropping = (
-                    Trk[0].metadata["data"].get("cropping_parameters", [0, -1, 0, -1])
-                )
-            else:
-                cropping = [0, -1, 0, -1]
-            xcrop = cropping[:2]
-            ycrop = cropping[2:]
             anim = Animate_plot(
                 figure=fig,
                 axes=ax,
@@ -51,34 +74,6 @@ def anim_decorator(plot_function):
                 show_timestamp=True,
             )
             return fig, ax, anim
-        elif anim_fus:
-            Trk = [arg for arg in args if isinstance(arg, Tracking)]
-            if not Trk:
-                Trk = [
-                    value for value in kwargs.values() if isinstance(value, Tracking)
-                ]
-
-            if Trk[0].scan is None:
-                return fig, ax
-
-            if hasattr(Trk[0], "metadata"):
-                cropping = (
-                    Trk[0].metadata["data"].get("cropping_parameters", [0, -1, 0, -1])
-                )
-            else:
-                cropping = [0, -1, 0, -1]
-            xcrop = cropping[:2]
-            ycrop = cropping[2:]
-
-            anim = Animate_plot_fUS(
-                fig=fig,
-                ax=ax,
-                scan=Trk[0].scan,
-                video_path=Trk[0].video_filepath,
-                x_crop=xcrop,
-                y_crop=ycrop,
-            )
-            return fig, ax, anim
 
         return fig, ax
 
@@ -86,8 +81,52 @@ def anim_decorator(plot_function):
 
 
 class TrackingAnimation(Animation):
+    """Base animation helper for animating tracking data.
+
+    This obviously needs interactive backend to work.
+    This class was not built to direct use. Please use `animate_scan(scan)` to
+    animate 2D+t or 3D+t scans.
+    If `interactive=True`, then this are the controls for the animation:
+        `backspace` -> play/pause
+        `up/down` -> adjusts the frame step of the animation (default and minimum
+        value is 1 to grab the next frame, if set to 2, will skip 1 frame, and so
+        on...
+        `+/-` -> adjusts the interval between frames in ms (default is 200), it
+        will multiply or divide by 2 if used + or -, respectively
+
+    Parameters
+    ----------
+    figure : mpl_Figure
+        The matplotlib figure object.
+    axes : mpl_Axes
+        The matplotlib axes object.
+    time_array : numpy.ndarray
+        The time array of the data being plotted.
+    video_path : str | pathlib.Path, optional
+        The path to the video file to be plotted. Default is ``None``.
+    arena : BaseArena, optional
+        The arena object to be used to crop the video. Default is ``None``.
+    x_crop : tuple[int, int], optional
+        The x-axis crop limits. Default is ``(0, -1)`` to plot the whole x-axis.
+    y_crop : tuple[int, int], optional
+        The y-axis crop limits. Default is ``(0, -1)`` to plot the whole y-axis.
+    interactive : bool, optional
+        If ``True``, the animation will be interactive. Default is ``True``.
+    show_timestamp : bool, optional
+        If ``True``, the timestamp will be shown on the plot. Default is ``True``.
+    other_artists : list, optional
+        Other artists to be plotted on the axes. Default is ``[]``.
+
+    Attributes
+    ----------
+    time : numpy.ndarray
+        The time array of the data being plotted.
+    current_time : float
+        The current time given by the current frame.
+    """
+
     @property
-    def time(self):
+    def time(self) -> npt.NDArray:
         """The time array of the data being plotted.
 
         Returns
@@ -98,7 +137,7 @@ class TrackingAnimation(Animation):
         return self._time
 
     @property
-    def current_time(self):
+    def current_time(self) -> float:
         """The current time given by the current frame.
 
         Returns
@@ -110,38 +149,26 @@ class TrackingAnimation(Animation):
 
     def __init__(
         self,
-        figure,
-        axes,
-        time_array,
-        video_path=None,
-        arena=None,
-        x_crop=[0, -1],
-        y_crop=[0, -1],
-        interactive=True,
-        show_timestamp=True,
-        other_artists=[],
+        figure: mpl_Figure,
+        axes: mpl_Axes,
+        time_array: npt.NDArray,
+        video_path: str | pathlib.Path | None = None,
+        arena: BaseArena | None = None,
+        x_crop: tuple[int, int] = (0, -1),
+        y_crop: tuple[int, int] = (0, -1),
+        interactive: bool = True,
+        show_timestamp: bool = True,
+        other_artists: list = [],
     ):
-        """Animation of 2/3D+t scans. This obviously needs interactive backend to
-        work.
-        This class was not built to direct use. Please use `animate_scan(scan)` to
-        animate 2D+t or 3D+t scans.
-        If `interactive=True`, then this are the controls for the animation:
-            `backspace` -> play/pause
-            `up/down` -> adjusts the frame step of the animation (default and minimum
-            value is 1 to grab the next frame, if set to 2, will skip 1 frame, and so
-            on...
-            `+/-` -> adjusts the interval between frames in ms (default is 200), it
-            will multiply or divide by 2 if used + or -, respectively
-        """
         ## Creating custom animation inheriting matplotlib Animation class
-        self.is_playing = True
+        self.is_playing: bool = True
 
         # frame_step says if animation is going frame by frame (frame_step = 1), or
         # if it is going to skip one frame (frame_step = 2), etc.
         # if sampling frequency of the animation data is high, sometimes skipping
         # some frames is a good trade-off to have a smoother animation
-        self.frame_step = 1
-        self.current_frame = 0
+        self.frame_step: int = 1
+        self.current_frame: int = 0
 
         self._interval = 50
         event_source = figure.canvas.new_timer(interval=self._interval)
@@ -154,6 +181,7 @@ class TrackingAnimation(Animation):
         self._drawn_artists = []
 
         super().__init__(fig=figure, event_source=event_source, blit=True)
+        self._fig = figure
         self.ax = axes
         # self._drawn_artists += images
         if video_path is not None:
@@ -195,13 +223,14 @@ class TrackingAnimation(Animation):
             self.press = False
             self.move = False
 
-            self.cpress = figure.canvas.mpl_connect("button_press_event", self.onpress)
+            self.cpress = figure.canvas.mpl_connect("button_press_event", self._onpress)
             self.crelease = figure.canvas.mpl_connect(
-                "button_release_event", self.onrelease
+                "button_release_event", self._onrelease
             )
-            self.cmove = figure.canvas.mpl_connect("motion_notify_event", self.onmove)
+            self.cmove = figure.canvas.mpl_connect("motion_notify_event", self._onmove)
 
     def _setup_video_axes(self, arena, video_path, x_crop, y_crop):
+        """TO BE IMPLEMENTED IN CHILD CLASSES."""
         pass
 
     def _start(self, *args):
@@ -289,21 +318,21 @@ class TrackingAnimation(Animation):
         )
         self.event_source.interval = int(self._interval)
 
-    def onpress(self, event):
+    def _onpress(self, event):
         self.press = True
 
-    def onmove(self, event):
+    def _onmove(self, event):
         if self.press:
             self.move = True
 
-    def onrelease(self, event):
+    def _onrelease(self, event):
         if self.press and not self.move:
-            self.onclick(event)  # click without moving
+            self._onclick(event)  # click without moving
 
         self.press = False
         self.move = False
 
-    def onclick(self, event):
+    def _onclick(self, event):
         pass
 
     def _refresh_frame_seq(self):
@@ -324,48 +353,60 @@ class TrackingAnimation(Animation):
             self.is_playing = True
             self.resume()
 
-        def _on_resize(self, event):
-            # On resize, we need to disable the resize event handling so we don't
-            # get too many events. Also stop the animation events, so that
-            # we're paused. Reset the cache and re-init. Set up an event handler
-            # to catch once the draw has actually taken place.
-            self._fig.canvas.mpl_disconnect(self._resize_id)
-            # slightly modified from matplotlib default where if animation is paused,
-            # resizing it would resume playing. Now it only resumes playing if it
-            # was already playing
-            if self.is_playing:
-                self.pause()
-            self._blit_cache.clear()
-            self._init_draw()
-            self._resize_id = self._fig.canvas.mpl_connect(
-                "draw_event", self._end_redraw
-            )
+    def _on_resize(self, event):
+        # On resize, we need to disable the resize event handling so we don't
+        # get too many events. Also stop the animation events, so that
+        # we're paused. Reset the cache and re-init. Set up an event handler
+        # to catch once the draw has actually taken place.
+        self._fig.canvas.mpl_disconnect(self._resize_id)
+        # slightly modified from matplotlib default where if animation is paused,
+        # resizing it would resume playing. Now it only resumes playing if it
+        # was already playing
+        if self.is_playing:
+            self.pause()
+        self._blit_cache.clear()
+        self._init_draw()
+        self._resize_id = self._fig.canvas.mpl_connect("draw_event", self._end_redraw)
 
-        def _end_redraw(self, event):
-            # Now that the redraw has happened, do the post draw flushing and
-            # blit handling. Then re-enable all of the original events.
-            self._post_draw(None, False)
-            # slightly modified from matplotlib default where if animation is paused,
-            # resizing it would resume playing. Now it only resumes playing if it
-            # was already playing
-            if self.is_playing:
-                self.resume()
-            self._fig.canvas.mpl_disconnect(self._resize_id)
-            self._resize_id = self._fig.canvas.mpl_connect(
-                "resize_event", self._on_resize
-            )
+    def _end_redraw(self, event):
+        # Now that the redraw has happened, do the post draw flushing and
+        # blit handling. Then re-enable all of the original events.
+        self._post_draw(None, False)
+        # slightly modified from matplotlib default where if animation is paused,
+        # resizing it would resume playing. Now it only resumes playing if it
+        # was already playing
+        if self.is_playing:
+            self.resume()
+        self._fig.canvas.mpl_disconnect(self._resize_id)
+        self._resize_id = self._fig.canvas.mpl_connect("resize_event", self._on_resize)
 
 
 class Animate_plot(TrackingAnimation):
+    """Animation class for 1D plots (feature vs. time).
+
+    Parameters
+    ----------
+    *args : Any
+        Arguments to be passed to the TrackingAnimation.
+    **kwargs : Any
+        Keyword arguments to be passed to the TrackingAnimation.
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # init playbar that will move along the time axis
         self.play_bar = self.ax.axvline(self.current_time, color="gray")
         self._drawn_artists.append(self.play_bar)
 
-    def onclick(self, event):
+    def onclick(self, event: MouseEvent):
+        """Define click events.
+
+        Parameters
+        ----------
+        event : matplotlib.backend_bases.MouseEvent
+            Matplotlib mouse event that is fired when a mouse button is pressed.
+        """
         if event.inaxes == self.ax:
-            # self.current_time = event.xdata
             self.current_frame = int(event.xdata * self.fps)
             if self.current_frame >= self.max_frames:
                 self.current_frame = int(self.max_frames - 1)
@@ -373,7 +414,7 @@ class Animate_plot(TrackingAnimation):
             self._draw_next_frame(self.current_frame, self._blit)
             self._refresh_frame_seq()
 
-    def _setup_video_axes(self, arena, video_path, x_crop, y_crop):
+    def _setup_video_axes(self, arena: BaseArena | None, video_path, x_crop, y_crop):
         self.video_axes = make_axes_locatable(self.ax).append_axes(
             "left", size="65%", pad=1
         )
@@ -411,6 +452,7 @@ class Animate_plot(TrackingAnimation):
         self.grab_frame()
 
     def grab_frame(self):
+        """Grab frame from video and update the axes."""
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
         _, frame = self.cap.read()
 

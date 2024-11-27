@@ -1,24 +1,53 @@
+"""Animation wrappers for the 2D tracking plots."""
+
+from collections.abc import Callable
 from functools import wraps
+from typing import Any
 
 import cv2
 import numpy as np
+from matplotlib.axes import Axes as mpl_Axes
+from matplotlib.figure import Figure as mpl_Figure
 from matplotlib.path import Path as mPath
 
 from tracking_physmed.plotting.animate_decorator import TrackingAnimation
 from tracking_physmed.tracking import Tracking
 
 
-def anim2d_decorator(plot_function):
+def anim2d_decorator(plot_function: Callable) -> Callable:
     """Decorator to animate tracking plots synched with video of corresponding tracking.
 
     Parameters
     ----------
     plot_function : tracking_physmed plot function
         Usually, plot function with one axes that returns Figure and Axes.
+
+    Returns
+    -------
+    callable
+        The wrapped function, either animated or not.
     """
 
     @wraps(plot_function)
-    def plot_wrapper(*args, **kwargs):
+    def plot_wrapper(
+        *args: Any, **kwargs: dict[str, Any]
+    ) -> tuple[mpl_Figure, mpl_Axes] | tuple[mpl_Figure, mpl_Axes, TrackingAnimation]:
+        """Wrapper function to animate tracking plots.
+
+        Parameters
+        ----------
+        *args : Any
+            Arguments to be passed to the plot function.
+        **kwargs : dict[str, Any]
+            Keyword arguments to be passed to the plot function.
+
+        Returns
+        -------
+        tuple[mpl_Figure, mpl_Axes] | tuple[mpl_Figure, mpl_Axes, TrackingAnimation]
+            If able to animate, a tuple containing the matplotlib figure, the axes and
+            the animation class. Otherwise, a tuple containing just the matpotlib figure
+            and the axes.
+        """
         do_anim = kwargs.pop("animate", False)
         keys = list(kwargs.keys())
         anim_kwargs = {
@@ -51,6 +80,29 @@ def anim2d_decorator(plot_function):
 
 
 class Animate_plot2D(TrackingAnimation):
+    """Animation of helper class for 2D tracking plots.
+
+    This obviously needs interactive backend to work.
+    This class was not built to direct use. Please use `animate_scan(scan)` to
+    animate 2D+t or 3D+t scans.
+    If `interactive=True`, then this are the controls for the animation:
+        `backspace` -> play/pause
+        `up/down` -> adjusts the frame step of the animation (default and minimum
+        value is 1 to grab the next frame, if set to 2, will skip 1 frame, and so
+        on...
+        `+/-` -> adjusts the interval between frames in ms (default is 200), it
+        will multiply or divide by 2 if used + or -, respectively
+
+    Parameters
+    ----------
+    lines : dict
+        Dictionary containing the lines to be animated.
+    *args : Any
+        Arguments to be passed to TrackingAnimation.
+    **kwargs : dict[str, Any]
+        Keyword arguments to be passed to TrackingAnimation.
+    """
+
     def __init__(self, lines, *args, **kwargs):
         self.lines = lines["lines"]
         self.index = lines["index"]
@@ -101,6 +153,7 @@ class Animate_plot2D(TrackingAnimation):
         self.grab_frame()
 
     def grab_frame(self):
+        """Grab frame from video and update the axes."""
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
         _, frame = self.cap.read()
 
