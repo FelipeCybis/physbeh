@@ -427,10 +427,10 @@ class Animate_plot(TrackingAnimation):
         camera_height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
         camera_width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         if y_crop[-1] < 0:
-            y_crop[1] = int(camera_height)
+            y_crop = (y_crop[0], int(camera_height))
 
         if x_crop[1] < 0:
-            x_crop[1] = int(camera_width)
+            x_crop = (x_crop[0], int(camera_width))
 
         self.y_slice = slice(*y_crop)
         self.x_slice = slice(*x_crop)
