@@ -3,6 +3,7 @@ from matplotlib.axes import Axes as mpl_Axes
 from matplotlib.figure import Figure as mpl_Figure
 
 from tracking_physmed.plotting import (
+    plot_acceleration,
     plot_angular_velocity,
     plot_center_proximity,
     plot_corner_proximity,
@@ -25,6 +26,7 @@ from tracking_physmed.plotting import (
         plot_center_proximity,
         plot_likelihood,
         plot_position,
+        plot_acceleration,
         plot_position_x,
         plot_position_y,
         plot_head_direction,

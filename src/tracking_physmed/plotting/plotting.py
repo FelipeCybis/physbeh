@@ -372,6 +372,128 @@ def plot_speed(
 
 
 @overload
+def plot_acceleration(  # numpydoc ignore=GL08
+    trk: Tracking,
+    *,
+    animate: Literal[True],
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
+
+
+@overload
+def plot_acceleration(  # numpydoc ignore=GL08
+    trk: Tracking,
+    *,
+    animate: Literal[False],
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
+
+
+@anim_decorator
+def plot_acceleration(
+    trk: Tracking,
+    bodypart: str = "body",
+    smooth=True,
+    speed_cutout=0,
+    only_running_bouts: bool = False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (12, 6),
+    animate: bool = False,
+    animate_video: bool = False,
+    animate_fus: bool = False,
+    **ax_kwargs,
+) -> (
+    tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]
+    | tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]
+):
+    """Plot acceleration of given label.
+
+    Parameters
+    ----------
+    trk : Tracking
+        The tracking object.
+    bodypart : str, optional
+        Bodypart label. Default is ``"body"``.
+    smooth : bool, optional
+        If speed array is to be smoothed using a gaussian kernel before calculating the
+        acceleration. Default is ``True``.
+    speed_cutout : int, optional
+        If speed is to be thresholded by some value. Default is ``0``.
+    only_running_bouts : bool, optional
+        If should plot only the running periods using
+        :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
+        is ``False``.
+    plot_only_running_bouts : bool, optional
+        Whether or not to plot a background color on periods of running bouts (and not
+        only not plot non running bouts). This only takes effect if `only_running_bouts`
+        is set to ``True``. Default is ``True``.
+    color : tuple, optional
+        Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
+        color defined by the label. Default is ``None``.
+    alpha : float, optional
+        The alpha value of the line collection. Default is ``1.0``.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.Figure, optional
+        If ``None``, new figure is created. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if ``figure=None``. Default is ``(12,6)``.
+    animate : bool, optional
+        If set to ``True``, plots an animation with the video of the Tracking class.
+        Default is ``False``.
+    animate_video : bool, optional
+        Whether to animate the plot with the video recording. Default is ``False``.
+    animate_fus : bool, optional
+        Whether to animate the plot with the functional Ultrasound video. Default is
+        ``False``.
+    **ax_kwargs
+        Keywords to pass to ``ax.set(**ax_kwargs)``.
+
+    Returns
+    -------
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : matplotlib.axes.Axes
+        The matplotlib axes object.
+    """
+    acceleration_array, time_array, index = trk.get_acceleration(
+        bodypart=bodypart,
+        smooth=smooth,
+        speed_cutout=speed_cutout,
+        only_running_bouts=only_running_bouts,
+    )
+
+    acc_units = (
+        str(trk.space_units[bodypart + "_x"].units) + "/" + trk.time_units + "**2"
+    )
+
+    ax_kwargs.setdefault("ylabel", f"animal acceleration ({acc_units})")
+    ax_kwargs.setdefault("xlabel", "time (s)")
+    ax_kwargs.setdefault("legend__loc", "upper right")
+    ax_kwargs.setdefault("grid__linestyle", "--")
+    figure, axes, _ = plot_array(
+        acceleration_array,
+        time_array=time_array,
+        index=index,
+        only_running_bouts=only_running_bouts,
+        label=bodypart,
+        color=get_label_color(trk, bodypart) if color is None else color,
+        axes=axes,
+        figure=figure,
+        figsize=figsize,
+        alpha=alpha,
+        **ax_kwargs,
+    )
+
+    if only_running_bouts and plot_only_running_bouts:
+        plot_running_bouts(trk, axes=axes)
+
+    return figure, axes
+
+
+@overload
 def plot_wall_proximity(  # numpydoc ignore=GL08
     animate: Literal[True],
 ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...

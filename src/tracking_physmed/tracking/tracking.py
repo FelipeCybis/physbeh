@@ -736,7 +736,7 @@ class Tracking:
         axis: Literal["x", "y", "xy"] = "xy",
         euclidean_distance: bool = False,
         smooth: bool = True,
-        speed_cutout: float = 0,
+        speed_cutout: float = 0.0,
         only_running_bouts: Literal[False],
     ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]: ...
 
@@ -748,19 +748,34 @@ class Tracking:
         axis: Literal["x", "y", "xy"] = "xy",
         euclidean_distance: bool = False,
         smooth: bool = True,
-        speed_cutout: float = 0,
+        speed_cutout: float = 0.0,
         only_running_bouts: Literal[True] = True,
     ) -> tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]: ...
 
-    def get_speed(
+    @overload
+    def get_speed(  # numpydoc ignore=GL08
         self,
         bodypart: str = "body",
         *,
         axis: Literal["x", "y", "xy"] = "xy",
         euclidean_distance: bool = False,
         smooth: bool = True,
-        speed_cutout: float = 0,
-        only_running_bouts: bool = False,
+        speed_cutout: float = 0.0,
+        only_running_bouts: bool,
+    ) -> (
+        tuple[npt.NDArray, npt.NDArray, npt.NDArray]
+        | tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]
+    ): ...
+
+    def get_speed(
+        self,
+        bodypart="body",
+        *,
+        axis="xy",
+        euclidean_distance=False,
+        smooth=True,
+        speed_cutout=0.0,
+        only_running_bouts=False,
     ) -> (
         tuple[npt.NDArray, npt.NDArray, npt.NDArray]
         | tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]
@@ -817,6 +832,97 @@ class Tracking:
             return speed_array, self.time_bouts, index
 
         return speed_array, self.time, index
+
+    @overload
+    def get_acceleration(  # numpydoc ignore=GL08
+        self,
+        bodypart: str = "body",
+        *,
+        smooth: bool = True,
+        speed_cutout: float = 0.0,
+        only_running_bouts: Literal[False],
+    ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]: ...
+
+    @overload
+    def get_acceleration(  # numpydoc ignore=GL08
+        self,
+        bodypart: str = "body",
+        *,
+        smooth: bool = True,
+        speed_cutout: float = 0.0,
+        only_running_bouts: Literal[True] = True,
+    ) -> tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]: ...
+
+    @overload
+    def get_acceleration(  # numpydoc ignore=GL08
+        self,
+        bodypart: str = "body",
+        *,
+        smooth: bool = True,
+        speed_cutout: float = 0.0,
+        only_running_bouts: bool,
+    ) -> (
+        tuple[npt.NDArray, npt.NDArray, npt.NDArray]
+        | tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]
+    ): ...
+
+    def get_acceleration(
+        self,
+        bodypart="body",
+        *,
+        smooth=True,
+        speed_cutout=0.0,
+        only_running_bouts=False,
+    ) -> (
+        tuple[npt.NDArray, npt.NDArray, npt.NDArray]
+        | tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]
+    ):
+        """Get acceleration for given ``bodypart``.
+
+        When getting the distance between frames, the first index is hard set to be 0 so
+        that the output array has the same length as the number of frames.
+
+        Parameters
+        ----------
+        bodypart : str, optional
+            Name of the label to get the acceleration from, by default 'body'.
+        smooth : bool, optional
+            If ``True`` a Gaussian window will convolve the speed array before
+            calculating the acceleration. The parameters of the Gaussian window can be
+            set via the self.speed_smooth_window variable. Default is ``True``.
+        speed_cutout : int, optional
+            If given it will set the speed values under this threshold to 0. Default is
+            ``0``.
+        only_running_bouts : bool, optional
+            Use only running bouts of the experiment. Default is ``False``.
+
+        Returns
+        -------
+        acceleration_array : numpy.ndarray
+            Acceleration array in cm/s**2.
+        time_array : numpy.ndarray
+            Time array in seconds.
+        index : numpy.ndarray
+            Index where ``p-value > pcutout`` is ``True``, index is ``False`` otherwise.
+        """
+        dist = self._get_distance_between_frames(bodypart=bodypart, axis="xy")
+        speed_array = dist * self.fps
+
+        index = self.get_index(bodypart, self.pcutout)
+
+        if smooth:
+            speed_array[~index] = 0
+            speed_array = np.convolve(self.speed_smooth_window, speed_array, "same")
+            speed_array[np.abs(speed_array) < speed_cutout] = 0
+
+        acceleration_array = np.gradient(speed_array)
+
+        if only_running_bouts:
+            acceleration_array = self._split_in_running_bouts(acceleration_array)
+            index = self._split_in_running_bouts(index)
+            return acceleration_array, self.time_bouts, index
+
+        return acceleration_array, self.time, index
 
     def get_running_bouts(self, speed_array=None, time_array=None):
         """Get running bouts given certain parameters.

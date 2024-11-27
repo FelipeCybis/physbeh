@@ -57,3 +57,4 @@ def test_mock_methods(tracking: Tracking):
     tracking.get_proximity_from_center()
     tracking.get_speed("body")
     tracking.get_proximity_from_wall()
+    tracking.get_acceleration()
