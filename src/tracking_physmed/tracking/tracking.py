@@ -566,7 +566,7 @@ class Tracking:
             resp_in_rad[~index] = 0
             resp_in_rad = np.convolve(smooth_window, resp_in_rad, "same")
 
-        angular_velocity = np.abs(np.gradient(resp_in_rad))
+        angular_velocity = np.abs(np.gradient(resp_in_rad) * self.fps)
 
         if only_running_bouts:
             angular_velocity_bouts = self._split_in_running_bouts(angular_velocity)
@@ -642,7 +642,7 @@ class Tracking:
             label0=label0, label1=label1, smooth=smooth
         )
 
-        angular_acceleration = np.gradient(angular_velocity)
+        angular_acceleration = np.gradient(angular_velocity) * self.fps
 
         if only_running_bouts:
             angular_acceleration_bouts = self._split_in_running_bouts(
@@ -1003,7 +1003,7 @@ class Tracking:
             bodypart=bodypart, smooth=smooth, speed_cutout=speed_cutout
         )
 
-        acceleration_array = np.gradient(speed_array)
+        acceleration_array = np.gradient(speed_array) * self.fps
 
         if only_running_bouts:
             acceleration_array = self._split_in_running_bouts(acceleration_array)
