@@ -41,7 +41,7 @@ def test_get_index(tracking: Tracking, likelihood: npt.NDArray[np.float64]):
 
 
 def test_angular_velocity(tracking: Tracking):
-    ang_velocity, time, index = tracking.get_direction_angular_velocity(
+    ang_velocity, time, index = tracking.get_angular_velocity(
         label0="neck", label1="probe", smooth=True
     )
     assert ang_velocity.shape == (len(tracking.Dataframe),)
@@ -58,3 +58,4 @@ def test_mock_methods(tracking: Tracking):
     tracking.get_speed("body")
     tracking.get_proximity_from_wall()
     tracking.get_acceleration()
+    tracking.get_angular_acceleration()

@@ -832,7 +832,7 @@ def plot_angular_velocity(
 ):
     """Plot angular velocity calculated from the vector 'label0' -> 'label1'.
 
-    See :class:`tracking_physmed.tracking.Tracking.get_direction_angular_velocity`, for
+    See :class:`tracking_physmed.tracking.Tracking.get_angular_velocity`, for
     more information.
 
     Parameters
@@ -883,7 +883,7 @@ def plot_angular_velocity(
         The matplotlib axes object.
     """
 
-    ang_velocity, time_array, index = trk.get_direction_angular_velocity(
+    ang_velocity, time_array, index = trk.get_angular_velocity(
         label0=label0,
         label1=label1,
         smooth=smooth,
@@ -896,6 +896,121 @@ def plot_angular_velocity(
     ax_kwargs.setdefault("grid__linestyle", "--")
     figure, axes, _ = plot_array(
         ang_velocity,
+        time_array=time_array,
+        index=index,
+        only_running_bouts=only_running_bouts,
+        label=label0 + " -> " + label1,
+        color=get_label_color(trk, label1) if color is None else color,
+        axes=axes,
+        figure=figure,
+        figsize=figsize,
+        alpha=alpha,
+        **ax_kwargs,
+    )
+
+    if only_running_bouts and plot_only_running_bouts:
+        plot_running_bouts(trk, axes=axes)
+
+    return figure, axes
+
+
+@overload
+def plot_angular_acceleration(  # numpydoc ignore=GL08
+    animate: Literal[True],
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
+
+
+@overload
+def plot_angular_acceleration(  # numpydoc ignore=GL08
+    animate: Literal[False],
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
+
+
+@anim_decorator
+def plot_angular_acceleration(
+    trk: Tracking,
+    label0: str = "neck",
+    label1: str = "probe",
+    smooth: bool = True,
+    *,
+    only_running_bouts=False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (14, 7),
+    animate: bool = False,
+    animate_video: bool = False,
+    animate_fus: bool = False,
+    **ax_kwargs,
+):
+    """Plot angular acceleration calculated from the vector 'label0' -> 'label1'.
+
+    See :class:`tracking_physmed.tracking.Tracking.get_angular_acceleration`, for
+    more information.
+
+    Parameters
+    ----------
+    trk : tracking_physmed.tracking.Tracking
+        The tracking object.
+    label0 : str, optional
+        Label where the vector will start. Default is ``'neck'``.
+    label1 : str, optional
+        Label where the vector will finish. Default is ``'probe'``.
+    smooth : bool, optional
+        Whether or not to smooth the direction data. Default is ``False``.
+    only_running_bouts : bool, optional
+        If should plot only the running periods using
+        :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
+        is ``False``.
+    plot_only_running_bouts : bool, optional
+        Whether or not to plot a background color on periods of running bouts (and not
+        only not plot non running bouts). This only takes effect if `only_running_bouts`
+        is set to ``True``. Default is ``True``.
+    color : tuple, optional
+        Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
+        color defined by the label. Default is ``None``.
+    alpha : float, optional
+        The alpha value of the line collection. Default is ``1.0``.
+    axes : matplotlib.axes.Axes, optional
+        If ``None``, new axes is created in `figure`. Default is ``None``.
+    figure : matplotlib.figure.Figure, optional
+        If ``None``, new figure is created. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if ``figure=None``. Default is ``(12,6)``.
+    animate : bool, optional
+        If set to ``True``, plots an animation with the video of the Tracking class.
+        Default is ``False``.
+    animate_video : bool, optional
+        Whether to animate the plot with the video recording. Default is ``False``.
+    animate_fus : bool, optional
+        Whether to animate the plot with the functional Ultrasound video. Default is
+        ``False``.
+    **ax_kwargs
+        Keywords to pass to ``ax.set(**ax_kwargs)``.
+
+    Returns
+    -------
+    figure : matplotlib.figure.Figure
+        The matplotlib figure object.
+    axes : matplotlib.axes.Axes
+        The matplotlib axes object.
+    """
+
+    ang_acceleration, time_array, index = trk.get_angular_acceleration(
+        label0=label0,
+        label1=label1,
+        smooth=smooth,
+        only_running_bouts=only_running_bouts,
+    )
+
+    ax_kwargs.setdefault("ylabel", "Angular acceleration (rad/s**2)")
+    ax_kwargs.setdefault("xlabel", "time (s)")
+    ax_kwargs.setdefault("legend__loc", "upper right")
+    ax_kwargs.setdefault("grid__linestyle", "--")
+    figure, axes, _ = plot_array(
+        ang_acceleration,
         time_array=time_array,
         index=index,
         only_running_bouts=only_running_bouts,

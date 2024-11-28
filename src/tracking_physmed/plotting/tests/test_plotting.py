@@ -4,6 +4,7 @@ from matplotlib.figure import Figure as mpl_Figure
 
 from tracking_physmed.plotting import (
     plot_acceleration,
+    plot_angular_acceleration,
     plot_angular_velocity,
     plot_center_proximity,
     plot_corner_proximity,
@@ -23,6 +24,7 @@ from tracking_physmed.plotting import (
         plot_speed,
         plot_wall_proximity,
         plot_corner_proximity,
+        plot_angular_acceleration,
         plot_center_proximity,
         plot_likelihood,
         plot_position,

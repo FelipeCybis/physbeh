@@ -486,28 +486,44 @@ class Tracking:
         return resp, self.time, index
 
     @overload
-    def get_direction_angular_velocity(  # numpydoc ignore=GL08
+    def get_angular_velocity(  # numpydoc ignore=GL08
         self,
         label0: str = "neck",
         label1: str = "probe",
         smooth: bool = True,
+        *,
         only_running_bouts: Literal[False] = False,
     ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]: ...
 
     @overload
-    def get_direction_angular_velocity(  # numpydoc ignore=GL08
+    def get_angular_velocity(  # numpydoc ignore=GL08
         self,
         label0: str = "neck",
         label1: str = "probe",
         smooth: bool = True,
+        *,
         only_running_bouts: Literal[True] = True,
     ) -> tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]: ...
 
-    def get_direction_angular_velocity(
+    @overload
+    def get_angular_velocity(  # numpydoc ignore=GL08
         self,
         label0: str = "neck",
         label1: str = "probe",
         smooth: bool = True,
+        *,
+        only_running_bouts: bool,
+    ) -> (
+        tuple[npt.NDArray, npt.NDArray, npt.NDArray]
+        | tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]
+    ): ...
+
+    def get_angular_velocity(
+        self,
+        label0: str = "neck",
+        label1: str = "probe",
+        smooth: bool = True,
+        *,
         only_running_bouts: bool = False,
     ):
         """Get angular velocity using the vector between `label0` and `label1`.
@@ -550,7 +566,7 @@ class Tracking:
             resp_in_rad[~index] = 0
             resp_in_rad = np.convolve(smooth_window, resp_in_rad, "same")
 
-        angular_velocity = np.gradient(resp_in_rad)
+        angular_velocity = np.abs(np.gradient(resp_in_rad))
 
         if only_running_bouts:
             angular_velocity_bouts = self._split_in_running_bouts(angular_velocity)
@@ -559,6 +575,84 @@ class Tracking:
             return angular_velocity_bouts, self.time_bouts, index_bouts
 
         return angular_velocity, self.time, index
+
+    @overload
+    def get_angular_acceleration(  # numpydoc ignore=GL08
+        self,
+        label0: str = "neck",
+        label1: str = "probe",
+        smooth: bool = True,
+        *,
+        only_running_bouts: Literal[False] = False,
+    ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]: ...
+
+    @overload
+    def get_angular_acceleration(  # numpydoc ignore=GL08
+        self,
+        label0: str = "neck",
+        label1: str = "probe",
+        smooth: bool = True,
+        *,
+        only_running_bouts: Literal[True] = True,
+    ) -> tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]: ...
+
+    @overload
+    def get_angular_acceleration(  # numpydoc ignore=GL08
+        self,
+        label0: str = "neck",
+        label1: str = "probe",
+        smooth: bool = True,
+        *,
+        only_running_bouts: bool,
+    ) -> (
+        tuple[npt.NDArray, npt.NDArray, npt.NDArray]
+        | tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]
+    ): ...
+
+    def get_angular_acceleration(
+        self,
+        label0: str = "neck",
+        label1: str = "probe",
+        smooth: bool = True,
+        only_running_bouts: bool = False,
+    ):
+        """Get angular acceleration using the vector between `label0` and `label1`.
+
+        Parameters
+        ----------
+        label0 : str, optional
+            Label where the vector will start. Default is ``'neck'``.
+        label1 : str, optional
+            Label where the vector will finish. Default is ``'probe'``.
+        smooth : bool, optional
+            Whether or not to smooth the direction data. Default is ``False``.
+        only_running_bouts : bool, optional
+            Use only running bouts of the experiment. Default is ``False``.
+
+        Returns
+        -------
+        angular_acceleration : numpy.ndarray
+            The angular acceleration array.
+        time_array : numpy.ndarray
+            Time array in seconds.
+        index : numpy.ndarray
+            Index where ``p-value > pcutout`` is ``True``, index is ``False`` otherwise.
+        """
+        angular_velocity, _, index = self.get_angular_velocity(
+            label0=label0, label1=label1, smooth=smooth
+        )
+
+        angular_acceleration = np.gradient(angular_velocity)
+
+        if only_running_bouts:
+            angular_acceleration_bouts = self._split_in_running_bouts(
+                angular_acceleration
+            )
+            index_bouts = self._split_in_running_bouts(index)
+
+            return angular_acceleration_bouts, self.time_bouts, index_bouts
+
+        return angular_acceleration, self.time, index
 
     def get_degree_interval_hd(
         self,
@@ -737,7 +831,7 @@ class Tracking:
         euclidean_distance: bool = False,
         smooth: bool = True,
         speed_cutout: float = 0.0,
-        only_running_bouts: Literal[False],
+        only_running_bouts: Literal[False] = False,
     ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]: ...
 
     @overload
@@ -840,7 +934,7 @@ class Tracking:
         *,
         smooth: bool = True,
         speed_cutout: float = 0.0,
-        only_running_bouts: Literal[False],
+        only_running_bouts: Literal[False] = False,
     ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]: ...
 
     @overload
@@ -905,15 +999,9 @@ class Tracking:
         index : numpy.ndarray
             Index where ``p-value > pcutout`` is ``True``, index is ``False`` otherwise.
         """
-        dist = self._get_distance_between_frames(bodypart=bodypart, axis="xy")
-        speed_array = dist * self.fps
-
-        index = self.get_index(bodypart, self.pcutout)
-
-        if smooth:
-            speed_array[~index] = 0
-            speed_array = np.convolve(self.speed_smooth_window, speed_array, "same")
-            speed_array[np.abs(speed_array) < speed_cutout] = 0
+        speed_array, _, index = self.get_speed(
+            bodypart=bodypart, smooth=smooth, speed_cutout=speed_cutout
+        )
 
         acceleration_array = np.gradient(speed_array)
 

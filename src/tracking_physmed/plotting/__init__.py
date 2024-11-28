@@ -2,6 +2,7 @@
 
 from .plotting import (
     plot_acceleration,
+    plot_angular_acceleration,
     plot_angular_velocity,
     plot_array,
     plot_center_proximity,
@@ -25,6 +26,7 @@ __all__ = [
     "plot_wall_proximity",
     "plot_center_proximity",
     "plot_corner_proximity",
+    "plot_angular_acceleration",
     "plot_acceleration",
     "plot_running_bouts",
     "plot_position_2d",
