@@ -157,7 +157,7 @@ html_theme_options = {
         "json_url": f"{cname}/version/latest/_static/versions.json",
         "version_match": get_version_match(current_version),
     },
-    "navbar_end": ["version_switcher", "theme-switcher", "navbar-icon-links"],
+    "navbar_end": ["version-switcher", "theme-switcher", "navbar-icon-links"],
 }
 html_context = {
     "github_url": "https://github.com",
