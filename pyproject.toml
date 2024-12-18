@@ -6,7 +6,7 @@ authors = [
     {name = "Felipe Cybis Pereira", email="felipe.cybispereira@gmail.com"}
 ]
 requires-python = ">=3.10, <3.13" 
-readme = "README.md"
+readme = "README.rst"
 dependencies = [
     "numpy~=1.26.4",
     "pandas~=2.2.1",
