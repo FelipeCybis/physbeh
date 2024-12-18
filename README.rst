@@ -2,11 +2,14 @@ PhysBeh
 =======
 
 .. start-quickstart
+.. start-about
 
 This repository contains the main function and classes written in Python for
 analysis of tracking data in the Physics for Medicine lab.
 
 The code is written in the format of a Python package (`physbeh`).
+
+.. stop-about
 
 Installation
 ------------
