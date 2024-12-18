@@ -12,7 +12,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Checkout tracking_physmed
+      - name: Checkout physbeh
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -27,7 +27,7 @@ jobs:
       - name: Create virtual environment
         run: uv venv
       - name: Install dependencies
-        run: uv pip install --upgrade --refresh-package tracking_physmed --reinstall-package tracking_physmed "tracking_physmed[docs] @ ."
+        run: uv pip install --upgrade --refresh-package physbeh --reinstall-package physbeh "physbeh[docs] @ ."
       - name: Build documentation
         run: |
           cd docs/

@@ -14,7 +14,7 @@ containing these variables:
 
 ```
 GH_OWNER=FelipeCybis
-GH_REPOSITORY=tracking_physmed
+GH_REPOSITORY=physbeh
 GH_TOKEN=<your-github-pat-token>
 ```
 

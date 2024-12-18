@@ -18,7 +18,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: "${{ matrix.os }}"
     steps:
-      - name: Checkout tracking_physmed
+      - name: Checkout physbeh
         uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -31,7 +31,7 @@ jobs:
       - name: Create virtual environment
         run: uv venv
       - name: Install dependencies
-        run: uv pip install --upgrade --refresh-package tracking_physmed --reinstall-package tracking_physmed "tracking_physmed[test] @ ."
+        run: uv pip install --upgrade --refresh-package physbeh --reinstall-package physbeh "physbeh[test] @ ."
       - name: Test with pytest and output coverage reports (unix)
         if: ${{ ! (matrix.os == 'windows-latest') }}
         run: |
