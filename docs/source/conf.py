@@ -176,6 +176,19 @@ if "dev" in current_version:
     )
 
 
+def touch_example_backreferences(app, what, name, obj, options, lines):
+    # generate empty examples files, so that we don't get
+    # inclusion errors if there are no examples for a class / module
+    examples_path = os.path.join(app.srcdir, "api", "generated", f"{name}.examples")
+    if not os.path.exists(examples_path):
+        # touch file
+        open(examples_path, "w").close()
+
+
+def setup(app):
+    app.connect("autodoc-process-docstring", touch_example_backreferences)
+
+
 # The following is used by sphinx.ext.linkcode to provide links to github
 def linkcode_resolve(domain, info):
     if domain != "py":
@@ -183,10 +196,10 @@ def linkcode_resolve(domain, info):
     if not info["module"]:
         return None
 
-    revision = "master"
-    package = "pyfus"
+    revision = "main"
+    package = "physbeh"
     url_fmt = (
-        "https://github.com/Iconeus/pyfus/blob/{revision}/"
+        "https://github.com/FelipeCybis/physbeh/blob/{revision}/"
         "src/{package}/{path}#L{lineno}"
     )
 
