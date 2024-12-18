@@ -255,6 +255,21 @@ class TrackingAnimation(Animation):
     def _draw_custom_frame(self):
         raise NotImplementedError
 
+    # Slightly reworking matpltolib _blit_draw method so it is a little more flexible
+    # For example, built-in blitting in matplotlib assumes blitting occurs only INSIDE
+    # axes, so it is not possible to animate labels or titles.
+    # This patch will redraw only the artists (self._drawn_artitsts), but it will blit
+    # the entire figure. This is possibly a little bit slower, but really the difference
+    # is minimal, it is still quite fast
+    def _blit_draw(self, artists):
+        # Handles blitted drawing, which renders only the artists given instead
+        # of the entire figure and the blits the entire figure.
+        # Make a separate pass to draw foreground.
+        for a in artists:
+            self._fig.draw_artist(a)
+        # After rendering all the needed artists, blit the entire figure.
+        self._fig.figure.canvas.blit()
+
     def _get_timestamp(self):
         return (
             f"current fr: {self.current_frame:05} | "
