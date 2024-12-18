@@ -19,7 +19,7 @@ dependencies = [
     "pyarrow~=17.0",
     "tqdm~=4.66.2",
     "pint-pandas~=0.5",
-    "pandas-stubs~=2.2.2.240514",
+    "pandas-stubs~=2.2.3.241126",
     "joblib~=1.4.2",
 ]
 
