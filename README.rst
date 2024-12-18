@@ -6,7 +6,7 @@ PhysBeh
 This repository contains the main function and classes written in Python for
 analysis of tracking data in the Physics for Medicine lab.
 
-The code is written in the format of a Python package (`tracking_physmed`).
+The code is written in the format of a Python package (`physbeh`).
 
 Installation
 ------------
@@ -41,8 +41,8 @@ environments is needed, you can start `here
 
   .. code-block:: bash
 
-    conda create -n tracking_physmed python=3.11
-    conda activate tracking_physmed
+    conda create -n physbeh python=3.11
+    conda activate physbeh
 
 2. Install PhysBeh from source
 ******************************
@@ -52,7 +52,7 @@ available from PyPI.
 
 .. code-block:: bash
 
-  python -m pip install git+https://github.com/FelipeCybis/tracking_physmed.git
+  python -m pip install git+https://github.com/FelipeCybis/physbeh.git
 
 3. Check installation
 *********************
@@ -61,7 +61,7 @@ Check that all tests pass:
 
 .. code-block:: python
 
-  import tracking_physmed
+  import physbeh
 
 If no error is raised, you have installed PyfUS correctly.
 

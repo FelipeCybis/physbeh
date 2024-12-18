@@ -2,7 +2,7 @@ import numpy as np
 import numpy.typing as npt
 import pytest
 
-from tracking_physmed.tracking import Tracking
+from physbeh.tracking import Tracking
 
 
 def test_Tracking(tracking: Tracking):

@@ -1,4 +1,4 @@
-"""Fixtures for the tracking_physmed package."""
+"""Fixtures for the physbeh package."""
 
 import matplotlib
 import numpy as np
@@ -6,7 +6,7 @@ import numpy.typing as npt
 import pandas as pd
 import pytest
 
-from tracking_physmed.tracking import Tracking
+from physbeh.tracking import Tracking
 
 
 def pytest_configure():

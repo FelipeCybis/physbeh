@@ -1,5 +1,5 @@
 [project]
-name = "tracking_physmed"
+name = "physbeh"
 version = "0.0.1.dev"
 description = "Miscellaneous functions for tracking analysis in Python using DeepLabCut at Physics for Medicine"
 authors = [
@@ -24,7 +24,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-all = ["tracking_physmed[docs,test,dev]"]
+all = ["physbeh[docs,test,dev]"]
 docs = [
     "numpydoc~=1.8.0",
     "sphinx~=8.0",

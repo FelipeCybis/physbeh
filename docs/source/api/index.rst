@@ -1,32 +1,32 @@
 API References
 ==============
 
-This is the class and function reference of tracking_physmed.
+This is the class and function reference of physbeh.
 
 .. grid::
 
-  .. grid-item-card:: ``tracking_physmed.tracking``: API to manipulate labeled data
-    :link: tracking_physmed.tracking.html
+  .. grid-item-card:: ``physbeh.tracking``: API to manipulate labeled data
+    :link: physbeh.tracking.html
     :link-type: url
     :columns: 12 12 12 12
     :class-card: sd-shadow-sm
     :margin: 2 2 auto auto
 
-    .. automodule:: tracking_physmed.tracking
+    .. automodule:: physbeh.tracking
 
 .. grid::
 
-  .. grid-item-card:: ``tracking_physmed.plotting``: Visualization of labeled data
-    :link: tracking_physmed.plotting.html
+  .. grid-item-card:: ``physbeh.plotting``: Visualization of labeled data
+    :link: physbeh.plotting.html
     :link-type: url
     :columns: 12 12 12 12
     :class-card: sd-shadow-sm
     :margin: 2 2 auto auto
 
-    .. automodule:: tracking_physmed.plotting
+    .. automodule:: physbeh.plotting
 
 .. toctree::
    :hidden:
 
-   tracking_physmed.tracking.rst
-   tracking_physmed.plotting.rst
+   physbeh.tracking.rst
+   physbeh.plotting.rst

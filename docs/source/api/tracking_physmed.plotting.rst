@@ -1,10 +1,10 @@
-``tracking_physmed.plotting``: : Visualization of labeled data
+``physbeh.plotting``: : Visualization of labeled data
 ==============================================================
 
 
 **Functions**:
 
-.. currentmodule:: tracking_physmed.plotting
+.. currentmodule:: physbeh.plotting
 
 .. autosummary::
    :toctree: generated/

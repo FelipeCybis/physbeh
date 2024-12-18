@@ -2,7 +2,7 @@ import pytest
 from matplotlib.axes import Axes as mpl_Axes
 from matplotlib.figure import Figure as mpl_Figure
 
-from tracking_physmed.plotting import (
+from physbeh.plotting import (
     plot_acceleration,
     plot_angular_acceleration,
     plot_angular_velocity,

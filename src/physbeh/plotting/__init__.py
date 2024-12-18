@@ -1,4 +1,4 @@
-"""Visualisation module for ``tracking_physmed``."""
+"""Visualisation module for ``physbeh``."""
 
 from .plotting import (
     plot_acceleration,

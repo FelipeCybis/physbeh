@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from tracking_physmed.arena.base import BaseArena
+from physbeh.arena.base import BaseArena
 
 
 class RectangularArena(BaseArena):

@@ -10,8 +10,8 @@ from matplotlib.axes import Axes as mpl_Axes
 from matplotlib.figure import Figure as mpl_Figure
 from matplotlib.path import Path as mPath
 
-from tracking_physmed.plotting.animate_decorator import TrackingAnimation
-from tracking_physmed.tracking import Tracking
+from physbeh.plotting.animate_decorator import TrackingAnimation
+from physbeh.tracking import Tracking
 
 
 def anim2d_decorator(plot_function: Callable) -> Callable:
@@ -19,7 +19,7 @@ def anim2d_decorator(plot_function: Callable) -> Callable:
 
     Parameters
     ----------
-    plot_function : tracking_physmed plot function
+    plot_function : physbeh plot function
         Usually, plot function with one axes that returns Figure and Axes.
 
     Returns

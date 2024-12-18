@@ -1,9 +1,9 @@
-.. tracking_physmed documentation master file, created by
+.. physbeh documentation master file, created by
    sphinx-quickstart on Thu Mar  2 17:47:46 2023.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to tracking_physmed's documentation!
+Welcome to physbeh's documentation!
 ============================================
 
 .. toctree::
@@ -19,7 +19,7 @@ Welcome to tracking_physmed's documentation!
    :hidden:
    :caption: Development
 
-   GitHub Repository <https://github.com/FelipeCybis/tracking_physmed>
+   GitHub Repository <https://github.com/FelipeCybis/physbeh>
 
 
 

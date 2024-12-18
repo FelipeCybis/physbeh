@@ -1,4 +1,4 @@
-"""Miscellaneous helper functions for tracking_physmed."""
+"""Miscellaneous helper functions for physbeh."""
 
 from typing import Any
 

@@ -14,10 +14,10 @@ from matplotlib import colors
 from matplotlib.collections import LineCollection
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from tracking_physmed.plotting.animate2d_decorator import anim2d_decorator
-from tracking_physmed.plotting.animate_decorator import Animate_plot, anim_decorator
-from tracking_physmed.tracking import Tracking
-from tracking_physmed.utils import _plot_color_wheel, get_line_collection
+from physbeh.plotting.animate2d_decorator import anim2d_decorator
+from physbeh.plotting.animate_decorator import Animate_plot, anim_decorator
+from physbeh.tracking import Tracking
+from physbeh.utils import _plot_color_wheel, get_line_collection
 
 
 def _check_ax_and_fig(
@@ -301,7 +301,7 @@ def plot_speed(
         If speed is to be thresholded by some value. Default is ``0``.
     only_running_bouts : bool, optional
         If should plot only the running periods using
-        :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
+        :class:`physbeh.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
     plot_only_running_bouts : bool, optional
         Whether or not to plot a background color on periods of running bouts (and not
@@ -423,7 +423,7 @@ def plot_acceleration(
         If speed is to be thresholded by some value. Default is ``0``.
     only_running_bouts : bool, optional
         If should plot only the running periods using
-        :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
+        :class:`physbeh.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
     plot_only_running_bouts : bool, optional
         Whether or not to plot a background color on periods of running bouts (and not
@@ -525,12 +525,12 @@ def plot_wall_proximity(
 ):
     """Plot proximity to specified wall.
 
-    See :class:`tracking_physmed.tracking.Tracking.get_proximity_from_wall`. for more
+    See :class:`physbeh.tracking.Tracking.get_proximity_from_wall`. for more
     information.
 
     Parameters
     ----------
-    trk : tracking_physmed.tracking.Tracking
+    trk : physbeh.tracking.Tracking
         The tracking object.
     wall : str or list of str or tuple of str, optional
         Wall to use for computations. Can be one of ("left", "right", "top",
@@ -539,7 +539,7 @@ def plot_wall_proximity(
         Bodypart to use for computations. Default "probe".
     only_running_bouts : bool, optional
         If should plot only the running periods using
-        :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
+        :class:`physbeh.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
     plot_only_running_bouts : bool, optional
         Whether or not to plot a background color on periods of running bouts (and not
@@ -627,18 +627,18 @@ def plot_center_proximity(
 ):
     """Plot proximity to the center of the environment.
 
-    See :class:`tracking_physmed.tracking.Tracking.get_proximity_from_center`. for more
+    See :class:`physbeh.tracking.Tracking.get_proximity_from_center`. for more
     information.
 
     Parameters
     ----------
-    trk : tracking_physmed.tracking.Tracking
+    trk : physbeh.tracking.Tracking
         The tracking object.
     bodypart : str, optional
         Bodypart to use for computations. Default "probe".
     only_running_bouts : bool, optional
         If should plot only the running periods using
-        :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
+        :class:`physbeh.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
     plot_only_running_bouts : bool, optional
         Whether or not to plot a background color on periods of running bouts (and not
@@ -721,7 +721,7 @@ def plot_corner_proximity(
 ):
     """Plot proximity to specified corner.
 
-    See :class:`tracking_physmed.tracking.Tracking.get_proximity_from_corner`. for more
+    See :class:`physbeh.tracking.Tracking.get_proximity_from_corner`. for more
     information.
 
     Parameters
@@ -735,7 +735,7 @@ def plot_corner_proximity(
         Bodypart to use for computations. Default "probe".
     only_running_bouts : bool, optional
         If should plot only the running periods using
-        :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
+        :class:`physbeh.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
     plot_only_running_bouts : bool, optional
         Whether or not to plot a background color on periods of running bouts (and not
@@ -832,12 +832,12 @@ def plot_angular_velocity(
 ):
     """Plot angular velocity calculated from the vector 'label0' -> 'label1'.
 
-    See :class:`tracking_physmed.tracking.Tracking.get_angular_velocity`, for
+    See :class:`physbeh.tracking.Tracking.get_angular_velocity`, for
     more information.
 
     Parameters
     ----------
-    trk : tracking_physmed.tracking.Tracking
+    trk : physbeh.tracking.Tracking
         The tracking object.
     label0 : str, optional
         Label where the vector will start. Default is ``'neck'``.
@@ -847,7 +847,7 @@ def plot_angular_velocity(
         Whether or not to smooth the direction data. Default is ``False``.
     only_running_bouts : bool, optional
         If should plot only the running periods using
-        :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
+        :class:`physbeh.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
     plot_only_running_bouts : bool, optional
         Whether or not to plot a background color on periods of running bouts (and not
@@ -947,12 +947,12 @@ def plot_angular_acceleration(
 ):
     """Plot angular acceleration calculated from the vector 'label0' -> 'label1'.
 
-    See :class:`tracking_physmed.tracking.Tracking.get_angular_acceleration`, for
+    See :class:`physbeh.tracking.Tracking.get_angular_acceleration`, for
     more information.
 
     Parameters
     ----------
-    trk : tracking_physmed.tracking.Tracking
+    trk : physbeh.tracking.Tracking
         The tracking object.
     label0 : str, optional
         Label where the vector will start. Default is ``'neck'``.
@@ -962,7 +962,7 @@ def plot_angular_acceleration(
         Whether or not to smooth the direction data. Default is ``False``.
     only_running_bouts : bool, optional
         If should plot only the running periods using
-        :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
+        :class:`physbeh.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
     plot_only_running_bouts : bool, optional
         Whether or not to plot a background color on periods of running bouts (and not
@@ -1041,7 +1041,7 @@ def plot_running_bouts(
 ):
     """Plot the running periods of the animal.
 
-    See :class:`tracking_physmed.tracking.Tracking.get_running_bouts`.
+    See :class:`physbeh.tracking.Tracking.get_running_bouts`.
 
     Parameters
     ----------
@@ -1135,7 +1135,7 @@ def plot_position_2d(
         ``["neck", "probe"]``.
     only_running_bouts : bool, optional
         If should plot only the running periods using
-        :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
+        :class:`physbeh.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
     cmap : str, optional
         The colormap to use for the plot. Default is ``"hsv"``.
@@ -1548,7 +1548,7 @@ def plot_head_direction(
         Whether or not to smooth the direction data. Default is ``False``.
     only_running_bouts : bool, optional
         If should plot only the running periods using
-        :class:`tracking_physmed.tracking.Tracking.get_running_bouts` function. Default
+        :class:`physbeh.tracking.Tracking.get_running_bouts` function. Default
         is ``False``.
     plot_only_running_bouts : bool, optional
         Whether or not to plot a background color on periods of running bouts (and not

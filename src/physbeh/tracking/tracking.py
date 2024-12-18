@@ -14,8 +14,8 @@ from joblib import delayed
 from scipy import signal
 from scipy.stats import multivariate_normal
 
-from tracking_physmed.arena import BaseArena
-from tracking_physmed.utils import (
+from physbeh.arena import BaseArena
+from physbeh.utils import (
     ProgressParallel,
     custom_2d_sigmoid,
     custom_sigmoid,
@@ -332,7 +332,7 @@ class Tracking:
         dataframe: pd.DataFrame | None = None,
         fps: float | None = None,
     ):
-        """Create a Tracking object from a `tracking_physmed.tracking.Tracking` object.
+        """Create a Tracking object from a `physbeh.tracking.Tracking` object.
 
         Parameters
         ----------

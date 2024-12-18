@@ -14,8 +14,8 @@ from matplotlib.backend_bases import MouseEvent
 from matplotlib.figure import Figure as mpl_Figure
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from tracking_physmed.arena import BaseArena
-from tracking_physmed.tracking import Tracking
+from physbeh.arena import BaseArena
+from physbeh.tracking import Tracking
 
 
 def anim_decorator(plot_function: Callable) -> Callable:
@@ -23,7 +23,7 @@ def anim_decorator(plot_function: Callable) -> Callable:
 
     Parameters
     ----------
-    plot_function : tracking_physmed plot function
+    plot_function : physbeh plot function
         Usually, plot function with one axes that returns Figure and Axes.
 
     Returns

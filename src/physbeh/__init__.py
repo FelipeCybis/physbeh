@@ -2,7 +2,7 @@
 
 from importlib import metadata
 
-__version__ = metadata.version("tracking-physmed")
+__version__ = metadata.version("physbeh")
 
 from . import io, plotting, tracking, utils
 from .io import load_tracking

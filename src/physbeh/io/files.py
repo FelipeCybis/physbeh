@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 import pint_pandas  # noqa: F401
 
-from tracking_physmed.arena import RectangularArena
-from tracking_physmed.tracking import Tracking, calculate_rectangle_cm_per_pixel
+from physbeh.arena import RectangularArena
+from physbeh.tracking import Tracking, calculate_rectangle_cm_per_pixel
 
 
 def _check_filename(

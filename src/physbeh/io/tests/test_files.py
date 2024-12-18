@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from tracking_physmed import load_tracking
-from tracking_physmed.tracking import Tracking
+from physbeh import load_tracking
+from physbeh.tracking import Tracking
 
 DATA_PATH = Path(__file__).parent / "data"
 

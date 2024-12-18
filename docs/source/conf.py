@@ -6,18 +6,18 @@
 import os
 import sys
 
-import tracking_physmed
+import physbeh
 
 sys.path.insert(0, os.path.abspath("../../src"))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "tracking_physmed"
+project = "physbeh"
 copyright = "2023, Felipe Cybis Pereira"
 author = "Felipe Cybis Pereira"
 
-current_version = tracking_physmed.__version__
+current_version = physbeh.__version__
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
@@ -55,7 +55,7 @@ autodoc_typehints = "none"
 numpydoc_show_class_members = False
 numpydoc_xref_param_type = True
 numpydoc_xref_aliases = {
-    "Tracking": "tracking_physmed.tracking.Tracking",
+    "Tracking": "physbeh.tracking.Tracking",
     "path-like": ":term:`path-like <python:path-like object>`",
     "path_like": ":term:`path-like <python:path-like object>`",
     "function": "callable",
@@ -133,7 +133,7 @@ html_theme_options = {
 html_context = {
     "github_url": "https://github.com",
     "github_user": "FelipeCybis",
-    "github_repo": "tracking_physmed",
+    "github_repo": "physbeh",
     "github_version": "main",
     "doc_path": "docs/source",
 }

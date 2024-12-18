@@ -1,14 +1,14 @@
-``tracking_physmed.tracking``: API to manipulate labeled data
+``physbeh.tracking``: API to manipulate labeled data
 =============================================================
 
 
-.. automodule:: tracking_physmed.tracking
+.. automodule:: physbeh.tracking
    :no-members:
    :no-inherited-members:
 
 **Classes**:
 
-.. currentmodule:: tracking_physmed.tracking
+.. currentmodule:: physbeh.tracking
 
 .. autosummary::
    :toctree: generated/
@@ -18,7 +18,7 @@
 
 **Functions**:
 
-.. currentmodule:: tracking_physmed.tracking
+.. currentmodule:: physbeh.tracking
 
 .. autosummary::
    :toctree: generated/
