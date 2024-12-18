@@ -8,6 +8,7 @@ import sys
 
 import physbeh
 
+sys.path.append(os.path.abspath("./_ext"))
 sys.path.insert(0, os.path.abspath("../../src"))
 
 # -- Project information -----------------------------------------------------
@@ -18,6 +19,18 @@ copyright = "2023, Felipe Cybis Pereira"
 author = "Felipe Cybis Pereira"
 
 current_version = physbeh.__version__
+
+# Latest release version
+latest_release = (
+    os.popen(
+        "git describe --tags " + os.popen("git rev-list --tags --max-count=1").read()
+    )
+    .read()
+    .strip()
+)
+
+# Cname of the project
+cname = os.getenv("DOCUMENTATION_CNAME", "http://10.113.113.118:8002")
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
@@ -26,7 +39,8 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_copybutton",
     "numpydoc",
-    "sphinx.ext.viewcode",
+    "sphinx.ext.linkcode",
+    "gh_substitutions",
     "sphinx_design",
 ]
 
@@ -119,6 +133,14 @@ html_css_files = [
     "theme_layout.css",  # control layout width
 ]
 
+
+def get_version_match(semver):
+    """Evaluate the version match for the multi-documentation."""
+    if semver.endswith("dev0"):
+        return "dev"
+    return semver
+
+
 html_theme_options = {
     "icon_links": [
         {
@@ -128,6 +150,11 @@ html_theme_options = {
         },
     ],
     "use_edit_page_button": True,
+    "check_switcher": False,
+    "switcher": {
+        "json_url": f"{cname}/version/latest/_static/versions.json",
+        "version_match": get_version_match(current_version),
+    },
     "navbar_end": ["theme-switcher", "navbar-icon-links"],
 }
 html_context = {
@@ -137,3 +164,56 @@ html_context = {
     "github_version": "main",
     "doc_path": "docs/source",
 }
+# Add banner in case version is not stable
+if "dev" in current_version:
+    html_theme_options["announcement"] = (
+        "<p>This is the development documentation "
+        f"of PhysBeh ({current_version}) "
+        '<a class="sd-sphinx-override sd-badge sd-text-wrap '
+        'sd-btn-outline-dark reference external" '
+        f'href="{cname}/version/{latest_release}">'
+        f"<span>Switch to stable version ({latest_release})</span></a></p>"
+    )
+
+
+# The following is used by sphinx.ext.linkcode to provide links to github
+def linkcode_resolve(domain, info):
+    if domain != "py":
+        return None
+    if not info["module"]:
+        return None
+
+    revision = "master"
+    package = "pyfus"
+    url_fmt = (
+        "https://github.com/Iconeus/pyfus/blob/{revision}/"
+        "src/{package}/{path}#L{lineno}"
+    )
+
+    class_name = info["fullname"].split(".")[0]
+    module = __import__(info["module"], fromlist=[class_name])
+    obj = operator.attrgetter(info["fullname"])(module)
+    # Unwrap the object to get the correct source
+    # file in case that is wrapped by a decorator
+    obj = inspect.unwrap(obj)
+
+    try:
+        # get filepath from object
+        fn = inspect.getsourcefile(obj)
+    except Exception:
+        fn = None
+    if not fn:
+        return
+
+    # Don't include filenames from outside this package's tree
+    if os.path.dirname(__import__(package).__file__) not in fn:
+        return
+
+    # get filepath relative to package root (will be the same in github)
+    fn = os.path.relpath(fn, start=os.path.dirname(__import__(package).__file__))
+    try:
+        # get permalink of object, if possible
+        lineno = inspect.getsourcelines(obj)[1]
+    except Exception:
+        lineno = ""
+    return url_fmt.format(revision=revision, package=package, path=fn, lineno=lineno)
