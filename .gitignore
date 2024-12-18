@@ -11,6 +11,7 @@ venv/
 venv*/
 .venv*/
 .python-version
+*.lock
 
 # VS Code
 .vscode
@@ -18,5 +19,7 @@ venv*/
 # Example data
 .mp4
 
-# Sphinx build folder
+# Documentation-reated
 build/
+docs/source/api/generated/
+docs/source/auto_examples/

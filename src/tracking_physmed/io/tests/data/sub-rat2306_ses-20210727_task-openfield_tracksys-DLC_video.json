@@ -1,0 +1,21 @@
+{
+    "PixelCoordinates": {
+        "LongName": "Important pixel coordinates in the video recording.",
+        "top_left": [
+            34,
+            25
+        ],
+        "top_right": [
+            399,
+            30
+        ],
+        "bottom_left": [
+            34,
+            389
+        ],
+        "bottom_right": [
+            393,
+            393
+        ]
+    }
+}

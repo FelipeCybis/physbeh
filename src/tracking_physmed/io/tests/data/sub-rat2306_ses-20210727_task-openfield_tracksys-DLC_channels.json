@@ -1,0 +1,12 @@
+{
+    "name": {
+        "LongName": "The name of the channel. It can be '{tracked_point}_x', '{tracked_point}_y' ot '{tracked_point}_likelihood'. When the name has 'likelihood' on it, corresponds to the likelihood of the 'x' and 'y' position of the {tracked_point} given by the tracking system."
+    },
+    "scorer": {
+        "LongName": "The DeepLabCut scorer name and it usually contains information about which type of network was used as well as the shuffle and the snapshot. Check the DeepLabCut docs for more information."
+    },
+    "units/px": {
+        "LongName": "The spatial units per pixel ratio.",
+        "Description": "Units ratio for the video used in the tracking system."
+    }
+}
