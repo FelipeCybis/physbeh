@@ -15,7 +15,7 @@ def test_Tracking(tracking: Tracking):
 
 def test_fps(tracking: Tracking):
     assert tracking.fps == 50
-    with pytest.raises(AttributeError, match="has no setter"):
+    with pytest.raises(AttributeError, match="(has no setter|can't set attribute)"):
         tracking.fps = 40
 
 
@@ -24,7 +24,7 @@ def test_time(tracking: Tracking):
     time = np.arange(len(tracking.Dataframe)) / tracking.fps
     np.testing.assert_equal(tracking.time, time)
     # cannot be set
-    with pytest.raises(AttributeError, match="has no setter"):
+    with pytest.raises(AttributeError, match="(has no setter|can't set attribute)"):
         tracking.time = 40
 
 
