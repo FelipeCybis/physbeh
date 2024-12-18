@@ -1,0 +1,4 @@
+FROM myoung34/github-runner:latest
+
+# Add missing dependencies for VTK and OpenCV
+RUN apt-get update && apt-get install -y libxrender1 ffmpeg libsm6 libxext6

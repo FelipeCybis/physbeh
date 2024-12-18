@@ -1,0 +1,38 @@
+# This workflow will run specific workflows depending on commmit flags.
+
+name: Workflows
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  check_commit_flags:
+    uses: ./.github/workflows/check_commit_flags.yml
+    with:
+      event_name: ${{ github.event_name }}
+  call-linting:
+    needs: check_commit_flags
+    if: ${{ needs.check_commit_flags.outputs.run-linting == 'true' }}
+    uses: ./.github/workflows/linting.yml
+  call-tests:
+    needs: [check_commit_flags, call-linting]
+    if: |
+      !cancelled() &&
+      (needs.call-linting.result == 'success' || needs.call-linting.result == 'skipped') &&
+      needs.check_commit_flags.outputs.run-tests == 'true'
+    uses: ./.github/workflows/testing.yml
+    # Secrets must be passed explicitly to called workflows.
+    # secrets:
+    #   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  call-docs:
+    needs: [check_commit_flags, call-linting]
+    if: |
+      !cancelled() &&
+      (needs.call-linting.result == 'success' || needs.call-linting.result == 'skipped') &&
+      needs.check_commit_flags.outputs.run-docs == 'true'
+    uses: ./.github/workflows/build_docs.yml

@@ -1,0 +1,10 @@
+---
+
+services:
+  runner:
+    image: tracking-physmed-github-runner-win:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.windows
+    env_file:
+      - ./variables.env

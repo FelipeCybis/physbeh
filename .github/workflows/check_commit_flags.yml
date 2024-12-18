@@ -1,0 +1,54 @@
+# This workflow checks flags in the commit message and sets environment variables that
+# will allow running future workflows accordingly.
+
+name: Check flags in commit message
+
+on:
+  workflow_call:
+    inputs:
+      event_name:
+        required: true
+        type: string
+    outputs:
+      run-linting:
+        value: ${{ jobs.check_commit_flags.outputs.run-linting }}
+      run-tests:
+        value: ${{ jobs.check_commit_flags.outputs.run-tests }}
+      run-docs:
+        value: ${{ jobs.check_commit_flags.outputs.run-docs }}
+
+jobs:
+  check_commit_flags:
+    name: Check commit message flags
+    runs-on: ubuntu-latest
+    outputs:
+      run-linting: ${{ steps.parser.outputs.runLinting }}
+      run-tests: ${{ steps.parser.outputs.runTests }}
+      run-docs: ${{ steps.parser.outputs.runDocs }}
+    # Getting the commit message from a pull request is different than from a push.
+    # Using if conditions to get either way.
+    steps:
+      - name: Checkout pythmed
+        uses: actions/checkout@v4
+      - name: Parse commit message and set outputs
+        id: parser
+        run: |
+          head_commit_msg=$(git show -s --format=%s)
+          echo "runLinting=false" >> $GITHUB_OUTPUT
+          echo "runTests=false" >> $GITHUB_OUTPUT
+          echo "runDocs=false" >> $GITHUB_OUTPUT
+          if  ! [[ $head_commit_msg =~ ^\[.*\] ]]; then
+            echo "runLinting=true" >> $GITHUB_OUTPUT
+            echo "runTests=true" >> $GITHUB_OUTPUT
+            echo "runDocs=true" >> $GITHUB_OUTPUT
+          else
+            if [[ $head_commit_msg =~ \[run\ linting\] ]]; then
+              echo "runLinting=true" >> $GITHUB_OUTPUT
+            fi
+            if [[ $head_commit_msg =~ \[run\ tests\] ]]; then
+              echo "runTests=true" >> $GITHUB_OUTPUT
+            fi
+            if [[ $head_commit_msg =~ \[run\ docs\] ]]; then
+              echo "runDocs=true" >> $GITHUB_OUTPUT
+            fi
+          fi
