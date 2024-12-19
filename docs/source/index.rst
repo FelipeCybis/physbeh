@@ -39,6 +39,7 @@ Welcome to PhysBeh's documentation!
 
 
     quickstart
+    auto_examples/index
     api/index
     changes/whats_new
 

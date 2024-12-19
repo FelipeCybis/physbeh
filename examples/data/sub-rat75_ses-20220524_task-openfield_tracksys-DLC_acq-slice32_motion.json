@@ -1,0 +1,20 @@
+{
+    "InstitutionAddress": "2-10 rue d'Oradour-sur-Glane, 75015 Paris, France",
+    "InstitutionName": "Institute Physics for Medicine Paris",
+    "Manufacturer": "DeepLabCut",
+    "TaskDescription": "Subjects explored an open arena unrestrained and uninterrupted.",
+    "TaskName": "openfield",
+    "TrackingSystemName": "DLC",
+    "ORNTChannelCount": 0,
+    "VELChannelCount": 0,
+    "ACCELChannelCount": 0,
+    "ANGACCELChannelCount": 0,
+    "GYROChannelCount": 0,
+    "JNTANGChannelCount": 0,
+    "MAGNChannelCount": 0,
+    "SamplingFrequency": 50.0,
+    "MotionChannelCount": 15,
+    "TrackedPointsCount": 5,
+    "POSChannelCount": 10,
+    "RecordingDuration": 720.0
+}
