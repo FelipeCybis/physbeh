@@ -245,17 +245,67 @@ def plot_array(
 @overload
 def plot_speed(  # numpydoc ignore=GL08
     trk: Tracking,
+    bodypart: str = "body",
     *,
-    animate: Literal[True],
+    speed_axis: Literal["x", "y", "xy"] = "xy",
+    euclidean=False,
+    smooth=True,
+    speed_cutout=0,
+    only_running_bouts: bool = False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (12, 6),
+    animate: Literal[True] = True,
+    **ax_kwargs,
 ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
 
 
 @overload
 def plot_speed(  # numpydoc ignore=GL08
     trk: Tracking,
+    bodypart: str = "body",
     *,
-    animate: Literal[False],
+    speed_axis: Literal["x", "y", "xy"] = "xy",
+    euclidean=False,
+    smooth=True,
+    speed_cutout=0,
+    only_running_bouts: bool = False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (12, 6),
+    animate: Literal[False] = False,
+    **ax_kwargs,
 ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
+
+
+@overload
+def plot_speed(  # numpydoc ignore=GL08
+    trk: Tracking,
+    bodypart: str = "body",
+    *,
+    speed_axis: Literal["x", "y", "xy"] = "xy",
+    euclidean=False,
+    smooth=True,
+    speed_cutout=0,
+    only_running_bouts: bool = False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (12, 6),
+    animate: bool,
+    **ax_kwargs,
+) -> (
+    tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]
+    | tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]
+): ...
 
 
 @anim_decorator
@@ -274,8 +324,6 @@ def plot_speed(
     figure: matplotlib.figure.Figure | None = None,
     figsize: tuple[float, float] = (12, 6),
     animate: bool = False,
-    animate_video: bool = False,
-    animate_fus: bool = False,
     **ax_kwargs,
 ) -> (
     tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]
@@ -321,11 +369,6 @@ def plot_speed(
     animate : bool, optional
         If set to ``True``, plots an animation with the video of the Tracking class.
         Default is ``False``.
-    animate_video : bool, optional
-        Whether to animate the plot with the video recording. Default is ``False``.
-    animate_fus : bool, optional
-        Whether to animate the plot with the functional Ultrasound video. Default is
-        ``False``.
     **ax_kwargs
         Keywords to pass to ``ax.set(**ax_kwargs)``.
 
