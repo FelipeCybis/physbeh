@@ -201,7 +201,7 @@ class Tracking:
         numpy.ndarray
             The timing array.
         """
-        return np.arange(len(self.Dataframe)) / self.fps
+        return (self.Dataframe.index / self.fps).to_numpy()
 
     @property
     def pcutout(self) -> float:  # numpydoc ignore=PR02
@@ -250,27 +250,6 @@ class Tracking:
         self._speed_smooth_window = signal.windows.gaussian(M=m, std=sigma)
         self._speed_smooth_window /= sum(self._speed_smooth_window)
 
-    @property
-    def scan(self):
-        """Related ``pythmed.scan.Scan`` object.
-
-        Returns
-        -------
-        pythmed.scan.Scan
-            The associated scan.
-        """
-        return self._scan
-
-    def attach_scan(self, Scan):
-        """Attach the corresponding Scan object to the Tracking.
-
-        Parameters
-        ----------
-        Scan : pythmed.scan.Scan
-            The associated scan.
-        """
-        self._scan = Scan
-
     def __init__(
         self,
         data: pd.DataFrame,
@@ -298,7 +277,8 @@ class Tracking:
         self._arena = BaseArena()
         self._space_units_per_pixel = 1.0
         self._pcutout = 0.8
-        self._speed_smooth_window = signal.windows.gaussian(M=101, std=6)
+        M = min(101, self.nframes)
+        self._speed_smooth_window = signal.windows.gaussian(M=M, std=6)
         self._speed_smooth_window /= sum(self._speed_smooth_window)
 
         self._scan = None
@@ -322,7 +302,7 @@ class Tracking:
             "-----------------------------------------------------------"
         )
 
-    def __getitem__(self, slice_object: tuple) -> Tracking:
+    def __getitem__(self, slice_object: tuple | slice) -> Tracking:
         return self.__class__.from_trk(self, self.Dataframe[slice_object])
 
     @classmethod
@@ -331,7 +311,7 @@ class Tracking:
         trk: Tracking,
         dataframe: pd.DataFrame | None = None,
         fps: float | None = None,
-    ):
+    ) -> Tracking:
         """Create a Tracking object from a `physbeh.tracking.Tracking` object.
 
         Parameters
@@ -399,6 +379,7 @@ class Tracking:
         self,
         label0: str = "neck",
         label1: str = "probe",
+        *,
         mode: str = "degree",
         smooth: bool = False,
         only_running_bouts: Literal[False] = False,
@@ -407,12 +388,27 @@ class Tracking:
     @overload
     def get_direction_array(  # numpydoc ignore=GL08
         self,
-        label0: str = ...,
-        label1: str = ...,
-        mode: str = ...,
-        smooth: bool = ...,
+        label0: str = "neck",
+        label1: str = "probe",
+        *,
+        mode: str = "degree",
+        smooth: bool = False,
         only_running_bouts: Literal[True] = True,
     ) -> tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]: ...
+
+    @overload
+    def get_direction_array(  # numpydoc ignore=GL08
+        self,
+        label0: str = "neck",
+        label1: str = "probe",
+        *,
+        mode: str = "degree",
+        smooth: bool = False,
+        only_running_bouts: bool,
+    ) -> (
+        tuple[npt.NDArray, npt.NDArray, npt.NDArray]
+        | tuple[list[npt.NDArray], list[npt.NDArray], list[npt.NDArray]]
+    ): ...
 
     def get_direction_array(
         self,
@@ -1042,7 +1038,9 @@ class Tracking:
         # False to True
         change_idx = np.where(np.diff(self.running_bouts))[0]
         # getting length from one change_idx to the next one
-        bout_lengths = np.insert(np.diff(change_idx), 0, change_idx[0])
+        bout_lengths = np.diff(change_idx)
+        if len(change_idx) > 0:
+            bout_lengths = np.insert(np.diff(change_idx), 0, change_idx[0])
 
         # This for loop gets every False bout (no running) shorter than 15 seconds,
         # either in the beginning or between running bouts and sets them to True
@@ -1057,7 +1055,11 @@ class Tracking:
         # again, getting indices of change in the new running_bouts array
         temp_change_idx = np.where(np.diff(self.running_bouts))[0]
         # again, getting lengths from one temp_change_idx to the next one
-        temp_bout_lengths = np.insert(np.diff(temp_change_idx), 0, temp_change_idx[0])
+        temp_bout_lengths = np.diff(temp_change_idx)
+        if len(temp_change_idx) > 0:
+            temp_bout_lengths = np.insert(
+                np.diff(temp_change_idx), 0, temp_change_idx[0]
+            )
 
         # This for loop gets every True bout (running) shorter then 15 seconds,
         # either in the beginning or between no running bouts and sets them to False (no
@@ -1155,7 +1157,9 @@ class Tracking:
         speed_bouts = self.get_speed(
             bodypart="body", smooth=True, only_running_bouts=True
         )[0]
-        bout_lenghts = [t_bout[-1] - t_bout[0] for t_bout in self.time_bouts]
+        bout_lenghts = [
+            t_bout[-1] - t_bout[0] for t_bout in self.time_bouts if t_bout.size > 0
+        ]
         info_dict["total_running_time"] = sum(bout_lenghts)
         info_dict["total_distance"] = np.concatenate(speed_bouts).mean() * sum(
             bout_lenghts

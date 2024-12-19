@@ -257,8 +257,8 @@ def plot_speed(  # numpydoc ignore=GL08
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
-    figsize: tuple[float, float] = (12, 6),
-    animate: Literal[True] = True,
+    figsize: tuple[float, float] = (8, 4),
+    animate: Literal[True],
     **ax_kwargs,
 ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
 
@@ -278,7 +278,7 @@ def plot_speed(  # numpydoc ignore=GL08
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
-    figsize: tuple[float, float] = (12, 6),
+    figsize: tuple[float, float] = (8, 4),
     animate: Literal[False] = False,
     **ax_kwargs,
 ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
@@ -299,7 +299,7 @@ def plot_speed(  # numpydoc ignore=GL08
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
-    figsize: tuple[float, float] = (12, 6),
+    figsize: tuple[float, float] = (8, 4),
     animate: bool,
     **ax_kwargs,
 ) -> (
@@ -322,7 +322,7 @@ def plot_speed(
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
-    figsize: tuple[float, float] = (12, 6),
+    figsize: tuple[float, float] = (8, 4),
     animate: bool = False,
     **ax_kwargs,
 ) -> (
@@ -1556,25 +1556,92 @@ def plot_position(
     return figure, (ax_x, ax_y)
 
 
+@overload
+def plot_head_direction(  # numpydoc ignore=GL08
+    trk: Tracking,
+    head_direction_vector_labels=["neck", "probe"],
+    *,
+    ang: Literal["deg", "rad"] = "deg",
+    smooth: bool = False,
+    only_running_bouts: bool = False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    label: str = "head direction",
+    cmap: str = "hsv",
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (8, 4),
+    animate: Literal[True],
+    **ax_kwargs,
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
+
+
+@overload
+def plot_head_direction(  # numpydoc ignore=GL08
+    trk: Tracking,
+    head_direction_vector_labels=["neck", "probe"],
+    *,
+    ang: Literal["deg", "rad"] = "deg",
+    smooth: bool = False,
+    only_running_bouts: bool = False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    label: str = "head direction",
+    cmap: str = "hsv",
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (8, 4),
+    animate: Literal[False] = False,
+    **ax_kwargs,
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
+
+
+@overload
+def plot_head_direction(  # numpydoc ignore=GL08
+    trk: Tracking,
+    head_direction_vector_labels=["neck", "probe"],
+    *,
+    ang: Literal["deg", "rad"] = "deg",
+    smooth: bool = False,
+    only_running_bouts: bool = False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    label: str = "head direction",
+    cmap: str = "hsv",
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (8, 4),
+    animate: bool,
+    **ax_kwargs,
+) -> (
+    tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]
+    | tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]
+): ...
+
+
 @anim_decorator
 def plot_head_direction(
     trk: Tracking,
     head_direction_vector_labels=["neck", "probe"],
-    ang="deg",
-    smooth=False,
-    only_running_bouts=False,
+    ang: Literal["deg", "rad"] = "deg",
+    smooth: bool = False,
+    only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
     color: tuple[float, float, float, float] | None = None,
     alpha: float = 1.0,
-    label="head direction",
-    cmap="hsv",
-    axes=None,
-    figure=None,
-    figsize=(12, 6),
-    animate=False,
-    animate_video=False,
-    animate_fus=False,
+    label: str = "head direction",
+    cmap: str = "hsv",
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (8, 4),
+    animate: bool = False,
     **ax_kwargs,
+) -> (
+    tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]
+    | tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]
 ):
     """Plot head direction using `head_direction_vector_labels`.
 
@@ -1618,11 +1685,6 @@ def plot_head_direction(
     animate : bool, optional
         If set to `True`, plots an animation with the video of the Tracking class.
         Default is ``False``.
-    animate_video : bool, optional
-        Whether to animate the plot with the video recording. Default is ``False``.
-    animate_fus : bool, optional
-        Whether to animate the plot with the functional Ultrasound video. Default is
-        ``False``.
     **ax_kwargs
         Additional keyword arguments to pass to the axes.
 

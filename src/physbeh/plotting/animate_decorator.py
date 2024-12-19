@@ -54,6 +54,12 @@ def anim_decorator(plot_function: Callable) -> Callable:
         """
         anim_video = kwargs.pop("animate_video", False)
         do_anim = kwargs.pop("animate", False)
+        keys = list(kwargs.keys())
+        anim_kwargs = {
+            k.replace("animate__", ""): kwargs.pop(k)
+            for k in keys
+            if k.startswith("animate__")
+        }
         fig, ax = plot_function(*args, **kwargs)
         if anim_video or do_anim:
             Trk = [arg for arg in args if isinstance(arg, Tracking)]
@@ -72,6 +78,7 @@ def anim_decorator(plot_function: Callable) -> Callable:
                 video_path=Trk[0].video_filepath,
                 arena=Trk[0].arena,
                 show_timestamp=True,
+                **anim_kwargs,
             )
             return fig, ax, anim
 
@@ -116,6 +123,9 @@ class TrackingAnimation(Animation):
         If ``True``, the timestamp will be shown on the plot. Default is ``True``.
     other_artists : list, optional
         Other artists to be plotted on the axes. Default is ``[]``.
+    blit : bool, optional
+        If ``True``, the animation will be blitted (see matplotlib's blitting). Default
+        is ``True``.
 
     Attributes
     ----------
@@ -159,6 +169,7 @@ class TrackingAnimation(Animation):
         interactive: bool = True,
         show_timestamp: bool = True,
         other_artists: list = [],
+        blit=True,
     ):
         ## Creating custom animation inheriting matplotlib Animation class
         self.is_playing: bool = True
@@ -170,7 +181,7 @@ class TrackingAnimation(Animation):
         self.frame_step: int = 1
         self.current_frame: int = 0
 
-        self._interval = 50
+        self._interval = 1
         event_source = figure.canvas.new_timer(interval=self._interval)
         self._repeat = True
 
@@ -180,8 +191,10 @@ class TrackingAnimation(Animation):
         self._framedata = range(0, self.n_frames, self.frame_step)
         self._drawn_artists = []
 
-        super().__init__(fig=figure, event_source=event_source, blit=True)
+        super().__init__(fig=figure, event_source=event_source, blit=blit)
         self._fig = figure
+        # self._fig.canvas.mpl_disconnect(self._first_draw_id)
+
         self.ax = axes
         # self._drawn_artists += images
         if video_path is not None:
@@ -206,6 +219,8 @@ class TrackingAnimation(Animation):
         # every 1 ms, but rather it will update as fast as possible
         self.interval_limit = 1
         if not self._blit:
+            self._interval = 50
+            self.event_source.interval = int(self._interval)
             self.interval_limit = 100
             warnings.warn(
                 "Matplotlib figure does not support blit. Animation will not be "
@@ -432,7 +447,7 @@ class Animate_plot(TrackingAnimation):
 
         self.extent = arena.get_extent(camera_width, camera_height)
 
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
+        self.cap.set(cv2.CAP_PROP_POS_MSEC, self.current_time * 1000)
         self.max_frames = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
         _, frame = self.cap.read()
 
@@ -448,7 +463,7 @@ class Animate_plot(TrackingAnimation):
 
     def grab_frame(self):
         """Grab frame from video and update the axes."""
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
+        self.cap.set(cv2.CAP_PROP_POS_MSEC, self.current_time * 1000)
         _, frame = self.cap.read()
 
         self.vid.set_array(frame[self.y_slice, self.x_slice, ::-1])
