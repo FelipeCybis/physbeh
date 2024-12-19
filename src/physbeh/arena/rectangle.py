@@ -93,12 +93,12 @@ class RectangularArena(BaseArena):
         return self._px_top_right
 
     @property
-    def spatial_units(self) -> float:
+    def spatial_units(self) -> str:
         """The spatial units used in the arena.
 
         Returns
         -------
-        float
+        str
             The spatial units used in the arena.
         """
         return self._spatial_units
@@ -133,6 +133,34 @@ class RectangularArena(BaseArena):
         self._px_bottom_right = px_bottom_right
         self._px_top_left = px_top_left
         self._px_top_right = px_top_right
+
+    def __repr__(self) -> str:
+        """Representation of the arena."""
+        norm = max(self.width, self.height)
+        width = int(5 * self.width / norm)
+        height = int(5 * self.height / norm)
+
+        left_len = max(len(f"{self.top_left} "), len(f"{self.bottom_left} "))
+
+        ascii_representation = f"{self.top_left}"
+        ascii_representation += " " * (left_len - len(f"{self.top_left}"))
+        ascii_representation += "+" + "-" * width
+        ascii_representation += f"+ {self.top_right}\n"
+
+        for _ in range(height):
+            ascii_representation += " " * left_len + "|" + " " * width + "|\n"
+        ascii_representation += (
+            f"{self.bottom_left}"
+            + " " * (left_len - len(f"{self.bottom_left}"))
+            + "+"
+            + "-" * width
+            + f"+ {self.bottom_right}\n"
+        )
+        return (
+            f"{self.__class__.__name__} "
+            f"({self.space_units_per_pixel:.3f} {self.spatial_units}/px)"
+            f"\n{ascii_representation}"
+        )
 
     def calculate_rectangle_per_pixel(self) -> float:
         """Helper function to calculate the cm per pixel ratio in a rectangle.

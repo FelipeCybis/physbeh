@@ -4,7 +4,7 @@ from importlib import metadata
 
 __version__ = metadata.version("physbeh")
 
-from . import io, plotting, tracking, utils
+from . import arena, io, plotting, tracking, utils
 from .io import load_tracking
 
-__all__ = ["load_tracking", "plotting", "tracking", "utils", "io"]
+__all__ = ["load_tracking", "plotting", "tracking", "utils", "io", "arena"]
