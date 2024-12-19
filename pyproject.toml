@@ -38,7 +38,7 @@ test = [
 ]
 dev = [
     "ipykernel~=6.29.3",
-    "ruff~=0.3.0",
+    "ruff~=0.8.4",
     "pre-commit",
 ]
 
