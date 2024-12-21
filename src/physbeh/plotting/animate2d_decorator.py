@@ -67,6 +67,7 @@ def anim2d_decorator(plot_function: Callable) -> Callable:
             anim = Animate_plot2D(
                 figure=fig,
                 axes=ax,
+                video_axes=None,
                 time_array=Trk[0].time,
                 video_path=Trk[0].video_filepath,
                 arena=Trk[0].arena,
@@ -123,17 +124,17 @@ class Animate_plot2D(TrackingAnimation):
         camera_height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
         camera_width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         if y_crop[-1] < 0:
-            y_crop[1] = int(camera_height)
+            y_crop = (y_crop[0], int(camera_height))
 
         if x_crop[1] < 0:
-            x_crop[1] = int(camera_width)
+            x_crop = (x_crop[0], int(camera_width))
 
         self.y_slice = slice(*y_crop)
         self.x_slice = slice(*x_crop)
 
         self.extent = arena.get_extent(camera_width, camera_height)
 
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
+        self.cap.set(cv2.CAP_PROP_POS_MSEC, self.current_time * 1000)
         self.max_frames = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
         _, frame = self.cap.read()
 
@@ -154,7 +155,7 @@ class Animate_plot2D(TrackingAnimation):
 
     def grab_frame(self):
         """Grab frame from video and update the axes."""
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
+        self.cap.set(cv2.CAP_PROP_POS_MSEC, self.current_time * 1000)
         _, frame = self.cap.read()
 
         self.vid.set_array(frame[self.y_slice, self.x_slice, ::-1])

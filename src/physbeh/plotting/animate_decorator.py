@@ -7,15 +7,28 @@ from functools import wraps
 from typing import Any
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy.typing as npt
 from matplotlib.animation import Animation
 from matplotlib.axes import Axes as mpl_Axes
 from matplotlib.backend_bases import MouseEvent
 from matplotlib.figure import Figure as mpl_Figure
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from physbeh.arena import BaseArena
+from physbeh.plotting.figure import BehFigure
 from physbeh.tracking import Tracking
+
+
+def _check_ax_and_fig(ax, fig, **fig_kwargs) -> tuple[mpl_Axes, mpl_Figure]:
+    if ax is None:
+        if fig is None:
+            fig = plt.figure(**fig_kwargs)
+        ax = fig.add_subplot(111)
+    else:
+        if fig is None:
+            fig = ax.figure
+        assert fig == ax.figure, "Axes and figure must be from the same object."
+    return ax, fig
 
 
 def anim_decorator(plot_function: Callable) -> Callable:
@@ -60,20 +73,24 @@ def anim_decorator(plot_function: Callable) -> Callable:
             for k in keys
             if k.startswith("animate__")
         }
-        fig, ax = plot_function(*args, **kwargs)
-        if anim_video or do_anim:
-            Trk = [arg for arg in args if isinstance(arg, Tracking)]
-            if not Trk:
-                Trk = [
-                    value for value in kwargs.values() if isinstance(value, Tracking)
-                ]
 
-            if Trk[0].video_filepath is None:
-                return fig, ax
+        Trk = [arg for arg in args if isinstance(arg, Tracking)]
+        if not Trk:
+            Trk = [value for value in kwargs.values() if isinstance(value, Tracking)]
 
+        axes = kwargs.pop("axes", None)
+        figure = kwargs.pop("figure", None)
+        figsize = kwargs.pop("figsize", (12, 6))
+
+        figure, (video_axes, axes) = plt.subplots(
+            1, 2, width_ratios=[0.4, 0.6], figsize=figsize
+        )
+        fig, ax = plot_function(*args, figure=figure, axes=axes, **kwargs)
+        if Trk[0].video_filepath is not None and (anim_video or do_anim):
             anim = Animate_plot(
                 figure=fig,
                 axes=ax,
+                video_axes=video_axes,
                 time_array=Trk[0].time,
                 video_path=Trk[0].video_filepath,
                 arena=Trk[0].arena,
@@ -107,6 +124,8 @@ class TrackingAnimation(Animation):
         The matplotlib figure object.
     axes : mpl_Axes
         The matplotlib axes object.
+    video_axes : mpl_Axes, optional
+        The matplotlib axes object to plot the video. Default is ``None``.
     time_array : numpy.ndarray
         The time array of the data being plotted.
     video_path : str | pathlib.Path, optional
@@ -159,8 +178,9 @@ class TrackingAnimation(Animation):
 
     def __init__(
         self,
-        figure: mpl_Figure,
+        figure: BehFigure,
         axes: mpl_Axes,
+        video_axes: mpl_Axes | None,
         time_array: npt.NDArray,
         video_path: str | pathlib.Path | None = None,
         arena: BaseArena | None = None,
@@ -181,8 +201,9 @@ class TrackingAnimation(Animation):
         self.frame_step: int = 1
         self.current_frame: int = 0
 
+        self.fig = figure
         self._interval = 1
-        event_source = figure.canvas.new_timer(interval=self._interval)
+        event_source = self.fig.figure.canvas.new_timer(interval=self._interval)
         self._repeat = True
 
         self._time = time_array
@@ -191,10 +212,11 @@ class TrackingAnimation(Animation):
         self._framedata = range(0, self.n_frames, self.frame_step)
         self._drawn_artists = []
 
-        super().__init__(fig=figure, event_source=event_source, blit=blit)
-        self._fig = figure
+        super().__init__(fig=self.fig.figure, event_source=event_source, blit=blit)
+        self._fig = self.fig.figure
         # self._fig.canvas.mpl_disconnect(self._first_draw_id)
 
+        self.video_axes = video_axes
         self.ax = axes
         # self._drawn_artists += images
         if video_path is not None:
@@ -232,17 +254,21 @@ class TrackingAnimation(Animation):
             # just starts animation and let it playing
             self.play()
         else:
-            self.ckeypress = figure.canvas.mpl_connect(
+            self.ckeypress = self.fig.figure.canvas.mpl_connect(
                 "key_press_event", self.onkeypress
             )
             self.press = False
             self.move = False
 
-            self.cpress = figure.canvas.mpl_connect("button_press_event", self._onpress)
-            self.crelease = figure.canvas.mpl_connect(
+            self.cpress = self.fig.figure.canvas.mpl_connect(
+                "button_press_event", self._onpress
+            )
+            self.crelease = self.fig.figure.canvas.mpl_connect(
                 "button_release_event", self._onrelease
             )
-            self.cmove = figure.canvas.mpl_connect("motion_notify_event", self._onmove)
+            self.cmove = self.fig.figure.canvas.mpl_connect(
+                "motion_notify_event", self._onmove
+            )
 
     def _setup_video_axes(self, arena, video_path, x_crop, y_crop):
         """TO BE IMPLEMENTED IN CHILD CLASSES."""
@@ -425,9 +451,6 @@ class Animate_plot(TrackingAnimation):
             self._refresh_frame_seq()
 
     def _setup_video_axes(self, arena: BaseArena | None, video_path, x_crop, y_crop):
-        self.video_axes = make_axes_locatable(self.ax).append_axes(
-            "left", size="65%", pad=1
-        )
         self.video_axes.set_aspect("equal")
 
         self.cap = cv2.VideoCapture(str(video_path))

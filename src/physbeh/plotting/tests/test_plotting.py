@@ -1,8 +1,8 @@
 import pytest
 from matplotlib.axes import Axes as mpl_Axes
-from matplotlib.figure import Figure as mpl_Figure
 
 from physbeh.plotting import (
+    BehFigure,
     plot_acceleration,
     plot_angular_acceleration,
     plot_angular_velocity,
@@ -37,7 +37,7 @@ from physbeh.plotting import (
 )
 def test_default_plottings(tracking, plot_func):
     fig, ax = plot_func(tracking)
-    assert isinstance(fig, mpl_Figure)
+    assert isinstance(fig, BehFigure)
 
     if plot_func in [plot_position]:
         assert isinstance(ax, tuple)

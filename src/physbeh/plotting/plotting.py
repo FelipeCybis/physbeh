@@ -16,22 +16,9 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from physbeh.plotting.animate2d_decorator import anim2d_decorator
 from physbeh.plotting.animate_decorator import Animate_plot, anim_decorator
+from physbeh.plotting.figure import BehFigure
 from physbeh.tracking import Tracking
 from physbeh.utils import _plot_color_wheel, get_line_collection
-
-
-def _check_ax_and_fig(
-    ax, fig, **fig_kwargs
-) -> tuple[matplotlib.axes.Axes, matplotlib.figure.Figure]:
-    if ax is None:
-        if fig is None:
-            fig = plt.figure(**fig_kwargs)
-        ax = fig.add_subplot(111)
-    else:
-        if fig is None:
-            fig = ax.figure
-        assert fig == ax.figure, "Axes and figure must be from the same object."
-    return ax, fig
 
 
 def _listify_bodyparts(trk, bodyparts):
@@ -64,6 +51,23 @@ def get_label_color(
     """
     cmap = mpl_cm.get_cmap(cmap_name).resampled(len(trk.labels))
     return cmap(trk.labels.index(bodypart))
+
+
+def _check_ax_and_fig(
+    ax, fig, **fig_kwargs
+) -> tuple[matplotlib.axes.Axes, matplotlib.figure.Figure]:
+    if ax is None:
+        if fig is None:
+            fig = plt.figure(**fig_kwargs)
+            fig = BehFigure(fig)
+
+        ax = fig.figure.add_subplot(111)
+    else:
+        if fig is None:
+            fig = ax.figure
+            fig = BehFigure(fig)
+        assert fig.figure == ax.figure, "Axes and figure must be from the same object."
+    return ax, fig.figure
 
 
 def plot_array(
@@ -164,6 +168,7 @@ def plot_array(
         The matplotlib axes object.
     """
     axes, figure = _check_ax_and_fig(axes, figure, figsize=figsize, dpi=dpi)
+    behfigure = BehFigure(figure)
 
     if time_array is None:
         time_array = np.arange(len(array))
@@ -207,6 +212,7 @@ def plot_array(
         alpha=alpha,
         **lc_kwargs,
     )
+    behfigure.lc = lc
     axes.add_collection(lc)
     if only_running_bouts:
         time_array = np.concatenate(time_array)
@@ -219,8 +225,9 @@ def plot_array(
     if colorbar and cmap is not None:
         divider = make_axes_locatable(axes)
         cax = divider.append_axes("right", size="4%", pad=0.1)
-        cbar = plt.colorbar(lc, cax=cax)
+        cbar = behfigure.figure.colorbar(lc, cax=cax)
         cbar.set_label(cbar_label)
+        behfigure.cbar = cbar
 
     if set_axes:
         keys = list(ax_kwargs.keys())
@@ -239,7 +246,7 @@ def plot_array(
             axes.legend(**legend_kwargs)
         axes.grid(**grid_kwargs)
 
-    return figure, axes, lines
+    return behfigure, axes, lines
 
 
 @overload
@@ -1239,6 +1246,7 @@ def plot_position_2d(
         color_collection_array = lines[:, 0, 1]
         cmap = "hsv"
         colorbar = False if colorwheel else colorbar
+        vmin, vmax = 0, 360
 
     # lines = get_line_collection(x_array=x_bp, y_array=y_bp, index=index)
     spatial_units = trk.space_units[bodypart + "_x"].units
@@ -1270,9 +1278,11 @@ def plot_position_2d(
 
     if use_head_direction:
         if colorwheel:
-            figure.set_size_inches(14, 7.5)
+            figure.figure.set_size_inches(14, 7.5)
             axes.set_position([0.12, 0.12, 0.5, 0.75])
-            ax_cw = figure.add_axes(rect=[0.65, 0.26, 0.3, 0.48], projection="polar")
+            ax_cw = figure.figure.add_axes(
+                rect=[0.65, 0.26, 0.3, 0.48], projection="polar"
+            )
             _plot_color_wheel(ax=ax_cw, cmap=cmap)
 
     lines_index = np.where(index)[0]
@@ -1351,7 +1361,7 @@ def plot_likelihood(
     axes.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
     axes.grid(linestyle="--")
 
-    return figure, axes
+    return BehFigure(figure), axes
 
 
 @anim_decorator
@@ -1548,6 +1558,8 @@ def plot_position(
     ax_x = figure.add_subplot(211)
     ax_y = figure.add_subplot(212)
 
+    figure = BehFigure(figure)
+
     plot_position_x(
         trk, bodyparts=bodyparts, axes=ax_x, figure=figure, xlabel="", **ax_kwargs
     )
@@ -1703,6 +1715,9 @@ def plot_head_direction(
         only_running_bouts=only_running_bouts,
     )
 
+    label = f"{head_direction_vector_labels[0]} $\\rightarrow$ "
+    label += f"{head_direction_vector_labels[1]}"
+
     index_wrapped_dict = {"deg": 270, "rad": 270 / 360 * 2 * np.pi}
     index_wrapped_angles = np.where(
         np.append(np.abs(np.diff(head_direction_array)), 0) >= index_wrapped_dict[ang]
@@ -1711,7 +1726,11 @@ def plot_head_direction(
 
     ylabel_dict = {"deg": "Degree", "rad": "Radians"}
     ax_kwargs.setdefault("ylabel", ylabel_dict[ang])
+    ax_kwargs.setdefault("cbar_label", ylabel_dict[ang])
     ax_kwargs.setdefault("xlabel", "time (s)")
+    vrange = {"deg": (0, 360), "rad": (0, 2 * np.pi)}
+    ax_kwargs.setdefault("vmin", vrange[ang][0])
+    ax_kwargs.setdefault("vmax", vrange[ang][1])
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
     figure, axes, _ = plot_array(
@@ -1730,6 +1749,13 @@ def plot_head_direction(
         figsize=figsize,
         **ax_kwargs,
     )
+
+    if cmap is not None:
+        # take the legend object and remove the symbol only, not the entry
+        legend = axes.get_legend()
+        if legend is not None:
+            legend.legend_handles[0].set_visible(False)
+            legend.handlelength = 0
 
     if only_running_bouts and plot_only_running_bouts:
         plot_running_bouts(trk, axes=axes)

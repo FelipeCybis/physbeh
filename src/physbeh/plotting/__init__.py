@@ -1,5 +1,6 @@
 """Visualisation module for ``physbeh``."""
 
+from .figure import BehFigure
 from .plotting import (
     plot_acceleration,
     plot_angular_acceleration,
@@ -38,4 +39,5 @@ __all__ = [
     "plot_head_direction_interval",
     "plot_occupancy",
     "plot_angular_velocity",
+    "BehFigure",
 ]
