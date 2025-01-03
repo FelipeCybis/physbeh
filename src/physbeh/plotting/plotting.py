@@ -94,7 +94,7 @@ def plot_array(
     dpi: float = 100,
     set_axes: bool = True,
     **ax_kwargs,
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, npt.NDArray]:
+) -> tuple[BehFigure, matplotlib.axes.Axes, npt.NDArray]:
     """Plot an array by transforming it into line collections.
 
     Parameters
@@ -267,7 +267,7 @@ def plot_speed(  # numpydoc ignore=GL08
     figsize: tuple[float, float] = (8, 4),
     animate: Literal[True],
     **ax_kwargs,
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
+) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]: ...
 
 
 @overload
@@ -288,7 +288,7 @@ def plot_speed(  # numpydoc ignore=GL08
     figsize: tuple[float, float] = (8, 4),
     animate: Literal[False] = False,
     **ax_kwargs,
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
+) -> tuple[BehFigure, matplotlib.axes.Axes]: ...
 
 
 @overload
@@ -310,8 +310,8 @@ def plot_speed(  # numpydoc ignore=GL08
     animate: bool,
     **ax_kwargs,
 ) -> (
-    tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]
-    | tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]
+    tuple[BehFigure, matplotlib.axes.Axes]
+    | tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]
 ): ...
 
 
@@ -333,8 +333,8 @@ def plot_speed(
     animate: bool = False,
     **ax_kwargs,
 ) -> (
-    tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]
-    | tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]
+    tuple[BehFigure, matplotlib.axes.Axes]
+    | tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]
 ):
     """Plot speed of given label.
 
@@ -401,7 +401,7 @@ def plot_speed(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes, _ = plot_array(
+    behfigure, axes, _ = plot_array(
         speed_array,
         time_array=time_array,
         index=index,
@@ -418,7 +418,7 @@ def plot_speed(
     if only_running_bouts and plot_only_running_bouts:
         plot_running_bouts(trk, axes=axes)
 
-    return figure, axes
+    return behfigure, axes
 
 
 @overload
@@ -426,7 +426,7 @@ def plot_acceleration(  # numpydoc ignore=GL08
     trk: Tracking,
     *,
     animate: Literal[True],
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
+) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]: ...
 
 
 @overload
@@ -434,7 +434,7 @@ def plot_acceleration(  # numpydoc ignore=GL08
     trk: Tracking,
     *,
     animate: Literal[False],
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
+) -> tuple[BehFigure, matplotlib.axes.Axes]: ...
 
 
 @anim_decorator
@@ -455,8 +455,8 @@ def plot_acceleration(
     animate_fus: bool = False,
     **ax_kwargs,
 ) -> (
-    tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]
-    | tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]
+    tuple[BehFigure, matplotlib.axes.Axes]
+    | tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]
 ):
     """Plot acceleration of given label.
 
@@ -523,7 +523,7 @@ def plot_acceleration(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes, _ = plot_array(
+    behfigure, axes, _ = plot_array(
         acceleration_array,
         time_array=time_array,
         index=index,
@@ -540,19 +540,19 @@ def plot_acceleration(
     if only_running_bouts and plot_only_running_bouts:
         plot_running_bouts(trk, axes=axes)
 
-    return figure, axes
+    return behfigure, axes
 
 
 @overload
 def plot_wall_proximity(  # numpydoc ignore=GL08
     animate: Literal[True],
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
+) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]: ...
 
 
 @overload
 def plot_wall_proximity(  # numpydoc ignore=GL08
     animate: Literal[False],
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
+) -> tuple[BehFigure, matplotlib.axes.Axes]: ...
 
 
 @anim_decorator
@@ -639,7 +639,7 @@ def plot_wall_proximity(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes, _ = plot_array(
+    behfigure, axes, _ = plot_array(
         wall_proximity,
         time_array=time_array,
         index=index,
@@ -656,7 +656,7 @@ def plot_wall_proximity(
     if only_running_bouts and plot_only_running_bouts:
         plot_running_bouts(trk, axes=axes)
 
-    return figure, axes
+    return behfigure, axes
 
 
 @anim_decorator
@@ -732,7 +732,7 @@ def plot_center_proximity(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes, _ = plot_array(
+    behfigure, axes, _ = plot_array(
         center_proximity,
         time_array=time_array,
         index=index,
@@ -749,7 +749,7 @@ def plot_center_proximity(
     if only_running_bouts and plot_only_running_bouts:
         plot_running_bouts(trk, axes=axes)
 
-    return figure, axes
+    return behfigure, axes
 
 
 @anim_decorator
@@ -829,7 +829,7 @@ def plot_corner_proximity(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes, _ = plot_array(
+    behfigure, axes, _ = plot_array(
         corner_proximity,
         time_array=time_array,
         index=index,
@@ -846,19 +846,19 @@ def plot_corner_proximity(
     if only_running_bouts and plot_only_running_bouts:
         plot_running_bouts(trk, axes=axes)
 
-    return figure, axes
+    return behfigure, axes
 
 
 @overload
 def plot_angular_velocity(  # numpydoc ignore=GL08
     animate: Literal[True],
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
+) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]: ...
 
 
 @overload
 def plot_angular_velocity(  # numpydoc ignore=GL08
     animate: Literal[False],
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
+) -> tuple[BehFigure, matplotlib.axes.Axes]: ...
 
 
 @anim_decorator
@@ -944,7 +944,7 @@ def plot_angular_velocity(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes, _ = plot_array(
+    behfigure, axes, _ = plot_array(
         ang_velocity,
         time_array=time_array,
         index=index,
@@ -961,19 +961,19 @@ def plot_angular_velocity(
     if only_running_bouts and plot_only_running_bouts:
         plot_running_bouts(trk, axes=axes)
 
-    return figure, axes
+    return behfigure, axes
 
 
 @overload
 def plot_angular_acceleration(  # numpydoc ignore=GL08
     animate: Literal[True],
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
+) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]: ...
 
 
 @overload
 def plot_angular_acceleration(  # numpydoc ignore=GL08
     animate: Literal[False],
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
+) -> tuple[BehFigure, matplotlib.axes.Axes]: ...
 
 
 @anim_decorator
@@ -1059,7 +1059,7 @@ def plot_angular_acceleration(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes, _ = plot_array(
+    behfigure, axes, _ = plot_array(
         ang_acceleration,
         time_array=time_array,
         index=index,
@@ -1076,7 +1076,7 @@ def plot_angular_acceleration(
     if only_running_bouts and plot_only_running_bouts:
         plot_running_bouts(trk, axes=axes)
 
-    return figure, axes
+    return behfigure, axes
 
 
 @anim_decorator
@@ -1558,14 +1558,21 @@ def plot_position(
     ax_x = figure.add_subplot(211)
     ax_y = figure.add_subplot(212)
 
-    figure = BehFigure(figure)
+    behfigure = BehFigure(figure)
 
     plot_position_x(
-        trk, bodyparts=bodyparts, axes=ax_x, figure=figure, xlabel="", **ax_kwargs
+        trk,
+        bodyparts=bodyparts,
+        axes=ax_x,
+        figure=behfigure.figure,
+        xlabel="",
+        **ax_kwargs,
     )
-    plot_position_y(trk, bodyparts=bodyparts, axes=ax_y, figure=figure, **ax_kwargs)
+    plot_position_y(
+        trk, bodyparts=bodyparts, axes=ax_y, figure=behfigure.figure, **ax_kwargs
+    )
 
-    return figure, (ax_x, ax_y)
+    return behfigure, (ax_x, ax_y)
 
 
 @overload
@@ -1586,7 +1593,7 @@ def plot_head_direction(  # numpydoc ignore=GL08
     figsize: tuple[float, float] = (8, 4),
     animate: Literal[True],
     **ax_kwargs,
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]: ...
+) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]: ...
 
 
 @overload
@@ -1607,7 +1614,7 @@ def plot_head_direction(  # numpydoc ignore=GL08
     figsize: tuple[float, float] = (8, 4),
     animate: Literal[False] = False,
     **ax_kwargs,
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ...
+) -> tuple[BehFigure, matplotlib.axes.Axes]: ...
 
 
 @overload
@@ -1629,8 +1636,8 @@ def plot_head_direction(  # numpydoc ignore=GL08
     animate: bool,
     **ax_kwargs,
 ) -> (
-    tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]
-    | tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]
+    tuple[BehFigure, matplotlib.axes.Axes]
+    | tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]
 ): ...
 
 
@@ -1652,8 +1659,8 @@ def plot_head_direction(
     animate: bool = False,
     **ax_kwargs,
 ) -> (
-    tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]
-    | tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, Animate_plot]
+    tuple[BehFigure, matplotlib.axes.Axes]
+    | tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]
 ):
     """Plot head direction using `head_direction_vector_labels`.
 
@@ -1733,7 +1740,7 @@ def plot_head_direction(
     ax_kwargs.setdefault("vmax", vrange[ang][1])
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes, _ = plot_array(
+    behfigure, axes, _ = plot_array(
         head_direction_array,
         time_array=time_array,
         index=index,
@@ -1759,7 +1766,7 @@ def plot_head_direction(
 
     if only_running_bouts and plot_only_running_bouts:
         plot_running_bouts(trk, axes=axes)
-    return figure, axes
+    return behfigure, axes
 
 
 @anim_decorator
@@ -1841,7 +1848,7 @@ def plot_head_direction_interval(
     ax_kwargs.setdefault("xlabel", "time (s)")
     ax_kwargs.setdefault("legend__loc", "upper right")
     ax_kwargs.setdefault("grid__linestyle", "--")
-    figure, axes, _ = plot_array(
+    behfigure, axes, _ = plot_array(
         hd_interval_array,
         time_array=time_array,
         index=index,
@@ -1860,7 +1867,7 @@ def plot_head_direction_interval(
     if only_running_bouts and plot_only_running_bouts:
         plot_running_bouts(trk, axes=axes)
 
-    return figure, axes
+    return behfigure, axes
 
 
 def plot_occupancy(

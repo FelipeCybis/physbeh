@@ -78,15 +78,15 @@ def anim_decorator(plot_function: Callable) -> Callable:
         if not Trk:
             Trk = [value for value in kwargs.values() if isinstance(value, Tracking)]
 
-        axes = kwargs.pop("axes", None)
-        figure = kwargs.pop("figure", None)
-        figsize = kwargs.pop("figsize", (12, 6))
-
-        figure, (video_axes, axes) = plt.subplots(
-            1, 2, width_ratios=[0.4, 0.6], figsize=figsize
-        )
-        fig, ax = plot_function(*args, figure=figure, axes=axes, **kwargs)
         if Trk[0].video_filepath is not None and (anim_video or do_anim):
+            axes = kwargs.pop("axes", None)
+            figure = kwargs.pop("figure", None)
+            figsize = kwargs.pop("figsize", (12, 6))
+            figure, (video_axes, axes) = plt.subplots(
+                1, 2, width_ratios=[0.4, 0.6], figsize=figsize
+            )
+            fig, ax = plot_function(*args, figure=figure, axes=axes, **kwargs)
+
             anim = Animate_plot(
                 figure=fig,
                 axes=ax,
@@ -98,8 +98,9 @@ def anim_decorator(plot_function: Callable) -> Callable:
                 **anim_kwargs,
             )
             return fig, ax, anim
-
-        return fig, ax
+        else:
+            fig, ax = plot_function(*args, **kwargs)
+            return fig, ax
 
     return plot_wrapper
 
@@ -180,7 +181,7 @@ class TrackingAnimation(Animation):
         self,
         figure: BehFigure,
         axes: mpl_Axes,
-        video_axes: mpl_Axes | None,
+        video_axes: mpl_Axes,
         time_array: npt.NDArray,
         video_path: str | pathlib.Path | None = None,
         arena: BaseArena | None = None,
