@@ -37,21 +37,22 @@ fig, ax, anim = pb.plotting.plot_speed(
 anim.video_axes.set_xlabel("X (cm)")
 anim.video_axes.set_ylabel("Y (cm)")
 
-fig.figure.show()
+fig.show()
 
 ###############################################################################
 # Or the animal's heading.
 
 fig, ax, anim = pb.plotting.plot_head_direction(
-    tracking[500:600],
+    tracking[520:600],
     figsize=(13, 4.5),
+    ylim=(0, 360),
     animate=True,
 )
 
 anim.video_axes.set_xlabel("X (cm)")
 anim.video_axes.set_ylabel("Y (cm)")
 
-fig.figure.show()
+fig.show()
 
 
 ###############################################################################
@@ -60,5 +61,5 @@ fig.figure.show()
 # Animating the 2D position of the animal is also possible. This can be quite useful too
 # color the path with some variable array and see its dynamics along the video.
 
-fig, ax, anim = pb.plotting.plot_position_2d(tracking[510:620], animate=True)
-fig.figure.show()
+fig, ax, anim = pb.plotting.plot_position_2d(tracking[540:620], animate=True)
+fig.show()

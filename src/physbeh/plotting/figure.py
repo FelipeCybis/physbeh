@@ -70,3 +70,7 @@ class BehFigure:
 
     def __init__(self, figure: Figure):
         self._figure = figure
+
+    def show(self):
+        """Show the figure."""
+        self._figure.show()

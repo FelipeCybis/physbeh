@@ -461,7 +461,8 @@ class Tracking:
 
         if smooth:
             resp_in_rad = np.unwrap(resp_in_rad)
-            smooth_window = signal.windows.gaussian(M=101, std=10)
+            M = min(101, self.nframes)
+            smooth_window = signal.windows.gaussian(M=M, std=10)
             smooth_window /= sum(smooth_window)
 
             resp_in_rad[~index] = 0
