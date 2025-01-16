@@ -1667,7 +1667,7 @@ def plot_head_direction(  # numpydoc ignore=GL08
     plot_only_running_bouts: bool = True,
     color: tuple[float, float, float, float] | None = None,
     alpha: float = 1.0,
-    label: str = "head direction",
+    label: str | None = "head direction",
     cmap: str | colors.Colormap = "hsv",
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -1688,7 +1688,7 @@ def plot_head_direction(  # numpydoc ignore=GL08
     plot_only_running_bouts: bool = True,
     color: tuple[float, float, float, float] | None = None,
     alpha: float = 1.0,
-    label: str = "head direction",
+    label: str | None = "head direction",
     cmap: str | colors.Colormap = "hsv",
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -1709,7 +1709,7 @@ def plot_head_direction(  # numpydoc ignore=GL08
     plot_only_running_bouts: bool = True,
     color: tuple[float, float, float, float] | None = None,
     alpha: float = 1.0,
-    label: str = "head direction",
+    label: str | None = "head direction",
     cmap: str | colors.Colormap = "hsv",
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -1732,7 +1732,7 @@ def plot_head_direction(
     plot_only_running_bouts: bool = True,
     color: tuple[float, float, float, float] | None = None,
     alpha: float = 1.0,
-    label: str = "head direction",
+    label: str | None = "head direction",
     cmap: str | colors.Colormap = "hsv",
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -1803,8 +1803,9 @@ def plot_head_direction(
         only_running_bouts=only_running_bouts,
     )
 
-    label = f"{head_direction_vector_labels[0]} $\\rightarrow$ "
-    label += f"{head_direction_vector_labels[1]}"
+    if label is None:
+        label = f"{head_direction_vector_labels[0]} $\\rightarrow$ "
+        label += f"{head_direction_vector_labels[1]}"
 
     index_wrapped_dict = {"deg": 270, "rad": 270 / 360 * 2 * np.pi}
     index_wrapped_angles = np.where(
