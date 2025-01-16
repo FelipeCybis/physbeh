@@ -889,14 +889,61 @@ def plot_corner_proximity(
 
 @overload
 def plot_angular_velocity(  # numpydoc ignore=GL08
+    trk: Tracking,
+    label0: str = "neck",
+    label1: str = "probe",
+    *,
+    smooth: bool = True,
+    only_running_bouts=False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (14, 7),
     animate: Literal[True],
+    **ax_kwargs,
 ) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]: ...
 
 
 @overload
 def plot_angular_velocity(  # numpydoc ignore=GL08
-    animate: Literal[False],
+    trk: Tracking,
+    label0: str = "neck",
+    label1: str = "probe",
+    *,
+    smooth: bool = True,
+    only_running_bouts=False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (14, 7),
+    animate: Literal[False] = False,
 ) -> tuple[BehFigure, matplotlib.axes.Axes]: ...
+
+
+@overload
+def plot_angular_velocity(  # numpydoc ignore=GL08
+    trk: Tracking,
+    label0: str = "neck",
+    label1: str = "probe",
+    *,
+    smooth: bool = True,
+    only_running_bouts=False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (14, 7),
+    animate: bool,
+    **ax_kwargs,
+) -> (
+    tuple[BehFigure, matplotlib.axes.Axes]
+    | tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]
+): ...
 
 
 @anim_decorator
@@ -904,8 +951,8 @@ def plot_angular_velocity(
     trk: Tracking,
     label0: str = "neck",
     label1: str = "probe",
-    smooth: bool = True,
     *,
+    smooth: bool = True,
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
     color: tuple[float, float, float, float] | None = None,
@@ -914,9 +961,10 @@ def plot_angular_velocity(
     figure: matplotlib.figure.Figure | None = None,
     figsize: tuple[float, float] = (14, 7),
     animate: bool = False,
-    animate_video: bool = False,
-    animate_fus: bool = False,
     **ax_kwargs,
+) -> (
+    tuple[BehFigure, matplotlib.axes.Axes]
+    | tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]
 ):
     """Plot angular velocity calculated from the vector 'label0' -> 'label1'.
 
@@ -955,11 +1003,6 @@ def plot_angular_velocity(
     animate : bool, optional
         If set to ``True``, plots an animation with the video of the Tracking class.
         Default is ``False``.
-    animate_video : bool, optional
-        Whether to animate the plot with the video recording. Default is ``False``.
-    animate_fus : bool, optional
-        Whether to animate the plot with the functional Ultrasound video. Default is
-        ``False``.
     **ax_kwargs
         Keywords to pass to ``ax.set(**ax_kwargs)``.
 
