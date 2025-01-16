@@ -2,7 +2,7 @@
 
 from matplotlib.collections import LineCollection
 from matplotlib.colorbar import Colorbar
-from matplotlib.figure import Figure
+from matplotlib.figure import Figure, SubFigure
 
 
 class BehFigure:
@@ -58,7 +58,7 @@ class BehFigure:
         self._lc = value
 
     @property
-    def figure(self) -> Figure:
+    def figure(self) -> Figure | SubFigure:
         """Get the underlying matplotlib figure.
 
         Returns
@@ -68,9 +68,9 @@ class BehFigure:
         """
         return self._figure
 
-    def __init__(self, figure: Figure):
+    def __init__(self, figure: Figure | SubFigure):
         self._figure = figure
 
     def show(self):
         """Show the figure."""
-        self._figure.show()
+        self._figure.get_figure(root=True).show()

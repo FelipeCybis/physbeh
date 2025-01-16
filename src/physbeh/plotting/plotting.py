@@ -54,8 +54,10 @@ def get_label_color(
 
 
 def _check_ax_and_fig(
-    ax, fig, **fig_kwargs
-) -> tuple[matplotlib.axes.Axes, matplotlib.figure.Figure]:
+    ax: matplotlib.axes.Axes | None,
+    fig: matplotlib.figure.Figure | BehFigure | None,
+    **fig_kwargs,
+) -> tuple[matplotlib.axes.Axes, BehFigure]:
     if ax is None:
         if fig is None:
             fig = plt.figure(**fig_kwargs)
@@ -64,10 +66,11 @@ def _check_ax_and_fig(
         ax = fig.figure.add_subplot(111)
     else:
         if fig is None:
-            fig = ax.figure
+            fig = BehFigure(ax.figure)
+        elif isinstance(fig, matplotlib.figure.Figure):
             fig = BehFigure(fig)
         assert fig.figure == ax.figure, "Axes and figure must be from the same object."
-    return ax, fig.figure
+    return ax, fig
 
 
 def plot_array(
@@ -167,8 +170,7 @@ def plot_array(
     axes : matplotlib.axes.Axes
         The matplotlib axes object.
     """
-    axes, figure = _check_ax_and_fig(axes, figure, figsize=figsize, dpi=dpi)
-    behfigure = BehFigure(figure)
+    axes, behfigure = _check_ax_and_fig(axes, figure, figsize=figsize, dpi=dpi)
 
     if time_array is None:
         time_array = np.arange(len(array))
@@ -1158,7 +1160,7 @@ def plot_running_bouts(
     if not hasattr(trk, "running_bouts"):
         trk.get_running_bouts()
 
-    axes, figure = _check_ax_and_fig(axes, figure, figsize=figsize)
+    axes, behfigure = _check_ax_and_fig(axes, figure, figsize=figsize)
 
     axes.fill_between(
         trk.time,
@@ -1170,7 +1172,7 @@ def plot_running_bouts(
         alpha=0.5,
     )
 
-    return figure, axes
+    return behfigure.figure, axes
 
 
 @anim2d_decorator
@@ -1377,7 +1379,7 @@ def plot_likelihood(
 
     bodyparts = _listify_bodyparts(trk, bodyparts)
 
-    axes, figure = _check_ax_and_fig(axes, figure, figsize=figsize)
+    axes, behfigure = _check_ax_and_fig(axes, figure, figsize=figsize)
 
     for bp in bodyparts:
         lk = trk.get_likelihood(bodypart=bp)
@@ -1397,7 +1399,7 @@ def plot_likelihood(
     axes.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
     axes.grid(linestyle="--")
 
-    return BehFigure(figure), axes
+    return behfigure, axes
 
 
 @anim_decorator
@@ -1938,7 +1940,7 @@ def plot_occupancy(
     axes : tuple[matplotlib.axes.Axes, matplotlib.axes.Axes]
         The matplotlib axes object.
     """
-    axes, fig = _check_ax_and_fig(axes, figure, figsize=figsize)
+    axes, behfigure = _check_ax_and_fig(axes, figure, figsize=figsize)
 
     H = trk.get_binned_position(bins=bins, only_running_bouts=only_running_bouts)
     H[0][H[0] == 0] = np.nan
@@ -1947,6 +1949,6 @@ def plot_occupancy(
     axes.invert_yaxis()
     axes.set_aspect("equal", "box")
     axes.set(xlabel="cm", ylabel="cm")
-    figure.colorbar(i, ax=axes, label="count")
+    behfigure.cbar = behfigure.figure.colorbar(i, ax=axes, label="count")
 
-    return figure, axes
+    return behfigure.figure, axes
