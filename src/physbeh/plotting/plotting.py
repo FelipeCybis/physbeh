@@ -80,7 +80,7 @@ def plot_array(
     linewidths: float = 2.0,
     label: str = "",
     color: tuple[float, float, float, float] = (0.5, 0.5, 0.5, 1.0),
-    cmap: str | None = None,
+    cmap: str | colors.Colormap | None = None,
     norm: colors.Normalize = colors.Normalize(),
     vmin: float | None = None,
     vmax: float | None = None,
@@ -203,7 +203,6 @@ def plot_array(
         vmin = np.nanmin(lc_kwargs["array"])
     if vmax is None:
         vmax = np.nanmax(lc_kwargs["array"])
-    clim = (vmin, vmax)
 
     lc = LineCollection(
         lines[slice_lines],  # type: ignore
@@ -220,7 +219,7 @@ def plot_array(
         index = np.concatenate(index)
 
     axes.autoscale()
-    lc.set_clim(clim)
+    lc.set_clim(vmin, vmax)
 
     if colorbar and cmap is not None:
         divider = make_axes_locatable(axes)
@@ -255,9 +254,9 @@ def plot_speed(  # numpydoc ignore=GL08
     bodypart: str = "body",
     *,
     speed_axis: Literal["x", "y", "xy"] = "xy",
-    euclidean=False,
-    smooth=True,
-    speed_cutout=0,
+    euclidean: bool = False,
+    smooth: bool = True,
+    speed_cutout: int | float = 0,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
     color: tuple[float, float, float, float] | None = None,
@@ -276,9 +275,9 @@ def plot_speed(  # numpydoc ignore=GL08
     bodypart: str = "body",
     *,
     speed_axis: Literal["x", "y", "xy"] = "xy",
-    euclidean=False,
-    smooth=True,
-    speed_cutout=0,
+    euclidean: bool = False,
+    smooth: bool = True,
+    speed_cutout: int | float = 0,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
     color: tuple[float, float, float, float] | None = None,
@@ -297,9 +296,9 @@ def plot_speed(  # numpydoc ignore=GL08
     bodypart: str = "body",
     *,
     speed_axis: Literal["x", "y", "xy"] = "xy",
-    euclidean=False,
-    smooth=True,
-    speed_cutout=0,
+    euclidean: bool = False,
+    smooth: bool = True,
+    speed_cutout: int | float = 0,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
     color: tuple[float, float, float, float] | None = None,
@@ -320,9 +319,9 @@ def plot_speed(
     trk: Tracking,
     bodypart: str = "body",
     speed_axis: Literal["x", "y", "xy"] = "xy",
-    euclidean=False,
-    smooth=True,
-    speed_cutout=0,
+    euclidean: bool = False,
+    smooth: bool = True,
+    speed_cutout: int | float = 0,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
     color: tuple[float, float, float, float] | None = None,
@@ -424,25 +423,69 @@ def plot_speed(
 @overload
 def plot_acceleration(  # numpydoc ignore=GL08
     trk: Tracking,
+    bodypart: str = "body",
     *,
+    smooth: bool = True,
+    speed_cutout: int | float = 0,
+    only_running_bouts: bool = False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (12, 6),
     animate: Literal[True],
+    **ax_kwargs,
 ) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]: ...
 
 
 @overload
 def plot_acceleration(  # numpydoc ignore=GL08
     trk: Tracking,
+    bodypart: str = "body",
     *,
-    animate: Literal[False],
+    smooth: bool = True,
+    speed_cutout: int | float = 0,
+    only_running_bouts: bool = False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (12, 6),
+    animate: Literal[False] = False,
+    **ax_kwargs,
 ) -> tuple[BehFigure, matplotlib.axes.Axes]: ...
+
+
+@overload
+def plot_acceleration(  # numpydoc ignore=GL08
+    trk: Tracking,
+    bodypart: str = "body",
+    *,
+    smooth: bool = True,
+    speed_cutout: int | float = 0,
+    only_running_bouts: bool = False,
+    plot_only_running_bouts: bool = True,
+    color: tuple[float, float, float, float] | None = None,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (12, 6),
+    animate: bool,
+    **ax_kwargs,
+) -> (
+    tuple[BehFigure, matplotlib.axes.Axes]
+    | tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]
+): ...
 
 
 @anim_decorator
 def plot_acceleration(
     trk: Tracking,
     bodypart: str = "body",
-    smooth=True,
-    speed_cutout=0,
+    smooth: bool = True,
+    speed_cutout: int | float = 0,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
     color: tuple[float, float, float, float] | None = None,
@@ -451,8 +494,6 @@ def plot_acceleration(
     figure: matplotlib.figure.Figure | None = None,
     figsize: tuple[float, float] = (12, 6),
     animate: bool = False,
-    animate_video: bool = False,
-    animate_fus: bool = False,
     **ax_kwargs,
 ) -> (
     tuple[BehFigure, matplotlib.axes.Axes]
@@ -493,11 +534,6 @@ def plot_acceleration(
     animate : bool, optional
         If set to ``True``, plots an animation with the video of the Tracking class.
         Default is ``False``.
-    animate_video : bool, optional
-        Whether to animate the plot with the video recording. Default is ``False``.
-    animate_fus : bool, optional
-        Whether to animate the plot with the functional Ultrasound video. Default is
-        ``False``.
     **ax_kwargs
         Keywords to pass to ``ax.set(**ax_kwargs)``.
 
@@ -1147,7 +1183,7 @@ def plot_position_2d(
     head_direction: bool = True,
     head_direction_vector_labels: tuple[str, str] | list[str] = ["neck", "probe"],
     only_running_bouts: bool = False,
-    cmap: str | None = None,
+    cmap: str | colors.Colormap | None = None,
     colorwheel=True,
     colorbar: bool = True,
     cbar_label: str = "",
@@ -1444,7 +1480,7 @@ def plot_position_x(
 @anim_decorator
 def plot_position_y(
     trk: Tracking,
-    bodyparts: str = "all",
+    bodyparts: str | list[str] = "all",
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -1587,7 +1623,7 @@ def plot_head_direction(  # numpydoc ignore=GL08
     color: tuple[float, float, float, float] | None = None,
     alpha: float = 1.0,
     label: str = "head direction",
-    cmap: str = "hsv",
+    cmap: str | colors.Colormap = "hsv",
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
     figsize: tuple[float, float] = (8, 4),
@@ -1608,7 +1644,7 @@ def plot_head_direction(  # numpydoc ignore=GL08
     color: tuple[float, float, float, float] | None = None,
     alpha: float = 1.0,
     label: str = "head direction",
-    cmap: str = "hsv",
+    cmap: str | colors.Colormap = "hsv",
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
     figsize: tuple[float, float] = (8, 4),
@@ -1629,7 +1665,7 @@ def plot_head_direction(  # numpydoc ignore=GL08
     color: tuple[float, float, float, float] | None = None,
     alpha: float = 1.0,
     label: str = "head direction",
-    cmap: str = "hsv",
+    cmap: str | colors.Colormap = "hsv",
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
     figsize: tuple[float, float] = (8, 4),
@@ -1652,7 +1688,7 @@ def plot_head_direction(
     color: tuple[float, float, float, float] | None = None,
     alpha: float = 1.0,
     label: str = "head direction",
-    cmap: str = "hsv",
+    cmap: str | colors.Colormap = "hsv",
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
     figsize: tuple[float, float] = (8, 4),
