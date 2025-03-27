@@ -1,6 +1,7 @@
 """Useful plotting functions for Tracking objects."""
 
 import warnings
+from collections.abc import Sequence
 from typing import Any, Literal, cast, overload
 
 import matplotlib
@@ -269,27 +270,6 @@ def plot_speed(  # numpydoc ignore=GL08
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
     figsize: tuple[float, float] = (8, 4),
-    animate: Literal[True],
-    **ax_kwargs,
-) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]: ...
-
-
-@overload
-def plot_speed(  # numpydoc ignore=GL08
-    trk: Tracking,
-    bodypart: str = "body",
-    *,
-    speed_axis: Literal["x", "y", "xy"] = "xy",
-    euclidean: bool = False,
-    smooth: bool = True,
-    speed_cutout: int | float = 0,
-    only_running_bouts: bool = False,
-    plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
-    alpha: float = 1.0,
-    axes: matplotlib.axes.Axes | None = None,
-    figure: matplotlib.figure.Figure | None = None,
-    figsize: tuple[float, float] = (8, 4),
     animate: Literal[False] = False,
     **ax_kwargs,
 ) -> tuple[BehFigure, matplotlib.axes.Axes]: ...
@@ -311,12 +291,9 @@ def plot_speed(  # numpydoc ignore=GL08
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
     figsize: tuple[float, float] = (8, 4),
-    animate: bool,
+    animate: Literal[True],
     **ax_kwargs,
-) -> (
-    tuple[BehFigure, matplotlib.axes.Axes]
-    | tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]
-): ...
+) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]: ...
 
 
 @anim_decorator
@@ -420,9 +397,28 @@ def plot_speed(
     )
 
     if only_running_bouts and plot_only_running_bouts:
-        plot_running_bouts(trk, axes=axes)
+        plot_running_bouts(trk, axes=axes, set_axes=False)
 
     return behfigure, axes
+
+
+@overload
+def plot_acceleration(  # numpydoc ignore=GL08
+    trk: Tracking,
+    bodypart: str = "body",
+    *,
+    smooth: bool = True,
+    speed_cutout: int | float = 0,
+    only_running_bouts: bool = False,
+    plot_only_running_bouts: bool = True,
+    color: ColorType | None = None,
+    alpha: float = 1.0,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (12, 6),
+    animate: Literal[False],
+    **ax_kwargs,
+) -> tuple[BehFigure, matplotlib.axes.Axes]: ...
 
 
 @overload
@@ -442,47 +438,6 @@ def plot_acceleration(  # numpydoc ignore=GL08
     animate: Literal[True],
     **ax_kwargs,
 ) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]: ...
-
-
-@overload
-def plot_acceleration(  # numpydoc ignore=GL08
-    trk: Tracking,
-    bodypart: str = "body",
-    *,
-    smooth: bool = True,
-    speed_cutout: int | float = 0,
-    only_running_bouts: bool = False,
-    plot_only_running_bouts: bool = True,
-    color: ColorType | None = None,
-    alpha: float = 1.0,
-    axes: matplotlib.axes.Axes | None = None,
-    figure: matplotlib.figure.Figure | None = None,
-    figsize: tuple[float, float] = (12, 6),
-    animate: Literal[False] = False,
-    **ax_kwargs,
-) -> tuple[BehFigure, matplotlib.axes.Axes]: ...
-
-
-@overload
-def plot_acceleration(  # numpydoc ignore=GL08
-    trk: Tracking,
-    bodypart: str = "body",
-    *,
-    smooth: bool = True,
-    speed_cutout: int | float = 0,
-    only_running_bouts: bool = False,
-    plot_only_running_bouts: bool = True,
-    color: ColorType | None = None,
-    alpha: float = 1.0,
-    axes: matplotlib.axes.Axes | None = None,
-    figure: matplotlib.figure.Figure | None = None,
-    figsize: tuple[float, float] = (12, 6),
-    animate: bool,
-    **ax_kwargs,
-) -> (
-    tuple[BehFigure, matplotlib.axes.Axes]
-    | tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]
-): ...
 
 
 @anim_decorator
@@ -579,21 +534,21 @@ def plot_acceleration(
     )
 
     if only_running_bouts and plot_only_running_bouts:
-        plot_running_bouts(trk, axes=axes)
+        plot_running_bouts(trk, axes=axes, set_axes=False)
 
     return behfigure, axes
 
 
 @overload
 def plot_wall_proximity(  # numpydoc ignore=GL08
-    animate: Literal[True],
-) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]: ...
+    animate: Literal[False],
+) -> tuple[BehFigure, matplotlib.axes.Axes]: ...
 
 
 @overload
 def plot_wall_proximity(  # numpydoc ignore=GL08
-    animate: Literal[False],
-) -> tuple[BehFigure, matplotlib.axes.Axes]: ...
+    animate: Literal[True],
+) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]: ...
 
 
 @anim_decorator
@@ -695,7 +650,7 @@ def plot_wall_proximity(
     )
 
     if only_running_bouts and plot_only_running_bouts:
-        plot_running_bouts(trk, axes=axes)
+        plot_running_bouts(trk, axes=axes, set_axes=False)
 
     return behfigure, axes
 
@@ -788,7 +743,7 @@ def plot_center_proximity(
     )
 
     if only_running_bouts and plot_only_running_bouts:
-        plot_running_bouts(trk, axes=axes)
+        plot_running_bouts(trk, axes=axes, set_axes=False)
 
     return behfigure, axes
 
@@ -885,7 +840,7 @@ def plot_corner_proximity(
     )
 
     if only_running_bouts and plot_only_running_bouts:
-        plot_running_bouts(trk, axes=axes)
+        plot_running_bouts(trk, axes=axes, set_axes=False)
 
     return behfigure, axes
 
@@ -1043,7 +998,7 @@ def plot_angular_velocity(
     )
 
     if only_running_bouts and plot_only_running_bouts:
-        plot_running_bouts(trk, axes=axes)
+        plot_running_bouts(trk, axes=axes, set_axes=False)
 
     return behfigure, axes
 
@@ -1158,20 +1113,49 @@ def plot_angular_acceleration(
     )
 
     if only_running_bouts and plot_only_running_bouts:
-        plot_running_bouts(trk, axes=axes)
+        plot_running_bouts(trk, axes=axes, set_axes=False)
 
     return behfigure, axes
+
+
+@overload
+def plot_running_bouts(  # numpydoc ignore=GL08
+    trk: Tracking,
+    *,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (12, 6),
+    set_axes: bool = False,
+    animate: Literal[False] = False,
+    **ax_kwargs,
+) -> tuple[BehFigure, matplotlib.axes.Axes]: ...
+
+
+@overload
+def plot_running_bouts(  # numpydoc ignore=GL08
+    trk: Tracking,
+    *,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (12, 6),
+    set_axes: bool = False,
+    animate: Literal[True],
+    **ax_kwargs,
+) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]: ...
 
 
 @anim_decorator
 def plot_running_bouts(
     trk: Tracking,
-    axes=None,
-    figsize=(12, 6),
-    figure=None,
-    animate=False,
-    animate_video=False,
-    animate_fus=False,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (12, 6),
+    set_axes: bool = False,
+    animate: bool = False,
+    **ax_kwargs,
+) -> (
+    tuple[BehFigure, matplotlib.axes.Axes]
+    | tuple[BehFigure, matplotlib.axes.Axes, Animate_plot]
 ):
     """Plot the running periods of the animal.
 
@@ -1183,18 +1167,17 @@ def plot_running_bouts(
         The tracking object.
     axes : matplotlib.axes.Axes, optional
         If ``None``, new axes is created in `figure`. Default is ``None``.
-    figsize : tuple, optional
-        Figure size, if ``figure=None``. Default is ``(12,6)``.
     figure : matplotlib.figure.Figure, optional
         If ``None``, new figure is created. Default is ``None``.
+    figsize : tuple, optional
+        Figure size, if ``figure=None``. Default is ``(12,6)``.
+    set_axes : bool, optional
+        Whether to set the axes properties. Default is ``True``.
     animate : bool, optional
         If set to ``True``, plots an animation with the video of the Tracking class.
         Default is ``False``.
-    animate_video : bool, optional
-        Whether to animate the plot with the video recording. Default is ``False``.
-    animate_fus : bool, optional
-        Whether to animate the plot with the functional Ultrasound video. Default is
-        ``False``.
+    **ax_kwargs
+        Keywords to pass to ``ax.set(**ax_kwargs)``.
 
     Returns
     -------
@@ -1218,7 +1201,20 @@ def plot_running_bouts(
         alpha=0.5,
     )
 
-    return behfigure.figure, axes
+    ax_kwargs.setdefault("ylabel", "running bouts")
+    ax_kwargs.setdefault("xlabel", "time (s)")
+    ax_kwargs.setdefault("grid__linestyle", "--")
+    if set_axes:
+        keys = list(ax_kwargs.keys())
+        grid_kwargs = {
+            key.replace("grid__", ""): ax_kwargs.pop(key)
+            for key in keys
+            if key.startswith("grid__")
+        }
+        axes.set(**ax_kwargs)
+        axes.grid(**grid_kwargs)
+
+    return behfigure, axes
 
 
 @overload
@@ -1892,7 +1888,7 @@ def plot_head_direction(
             legend.handlelength = 0
 
     if only_running_bouts and plot_only_running_bouts:
-        plot_running_bouts(trk, axes=axes)
+        plot_running_bouts(trk, axes=axes, set_axes=False)
     return behfigure, axes
 
 
@@ -1992,27 +1988,33 @@ def plot_head_direction_interval(
     )
 
     if only_running_bouts and plot_only_running_bouts:
-        plot_running_bouts(trk, axes=axes)
+        plot_running_bouts(trk, axes=axes, set_axes=False)
 
     return behfigure, axes
 
 
 def plot_occupancy(
     trk: Tracking,
-    bins=40,
-    only_running_bouts=True,
-    axes=None,
-    figure=None,
-    figsize=(8, 7),
-):
+    bins: int | Sequence[int] = 10,
+    only_running_bouts: bool = True,
+    axes: matplotlib.axes.Axes | None = None,
+    figure: matplotlib.figure.Figure | None = None,
+    figsize: tuple[float, float] = (8, 6),
+) -> tuple[BehFigure, matplotlib.axes.Axes]:
     """Plot the occupancy of the animal in the arena.
 
     Parameters
     ----------
     trk : Tracking
         The tracking object.
-    bins : int, optional
-        The number of bins to use for the histogram. Default is ``40``.
+    bins : int or [int, int], optional
+        The bin specification:
+
+        * If ``int``, the number of bins for the two dimensions (``nx=ny=bins``).
+        * If ``[int, int]``, the number of bins in each dimension
+            (``nx, ny = bins``).
+
+        Default is ``10``.
     only_running_bouts : bool, optional
         Whether to plot only the occupancy during running bouts. Default is ``True``.
     axes : matplotlib.axes.Axes, optional
@@ -2040,4 +2042,4 @@ def plot_occupancy(
     axes.set(xlabel="cm", ylabel="cm")
     behfigure.cbar = behfigure.figure.colorbar(i, ax=axes, label="count")
 
-    return behfigure.figure, axes
+    return behfigure, axes

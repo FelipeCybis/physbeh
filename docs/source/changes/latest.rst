@@ -7,3 +7,6 @@
 ---------------
 - Add `__repr__` for the `physbeh.RectangularArena` class.
 
+🧹 Maintenance
+--------------
+- Lots of typing, docstring and examples improvements.
