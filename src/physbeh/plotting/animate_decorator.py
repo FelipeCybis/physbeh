@@ -4,7 +4,7 @@ import pathlib
 import warnings
 from collections.abc import Callable
 from functools import wraps
-from typing import Any
+from typing import Any, cast
 
 import cv2
 import matplotlib.pyplot as plt
@@ -13,6 +13,7 @@ from matplotlib.animation import Animation
 from matplotlib.axes import Axes as mpl_Axes
 from matplotlib.backend_bases import MouseEvent
 from matplotlib.figure import Figure as mpl_Figure
+from matplotlib.figure import SubFigure as mpl_SubFigure
 
 from physbeh.arena import BaseArena
 from physbeh.plotting.figure import BehFigure
@@ -80,11 +81,13 @@ def anim_decorator(plot_function: Callable) -> Callable:
 
         if Trk[0].video_filepath is not None and (anim_video or do_anim):
             axes = kwargs.pop("axes", None)
-            figure = kwargs.pop("figure", None)
             figsize = kwargs.pop("figsize", (12, 6))
-            figure, (video_axes, axes) = plt.subplots(
-                1, 2, width_ratios=[0.4, 0.6], figsize=figsize
-            )
+            figure = kwargs.pop("figure", BehFigure(plt.figure(figsize=figsize)))
+            figure = cast(BehFigure | mpl_Figure | mpl_SubFigure, figure)
+            if not isinstance(figure, BehFigure):
+                figure = BehFigure(figure)
+
+            video_axes, axes = figure.figure.subplots(1, 2, width_ratios=[0.4, 0.6])
             fig, ax = plot_function(*args, figure=figure, axes=axes, **kwargs)
 
             anim = Animate_plot(
