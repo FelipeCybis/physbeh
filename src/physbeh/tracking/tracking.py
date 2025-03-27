@@ -243,9 +243,9 @@ class Tracking:
     def speed_smooth_window(
         self, params: tuple[float, float]
     ) -> None:  # numpydoc ignore=GL08
-        assert (
-            len(params) == 2
-        ), "To set the gaussian window, a tuple with (length, std) should be passed."
+        assert len(params) == 2, (
+            "To set the gaussian window, a tuple with (length, std) should be passed."
+        )
         m, sigma = params
         self._speed_smooth_window = signal.windows.gaussian(M=m, std=sigma)
         self._speed_smooth_window /= sum(self._speed_smooth_window)

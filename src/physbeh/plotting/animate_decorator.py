@@ -314,8 +314,7 @@ class TrackingAnimation(Animation):
 
     def _get_timestamp(self):
         return (
-            f"current fr: {self.current_frame:05} | "
-            f"time: {self.current_time:06.2f} s"
+            f"current fr: {self.current_frame:05} | time: {self.current_time:06.2f} s"
         )
 
     def onkeypress(self, event):
