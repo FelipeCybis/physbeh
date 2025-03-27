@@ -16,7 +16,7 @@ def test_Tracking(tracking: Tracking):
 def test_fps(tracking: Tracking):
     assert tracking.fps == 50
     with pytest.raises(AttributeError, match="(has no setter|can't set attribute)"):
-        tracking.fps = 40
+        tracking.fps = 40  # type: ignore[misc] # we are testing this error...
 
 
 def test_time(tracking: Tracking):
@@ -25,7 +25,7 @@ def test_time(tracking: Tracking):
     np.testing.assert_equal(tracking.time, time)
     # cannot be set
     with pytest.raises(AttributeError, match="(has no setter|can't set attribute)"):
-        tracking.time = 40
+        tracking.time = 40  # type: ignore[misc] # we are testing this error...
 
 
 def test_labels(tracking: Tracking):

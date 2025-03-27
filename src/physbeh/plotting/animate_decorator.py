@@ -76,12 +76,16 @@ def anim_decorator(plot_function: Callable) -> Callable:
         }
 
         Trk = [arg for arg in args if isinstance(arg, Tracking)]
+        # if not trk, tracking was passed as keyword argument
         if not Trk:
-            Trk = [value for value in kwargs.values() if isinstance(value, Tracking)]
+            Trk = cast(
+                list[Tracking],
+                [value for value in kwargs.values() if isinstance(value, Tracking)],
+            )
 
         if Trk[0].video_filepath is not None and (anim_video or do_anim):
             axes = kwargs.pop("axes", None)
-            figsize = kwargs.pop("figsize", (12, 6))
+            figsize = cast(tuple[float, float], kwargs.pop("figsize", (12, 6)))
             figure = kwargs.pop("figure", BehFigure(plt.figure(figsize=figsize)))
             figure = cast(BehFigure | mpl_Figure | mpl_SubFigure, figure)
             if not isinstance(figure, BehFigure):
@@ -453,7 +457,7 @@ class Animate_plot(TrackingAnimation):
             self._draw_next_frame(self.current_frame, self._blit)
             self._refresh_frame_seq()
 
-    def _setup_video_axes(self, arena: BaseArena | None, video_path, x_crop, y_crop):
+    def _setup_video_axes(self, arena: BaseArena, video_path, x_crop, y_crop):
         self.video_axes.set_aspect("equal")
 
         self.cap = cv2.VideoCapture(str(video_path))

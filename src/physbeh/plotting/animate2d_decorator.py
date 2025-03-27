@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from functools import wraps
-from typing import Any
+from typing import cast
 
 import cv2
 import numpy as np
@@ -30,7 +30,7 @@ def anim2d_decorator(plot_function: Callable) -> Callable:
 
     @wraps(plot_function)
     def plot_wrapper(
-        *args: Any, **kwargs: dict[str, Any]
+        *args, **kwargs
     ) -> tuple[mpl_Figure, mpl_Axes] | tuple[mpl_Figure, mpl_Axes, TrackingAnimation]:
         """Wrapper function to animate tracking plots.
 
@@ -61,9 +61,10 @@ def anim2d_decorator(plot_function: Callable) -> Callable:
         if do_anim:
             Trk = [arg for arg in args if isinstance(arg, Tracking)]
             if not Trk:
-                Trk = [
-                    value for value in kwargs.values() if isinstance(value, Tracking)
-                ]
+                Trk = cast(
+                    list[Tracking],
+                    [value for value in kwargs.values() if isinstance(value, Tracking)],
+                )
             anim = Animate_plot2D(
                 figure=fig,
                 axes=ax,
