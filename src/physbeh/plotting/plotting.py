@@ -55,21 +55,23 @@ def get_label_color(
 
 def _check_ax_and_fig(
     ax: matplotlib.axes.Axes | None,
-    fig: matplotlib.figure.Figure | BehFigure | None,
+    fig: matplotlib.figure.Figure | matplotlib.figure.SubFigure | BehFigure | None,
     **fig_kwargs,
 ) -> tuple[matplotlib.axes.Axes, BehFigure]:
+    # Wrap figure in BehFigure if matplotlib figure
+    if isinstance(fig, matplotlib.figure.Figure | matplotlib.figure.SubFigure):
+        fig = BehFigure(fig)
+    # Add axes to figure if not provided
     if ax is None:
         if fig is None:
-            fig = plt.figure(**fig_kwargs)
-            fig = BehFigure(fig)
-
+            fig = BehFigure(plt.figure(**fig_kwargs))
         ax = fig.figure.add_subplot(111)
-    else:
-        if fig is None:
-            fig = BehFigure(ax.figure)
-        elif isinstance(fig, matplotlib.figure.Figure):
-            fig = BehFigure(fig)
-        assert fig.figure == ax.figure, "Axes and figure must be from the same object."
+    # If figure still None, axes was provided, take figure from axes
+    if fig is None:
+        fig = BehFigure(ax.figure)
+    assert fig.figure == ax.figure.figure, (
+        f"Axes and figure must be from the same object, but {fig.figure} != {ax.figure}"
+    )
     return ax, fig
 
 

@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import pytest
 from matplotlib.axes import Axes as mpl_Axes
 
@@ -45,3 +46,23 @@ def test_default_plottings(tracking, plot_func):
         assert all([isinstance(a, mpl_Axes) for a in ax])
     else:
         assert isinstance(ax, mpl_Axes)
+
+    fig, ax = plot_func(tracking, animate=True)
+
+    # plot_position do not accept axes
+    if plot_func not in [plot_position]:
+        fig, ax = plt.subplots()
+        beh_fig, beh_ax = plot_func(tracking, axes=ax)
+
+        assert fig == beh_fig.figure
+        assert beh_ax == ax
+
+    fig = plt.figure()
+    subfigs = fig.subfigures(1, 2)
+    beh_fig, beh_ax = plot_func(tracking, figure=subfigs[0])
+
+    if isinstance(beh_ax, tuple):
+        beh_ax = beh_ax[0]
+
+    assert beh_ax.figure.figure == beh_fig.figure
+    assert subfigs[0].figure == beh_fig.figure

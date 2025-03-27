@@ -15,6 +15,15 @@ def pytest_configure():
         matplotlib.use("Agg", force=True)
 
 
+@pytest.fixture(autouse=True)
+def close_all() -> None:
+    """Close all matplotlib figures."""
+    if matplotlib is not None:
+        import matplotlib.pyplot as plt
+
+        plt.close("all")  # takes < 1 us so just always do it
+
+
 # --------------------------------------- RNG ---------------------------------------  #
 
 

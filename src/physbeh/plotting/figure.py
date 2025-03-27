@@ -58,7 +58,7 @@ class BehFigure:
         self._lc = value
 
     @property
-    def figure(self) -> Figure | SubFigure:
+    def figure(self) -> Figure:
         """Get the underlying matplotlib figure.
 
         Returns
@@ -66,7 +66,7 @@ class BehFigure:
         matplotlib.figure.Figure
             The matplotlib figure object.
         """
-        return self._figure
+        return self._figure.figure
 
     def __init__(self, figure: Figure | SubFigure):
         self._figure = figure
