@@ -12,9 +12,10 @@ import numpy.typing as npt
 from matplotlib import colormaps as mpl_cm
 from matplotlib import colors
 from matplotlib.collections import LineCollection
+from matplotlib.typing import ColorType
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from physbeh.plotting.animate2d_decorator import anim2d_decorator
+from physbeh.plotting.animate2d_decorator import Animate_plot2D, anim2d_decorator
 from physbeh.plotting.animate_decorator import Animate_plot, anim_decorator
 from physbeh.plotting.figure import BehFigure
 from physbeh.tracking import Tracking
@@ -84,7 +85,7 @@ def plot_array(
     only_running_bouts: bool = False,
     linewidths: float = 2.0,
     label: str = "",
-    color: tuple[float, float, float, float] = (0.5, 0.5, 0.5, 1.0),
+    color: ColorType = (0.5, 0.5, 0.5, 1.0),
     cmap: str | colors.Colormap | None = None,
     norm: colors.Normalize = colors.Normalize(),
     vmin: float | None = None,
@@ -126,7 +127,7 @@ def plot_array(
     label : str, optional
         The label of the line collection. This is what is going to appear in the figure
         legend. Default is ``""``.
-    color : tuple, optional
+    color : color, optional
         Tuple of RGB(A) values for color of the line collection, if not using
         `head_direction` or any `color_collection_array`. Default is ``(0.5, 0.5, 0.5,
         1.0)``.
@@ -328,7 +329,7 @@ def plot_speed(
     speed_cutout: int | float = 0,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -365,7 +366,7 @@ def plot_speed(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
-    color : tuple, optional
+    color : color, optional
         Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
         color defined by the label. Default is ``None``.
     alpha : float, optional
@@ -433,7 +434,7 @@ def plot_acceleration(  # numpydoc ignore=GL08
     speed_cutout: int | float = 0,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -452,7 +453,7 @@ def plot_acceleration(  # numpydoc ignore=GL08
     speed_cutout: int | float = 0,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -471,7 +472,7 @@ def plot_acceleration(  # numpydoc ignore=GL08
     speed_cutout: int | float = 0,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -492,7 +493,7 @@ def plot_acceleration(
     speed_cutout: int | float = 0,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -524,7 +525,7 @@ def plot_acceleration(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
-    color : tuple, optional
+    color : color, optional
         Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
         color defined by the label. Default is ``None``.
     alpha : float, optional
@@ -603,7 +604,7 @@ def plot_wall_proximity(
     bodypart="neck",
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -635,7 +636,7 @@ def plot_wall_proximity(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
-    color : tuple, optional
+    color : color, optional
         Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
         color defined by the label. Default is ``None``.
     alpha : float, optional
@@ -705,7 +706,7 @@ def plot_center_proximity(
     bodypart="probe",
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -734,7 +735,7 @@ def plot_center_proximity(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
-    color : tuple, optional
+    color : color, optional
         Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
         color defined by the label. Default is ``None``.
     alpha : float, optional
@@ -799,7 +800,7 @@ def plot_corner_proximity(
     bodypart="probe",
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha=1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -831,7 +832,7 @@ def plot_corner_proximity(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
-    color : tuple, optional
+    color : color, optional
         Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
         color defined by the label. Default is ``None``.
     alpha : float, optional
@@ -898,7 +899,7 @@ def plot_angular_velocity(  # numpydoc ignore=GL08
     smooth: bool = True,
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -917,7 +918,7 @@ def plot_angular_velocity(  # numpydoc ignore=GL08
     smooth: bool = True,
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -935,7 +936,7 @@ def plot_angular_velocity(  # numpydoc ignore=GL08
     smooth: bool = True,
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -957,7 +958,7 @@ def plot_angular_velocity(
     smooth: bool = True,
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -991,7 +992,7 @@ def plot_angular_velocity(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
-    color : tuple, optional
+    color : color, optional
         Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
         color defined by the label. Default is ``None``.
     alpha : float, optional
@@ -1068,7 +1069,7 @@ def plot_angular_acceleration(
     *,
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -1101,7 +1102,7 @@ def plot_angular_acceleration(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
-    color : tuple, optional
+    color : color, optional
         Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
         color defined by the label. Default is ``None``.
     alpha : float, optional
@@ -1220,10 +1221,59 @@ def plot_running_bouts(
     return behfigure.figure, axes
 
 
+@overload
+def plot_position_2d(  # numpydoc ignore=GL08
+    trk: Tracking,
+    bodypart: str = "body",
+    *,
+    color_collection_array: npt.NDArray | None = None,
+    vmin: float | None = None,
+    vmax: float | None = None,
+    head_direction: bool = True,
+    head_direction_vector_labels: tuple[str, str] | list[str] = ["neck", "probe"],
+    only_running_bouts: bool = False,
+    cmap: str | colors.Colormap | None = None,
+    colorwheel=True,
+    colorbar: bool = True,
+    cbar_label: str = "",
+    color="gray",
+    axes=None,
+    figure=None,
+    figsize: tuple[float, float] = (8, 6),
+    animate: Literal[False] = False,
+    **ax_kwargs,
+) -> tuple[BehFigure, matplotlib.axes.Axes, dict[str, npt.NDArray]]: ...
+
+
+@overload
+def plot_position_2d(  # numpydoc ignore=GL08
+    trk: Tracking,
+    bodypart: str = "body",
+    *,
+    color_collection_array: npt.NDArray | None = None,
+    vmin: float | None = None,
+    vmax: float | None = None,
+    head_direction: bool = True,
+    head_direction_vector_labels: tuple[str, str] | list[str] = ["neck", "probe"],
+    only_running_bouts: bool = False,
+    cmap: str | colors.Colormap | None = None,
+    colorwheel=True,
+    colorbar: bool = True,
+    cbar_label: str = "",
+    color="gray",
+    axes=None,
+    figure=None,
+    figsize: tuple[float, float] = (8, 6),
+    animate: Literal[True],
+    **ax_kwargs,
+) -> tuple[BehFigure, matplotlib.axes.Axes, Animate_plot2D]: ...
+
+
 @anim2d_decorator
 def plot_position_2d(
     trk: Tracking,
     bodypart: str = "body",
+    *,
     color_collection_array: npt.NDArray | None = None,
     vmin: float | None = None,
     vmax: float | None = None,
@@ -1239,10 +1289,8 @@ def plot_position_2d(
     figure=None,
     figsize: tuple[float, float] = (8, 6),
     animate: bool = False,
-    animate_video: bool = False,
-    animate_fus: bool = False,
     **ax_kwargs,
-):
+) -> tuple[BehFigure, matplotlib.axes.Axes, dict[str, npt.NDArray] | Animate_plot2D]:
     """Plot position of the animal in 2D coordinates.
 
     Parameters
@@ -1279,7 +1327,7 @@ def plot_position_2d(
         Whether to plot the colorbar. Default is ``True``.
     cbar_label : str, optional
         The label of the colorbar. Default is ``None``.
-    color : tuple, optional
+    color : color, optional
         Tuple of RGB(A) values for color of the line collection, if not using
         `head_direction` or any `color_collection_array`. Default is ``(0.5, 0.5, 0.5,
         1.0)``.
@@ -1292,11 +1340,6 @@ def plot_position_2d(
     animate : bool, optional
         If set to ``True``, plots an animation with the video of the Tracking class.
         Default is ``False``.
-    animate_video : bool, optional
-        Whether to animate the plot with the video recording. Default is ``False``.
-    animate_fus : bool, optional
-        Whether to animate the plot with the functional Ultrasound video. Default is
-        ``False``.
     **ax_kwargs
         Additional keyword arguments to pass to the axes.
 
@@ -1667,7 +1710,7 @@ def plot_head_direction(  # numpydoc ignore=GL08
     smooth: bool = False,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     label: str | None = "head direction",
     cmap: str | colors.Colormap = "hsv",
@@ -1688,7 +1731,7 @@ def plot_head_direction(  # numpydoc ignore=GL08
     smooth: bool = False,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     label: str | None = "head direction",
     cmap: str | colors.Colormap = "hsv",
@@ -1709,7 +1752,7 @@ def plot_head_direction(  # numpydoc ignore=GL08
     smooth: bool = False,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     label: str | None = "head direction",
     cmap: str | colors.Colormap = "hsv",
@@ -1732,7 +1775,7 @@ def plot_head_direction(
     smooth: bool = False,
     only_running_bouts: bool = False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     label: str | None = "head direction",
     cmap: str | colors.Colormap = "hsv",
@@ -1766,7 +1809,7 @@ def plot_head_direction(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
-    color : tuple, optional
+    color : color, optional
         `cmap` must be ``None`` for `color` to be used. Tuple of RGB(A) values for color
         of the line collection, if ``None``, uses the color defined by the label.
         Default is ``None``.
@@ -1861,7 +1904,7 @@ def plot_head_direction_interval(
     head_direction_vector_labels=["neck", "probe"],
     only_running_bouts=False,
     plot_only_running_bouts: bool = True,
-    color: tuple[float, float, float, float] | None = None,
+    color: ColorType | None = None,
     alpha: float = 1.0,
     axes: matplotlib.axes.Axes | None = None,
     figure: matplotlib.figure.Figure | None = None,
@@ -1893,7 +1936,7 @@ def plot_head_direction_interval(
         Whether or not to plot a background color on periods of running bouts (and not
         only not plot non running bouts). This only takes effect if `only_running_bouts`
         is set to ``True``. Default is ``True``.
-    color : tuple, optional
+    color : color, optional
         Tuple of RGB(A) values for color of the line collection, if ``None``, uses the
         color defined by the label. Default is ``None``.
     alpha : float, optional

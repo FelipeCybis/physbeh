@@ -1,16 +1,14 @@
 """Miscellaneous helper functions for physbeh."""
 
-from typing import Any
-
 import numpy as np
 import numpy.typing as npt
 from matplotlib import colors
 
 
 def get_line_collection(
-    x_array: npt.NDArray | list[float],
-    y_array: npt.NDArray | list[float],
-    index: list[bool] | np.ndarray[Any, np.dtype[bool]],
+    x_array: npt.NDArray | list[npt.NDArray],
+    y_array: npt.NDArray | list[npt.NDArray],
+    index: npt.NDArray[np.bool] | list[npt.NDArray[np.bool]],
 ) -> npt.NDArray:
     """Get collection of arrays for each segment of `x_array` and `y_array`.
 
@@ -18,9 +16,9 @@ def get_line_collection(
 
     Parameters
     ----------
-    x_array : numpy.ndarray or list of float
+    x_array : numpy.ndarray or list of numpy.ndarray
         The ``x`` coordinates for the line collection.
-    y_array : numpy.ndarray or list of float
+    y_array : numpy.ndarray or list of numpy.ndarray
         The ``y`` coordinates for the line collection.
     index : list or numpy.ndarray of bool
         The indices to keep in the line collection.

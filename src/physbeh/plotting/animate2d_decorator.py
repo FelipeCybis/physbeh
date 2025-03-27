@@ -76,7 +76,7 @@ def anim2d_decorator(plot_function: Callable) -> Callable:
                 **anim_kwargs,
             )
             return fig, ax, anim
-        return fig, ax
+        return fig, ax, lines
 
     return plot_wrapper
 
