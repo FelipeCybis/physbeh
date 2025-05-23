@@ -112,7 +112,7 @@ class RectangularArena(BaseArena):
         float
             The space units per pixel ratio.
         """
-        return self.calculate_rectangle_per_pixel()
+        return self.calculate_cm_per_pixel()
 
     def __init__(
         self,
@@ -162,7 +162,7 @@ class RectangularArena(BaseArena):
             f"\n{ascii_representation}"
         )
 
-    def calculate_rectangle_per_pixel(self) -> float:
+    def calculate_cm_per_pixel(self) -> float:
         """Helper function to calculate the cm per pixel ratio in a rectangle.
 
         Returns

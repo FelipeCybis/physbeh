@@ -12,13 +12,13 @@ class BaseArena:
     """
 
     @property
-    def top_left(self):
-        """Top left corner of the arena.
+    def origin(self):
+        """The origin of the arena in pixel coordinates.
 
         Returns
         -------
         numpy.ndarray
-            The top left corner of the arena.
+            The origin coordinate of the arena.
         """
         return np.array([0, 0])
 
@@ -52,7 +52,7 @@ class BaseArena:
         original_extent = np.array(
             (-0.5, px_total_width - 0.5, px_total_height - 0.5, -0.5)
         )
-        original_extent[:2] -= self.top_left[0]
-        original_extent[2:] -= self.top_left[1]
+        original_extent[:2] -= self.origin[0]
+        original_extent[2:] -= self.origin[1]
 
         return original_extent * self.space_units_per_pixel
