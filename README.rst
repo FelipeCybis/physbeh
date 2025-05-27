@@ -66,7 +66,7 @@ Check that all tests pass:
 
   import physbeh
 
-If no error is raised, you have installed PyfUS correctly.
+If no error is raised, you have installed PhysBeh correctly.
 
 .. stop-installation
 
