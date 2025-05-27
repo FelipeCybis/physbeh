@@ -107,35 +107,6 @@ numpydoc_xref_aliases = {
 }
 numpydoc_xref_ignore = {"optional", "or", "of"}
 numpydoc_validate = True
-# error_ignores = {
-#     "GL01",  # Docstring should start in the line immediately after the quotes
-#     "EX01",  # No examples section found
-#     "ES01",  # No extended summary found
-#     "SA01",  # See Also section not found
-# }
-# numpydoc_validation_checks = {"all"} | error_ignores
-# numpydoc_validation_exclude = {
-#     r"\.__init__$",
-#     # Ignore anything that's private (e.g., starts with _)
-#     r"\._.*$",
-#     # Ignore methods inherited from sklearn.base.BaseEstimator
-#     "FirstLevelModel.fit_transform",
-#     "SecondLevelModel.fit_transform",
-#     r"\.get_metadata_routing",
-#     r"\.get_params",
-#     r"\.set_params",
-#     r"\.set_fit_request",
-#     r"\.set_transform_request",
-#     r"\.set_inverse_transform_request",
-#     # Ignore methods inherited from sklearn.base.BaseEstimator
-#     r"\.set_output",
-#     r"AnimateScan\.to_html5_video",
-#     r"AnimateScan\.to_jshtml",
-#     r"AnimateScan\.new_saved_frame_seq",
-#     r"AnimateScan\.new_frame_seq",
-#     r"AnimateScan\.save",
-#     r"Animation\.save",
-# }
 
 # -- Intersphinx configuration ---------------------------------------------------------
 
