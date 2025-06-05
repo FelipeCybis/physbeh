@@ -134,6 +134,8 @@ class RectangularArena(BaseArena):
         self._px_top_left = px_top_left
         self._px_top_right = px_top_right
 
+        self.origin = self.top_left
+
     def __repr__(self) -> str:
         """Representation of the arena."""
         norm = max(self.width, self.height)

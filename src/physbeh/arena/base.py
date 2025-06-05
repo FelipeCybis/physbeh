@@ -20,7 +20,24 @@ class BaseArena:
         numpy.ndarray
             The origin coordinate of the arena.
         """
-        return np.array([0, 0])
+        if not hasattr(self, "_origin"):
+            self._origin = np.array([0, 0])
+        return self._origin
+
+    @origin.setter
+    def origin(self, value: np.ndarray):
+        """Set the origin of the arena in pixel coordinates.
+
+        Parameters
+        ----------
+        value : numpy.ndarray
+            The new origin coordinate of the arena.
+        """
+        if not isinstance(value, np.ndarray):
+            raise TypeError("Origin must be a numpy array.")
+        if value.shape != (2,):
+            raise ValueError("Origin must be a 1D array with two elements.")
+        self._origin = value
 
     @property
     def space_units_per_pixel(self) -> float:
