@@ -72,7 +72,6 @@ def anim2d_decorator(plot_function: Callable) -> Callable:
                 time_array=Trk[0].time,
                 video_path=Trk[0].video_filepath,
                 arena=Trk[0].arena,
-                show_timestamp=True,
                 **anim_kwargs,
             )
             return fig, ax, anim
