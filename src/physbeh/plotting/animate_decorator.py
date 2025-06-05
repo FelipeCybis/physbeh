@@ -153,6 +153,9 @@ class TrackingAnimation(Animation):
     blit : bool, optional
         If ``True``, the animation will be blitted (see matplotlib's blitting). Default
         is ``True``.
+    start_on_show : bool, optional
+        If ``True``, the animation will start playing when the figure is shown.
+        Default is ``True``.
 
     Attributes
     ----------
@@ -197,10 +200,12 @@ class TrackingAnimation(Animation):
         interactive: bool = True,
         show_timestamp: bool = True,
         other_artists: list = [],
-        blit=True,
+        blit: bool = True,
+        start_on_show: bool = True,
     ):
         ## Creating custom animation inheriting matplotlib Animation class
-        self.is_playing: bool = True
+        self.start_on_show = start_on_show
+        self.is_playing: bool = start_on_show
 
         # frame_step says if animation is going frame by frame (frame_step = 1), or
         # if it is going to skip one frame (frame_step = 2), etc.
@@ -281,6 +286,33 @@ class TrackingAnimation(Animation):
     def _setup_video_axes(self, arena, video_path, x_crop, y_crop):
         """TO BE IMPLEMENTED IN CHILD CLASSES."""
         pass
+
+    def _start(self, *args):
+        """Override of the Animation._start method.
+
+        Starts interactive animation. Adds the draw frame command to the GUI
+        handler, calls show to start the event loop.
+
+        We are implementing the option to not start the event source right away with:
+        ```
+        if self.start_on_show:
+            self.event_source.start()
+        ```
+        """
+        # Do not start the event source if saving() it.
+        if self._fig.canvas.is_saving():
+            return
+        # First disconnect our draw event handler
+        self._fig.canvas.mpl_disconnect(self._first_draw_id)
+
+        # Now do any initial draw
+        self._init_draw()
+
+        # Add our callback for stepping the animation and
+        # actually start the event_source.
+        self.event_source.add_callback(self._step)
+        if self.start_on_show:
+            self.event_source.start()
 
     def _step(self):
         try:
