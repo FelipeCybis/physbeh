@@ -1,7 +1,9 @@
 .. currentmodule:: physbeh
 
-0.6.0.dev0
-==========
+0.6.0
+=====
+
+**Released September 2025**
 
 🆕 New features
 ---------------

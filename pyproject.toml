@@ -1,6 +1,6 @@
 [project]
 name = "physbeh"
-version = "0.6.0.dev"
+version = "0.6.0"
 description = "Miscellaneous functions for tracking analysis in Python using DeepLabCut at Physics for Medicine"
 authors = [
     {name = "Felipe Cybis Pereira", email="felipe.cybispereira@gmail.com"}
