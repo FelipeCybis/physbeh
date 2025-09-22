@@ -88,7 +88,7 @@ def plot_array(
     label: str = "",
     color: ColorType = (0.5, 0.5, 0.5, 1.0),
     cmap: str | colors.Colormap | None = None,
-    norm: colors.Normalize = colors.Normalize(),
+    norm: colors.Normalize | None = None,
     vmin: float | None = None,
     vmax: float | None = None,
     colorbar: bool = True,
@@ -137,7 +137,8 @@ def plot_array(
         Takes precedence over `color` if set to anything different than ``None``.
         Default is ``None``.
     norm : matplotlib.colors.Normalize, optional
-        The normalization of the colormap. Default is ``colors.Normalize()``.
+        The normalization of the colormap. Default is ``None`` to be set to
+        `matplotlib.colors.Normalize`.
     vmin, vmax : float or None, optional
         When using no explicit `norm`, `vmin` and `vmax` define the data range that the
         colormap covers. If ``None``, the colormap covers the complete value range of
@@ -185,7 +186,7 @@ def plot_array(
     lc_kwargs: dict[str, Any] = {}
     if cmap is not None:
         lc_kwargs["cmap"] = cmap
-        lc_kwargs["norm"] = norm
+        lc_kwargs["norm"] = colors.Normalize() if norm is None else norm
     else:
         lc_kwargs["color"] = color
 
