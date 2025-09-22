@@ -149,7 +149,10 @@ class Animate_plot2D(TrackingAnimation):
         ind = np.logical_and(
             self.index >= self.current_frame,
             self.index < self.current_frame + self.frame_step,
-        )[:-1]
+        )
+        if ind.shape[0] > self.lines.shape[0]:
+            ind = ind[:-1]
+
         self.collection._paths += [mPath(line) for line in self.lines[ind]]
         self.grab_frame()
 
