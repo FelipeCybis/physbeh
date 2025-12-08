@@ -33,7 +33,7 @@ docs = [
 ]
 test = [
     "pytest-cov>=6.0.0",
-    "pytest~=8.4.0",
+    "pytest~=9.0.2",
 ]
 dev = [
     "ipykernel~=6.29.3",
