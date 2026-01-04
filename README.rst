@@ -1,4 +1,8 @@
-|zenodo| |version| |python| |build| |ruff|
+|pypi| |zenodo| |version| |python| |build| |ruff|
+
+.. |pypi| image:: https://img.shields.io/pypi/v/physbeh.svg
+    :target: https://pypi.org/project/physbeh/
+    :alt: Pypi Package
 
 .. |zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.15494995.svg
   :target: https://doi.org/10.5281/zenodo.15494995
