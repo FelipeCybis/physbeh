@@ -40,7 +40,7 @@ This is the core package used for the behavioral analysis in the following paper
 
 This package was implemented for easily manipulation of DeepLabCut output data.
 Today there are more structured and well-maintained packages for this purpose, such as
-`movement <https://github.com/neuroinformatics-unit/movement>`.
+`movement <https://github.com/neuroinformatics-unit/movement>`_.
 
 
 .. stop-about
