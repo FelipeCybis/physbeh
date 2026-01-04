@@ -50,48 +50,17 @@ Installation
 
 .. start-installation
 
-1. Setup a virtual environment
+`physbeh` can be installed from PyPI normally with `pip install physbeh`. Or you can
+install it from source
+
+1. Install PhysBeh from source
 ******************************
-
-Create and activate a new python environment (if familiarisation with virtual
-environments is needed, you can start `here
-<https://docs.python.org/3/library/venv.html>`__ or `here
-<https://ioflood.com/blog/python-venv-virtual-environment/>`__):
-
-- Using `venv` (recommended):
-
-  On Linux
-
-  .. code-block:: bash
-
-    python3 -m venv /path_to_env
-    source /path_to_env/bin/activate
-
-  On Windows
-
-  .. code-block:: powershell
-
-    python3 -m venv /path_to_env
-    /path_to_env/Script/activate
-
-- Using `conda <https://docs.conda.io/projects/conda/en/stable/>`_:
-
-  .. code-block:: bash
-
-    conda create -n physbeh python=3.11
-    conda activate physbeh
-
-2. Install PhysBeh from source
-******************************
-
-PhysBeh is a private package developed by Iconeus and Physics for Medicine and is not
-available from PyPI.
 
 .. code-block:: bash
 
   python -m pip install git+https://github.com/FelipeCybis/physbeh.git
 
-3. Check installation
+2. Check installation
 *********************
 
 Check that all tests pass:
