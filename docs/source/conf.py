@@ -48,19 +48,6 @@ project = "physbeh"
 copyright = "2023, Felipe Cybis Pereira"
 author = "Felipe Cybis Pereira"
 
-current_version = physbeh.__version__
-
-# Latest release version
-latest_release = (
-    os.popen(
-        "git describe --tags " + os.popen("git rev-list --tags --max-count=1").read()
-    )
-    .read()
-    .strip()
-)
-
-# Cname of the project
-cname = os.getenv("DOCUMENTATION_CNAME", "http://10.113.113.118:8002")
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
@@ -135,14 +122,6 @@ html_css_files = [
     "theme_layout.css",  # control layout width
 ]
 
-
-def get_version_match(semver):
-    """Evaluate the version match for the multi-documentation."""
-    if semver.endswith("dev0"):
-        return "dev"
-    return semver
-
-
 html_theme_options = {
     "icon_links": [
         {
@@ -152,12 +131,7 @@ html_theme_options = {
         },
     ],
     "use_edit_page_button": True,
-    "check_switcher": False,
-    "switcher": {
-        "json_url": f"{cname}/version/latest/_static/versions.json",
-        "version_match": get_version_match(current_version),
-    },
-    "navbar_end": ["version-switcher", "theme-switcher", "navbar-icon-links"],
+    "navbar_end": ["theme-switcher", "navbar-icon-links"],
 }
 html_context = {
     "github_url": "https://github.com",
@@ -166,16 +140,6 @@ html_context = {
     "github_version": "main",
     "doc_path": "docs/source",
 }
-# Add banner in case version is not stable
-if "dev" in current_version:
-    html_theme_options["announcement"] = (
-        "<p>This is the development documentation "
-        f"of PhysBeh ({current_version}) "
-        '<a class="sd-sphinx-override sd-badge sd-text-wrap '
-        'sd-btn-outline-dark reference external" '
-        f'href="{cname}/version/{latest_release}">'
-        f"<span>Switch to stable version ({latest_release})</span></a></p>"
-    )
 
 # sphinx-gallery configuration
 sphinx_gallery_conf = {

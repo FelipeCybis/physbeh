@@ -1,7 +1,9 @@
 .. currentmodule:: physbeh
 
-0.6.4.dev0
-===========
+0.6.4
+=====
+
+**Released January 2026**
 
 🧹 Maintenance
 --------------
