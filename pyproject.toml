@@ -5,7 +5,7 @@ description = "Miscellaneous functions for tracking analysis in Python using Dee
 authors = [
     {name = "Felipe Cybis Pereira", email="felipe.cybispereira@gmail.com"}
 ]
-requires-python = ">=3.10, <3.13" 
+requires-python = ">=3.10, <3.14" 
 readme = "README.rst"
 dependencies = [
     "joblib~=1.5.0",
