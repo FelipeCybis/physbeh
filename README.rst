@@ -38,6 +38,10 @@ This is the core package used for the behavioral analysis in the following paper
 
 1. Cybis Pereira, F., Castedo, S.H., Meur-Diebolt, S.L., Ialy-Radio, N., Bhattacharya, S., Ferrier, J., Osmanski, B.F., Cocco, S., Monasson, R., Pezet, S., et al. (2026). A vascular code for speed in the spatial navigation system. Cell Reports 45. https://doi.org/10.1016/j.celrep.2025.116791.
 
+This package was implemented for easily manipulation of DeepLabCut output data.
+Today there are more structured and well-maintained packages for this purpose, such as
+[`movement`](https://github.com/neuroinformatics-unit/movement).
+
 
 .. stop-about
 

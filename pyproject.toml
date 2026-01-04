@@ -88,7 +88,3 @@ exclude = [
   "/src/physbeh/*/tests/",
   "/examples"
 ]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/pyfus"]
-include = ["py.typed"]
