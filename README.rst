@@ -3,7 +3,7 @@
 .. |zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.15494995.svg
   :target: https://doi.org/10.5281/zenodo.15494995
 
-.. |version| image:: https://img.shields.io/badge/version-0.6.3-orange.svg
+.. |version| image:: https://img.shields.io/badge/version-0.6.4-orange.svg
     :target: https://github.com/FelipeCybis/physbeh/
     :alt: physbeh version
 

@@ -1,12 +1,18 @@
 [project]
 name = "physbeh"
-version = "0.6.3"
+version = "0.6.4"
 description = "Miscellaneous functions for tracking analysis in Python using DeepLabCut at Physics for Medicine"
 authors = [
     {name = "Felipe Cybis Pereira", email="felipe.cybispereira@gmail.com"}
 ]
 requires-python = ">=3.10, <3.14" 
+license = { file = "LICENSE" }
 readme = "README.rst"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
 dependencies = [
     "joblib~=1.5.0",
     "matplotlib~=3.10",
@@ -19,6 +25,9 @@ dependencies = [
     "tables~=3.10",
     "tqdm~=4.66",
 ]
+
+[project.urls]
+repository = "https://github.com/FelipeCybis/physbeh"
 
 [project.optional-dependencies]
 all = ["physbeh[docs,test,dev]"]
