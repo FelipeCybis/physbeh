@@ -37,7 +37,7 @@ docs = [
     "sphinx-copybutton~=0.5",
     "sphinx-design~=0.5",
     "sphinx-gallery>=0.18.0",
-    "sphinx~=8.0",
+    "sphinx>=8,<10",
 ]
 test = [
     "pytest-cov>=6.0.0",
